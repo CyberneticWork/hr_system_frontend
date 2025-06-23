@@ -19,13 +19,13 @@ function LoginPage({ onSuccess }) {
           <Login onSuccess={onSuccess} />
         </div>
         {/* Demo Credentials (optional) */}
-        {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-purple-800 font-medium mb-2">Demo Credentials:</p>
           <p className="text-sm text-blue-700">
             <span className="font-mono">admin@hrm.com</span> /{" "}
             <span className="font-mono">admin123</span>
           </p>
-        </div> */}
+        </div>
       </div>
     </div>
   );
