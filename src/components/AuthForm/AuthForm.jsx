@@ -10,6 +10,7 @@ const AuthForm = ({
   onSubmit, 
   loading, 
   error,
+  errors = {}, // <-- field-level errors
   showPassword,
   togglePassword,
   showConfirmPassword,
@@ -37,6 +38,9 @@ const AuthForm = ({
               placeholder="Enter your full name"
             />
           </div>
+          {errors.name && (
+            <p className="text-red-600 text-sm mt-1">{errors.name[0]}</p>
+          )}
         </div>
       )}
       
@@ -57,6 +61,9 @@ const AuthForm = ({
             placeholder="Enter your email"
           />
         </div>
+        {errors.email && (
+          <p className="text-red-600 text-sm mt-1">{errors.email[0]}</p>
+        )}
       </div>
       
       <div>
@@ -83,6 +90,9 @@ const AuthForm = ({
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
         </div>
+        {errors.password && (
+          <p className="text-red-600 text-sm mt-1">{errors.password[0]}</p>
+        )}
       </div>
       
       {!isLogin && (
@@ -110,6 +120,9 @@ const AuthForm = ({
               {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
+          {errors.confirmPassword && (
+            <p className="text-red-600 text-sm mt-1">{errors.confirmPassword[0]}</p>
+          )}
         </div>
       )}
       

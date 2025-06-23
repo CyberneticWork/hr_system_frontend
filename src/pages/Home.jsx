@@ -1,19 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Building2, Users, Shield } from "lucide-react";
 import Dashboard from "../components/Dashboard/Dashboard";
 import LoginPage from "./LoginPage";
+import { loadUser, logout } from "../services/AuthService";
+import {
+  getUser,
+  setUser as storeUser,
+  clearUser,
+} from "../services/UserService";
 
 // Home Page (Landing + Auth)
 function Home() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(getUser());
 
-  const handleAuthSuccess = (userData) => {
-    setUser(userData);
+  // Try to load user on mount (if token exists)
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const userData = await loadUser();
+        setUser(userData);
+        storeUser(userData);
+      } catch {
+        setUser(null);
+        clearUser();
+      }
+    }
+    // Only fetch if not already in localStorage
+    if (!user) {
+      fetchUser();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAuthSuccess = async () => {
+    try {
+      const userData = await loadUser();
+      setUser(userData);
+      storeUser(userData);
+    } catch {
+      setUser(null);
+      clearUser();
+    }
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    window.authToken = null;
+  const handleLogout = async () => {
+    try {
+      await logout(); // Clear token on backend and localStorage
+    } catch (e) {
+      // Optionally handle error
+    }
+    clearUser(); // Clear user from localStorage
+    setUser(null); // Update state to trigger re-render
   };
 
   if (user) {
