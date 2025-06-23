@@ -210,70 +210,6 @@ const Login = ({ onSuccess }) => {
   );
 };
 
-// Register Page Component
-const Register = ({ onSuccess }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
-  };
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError('');
-
-    // Validate password match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await api.post('/api/register', formData);
-      // Store JWT token in memory
-      window.authToken = response.data.token;
-      onSuccess(response.data.user);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <AuthForm
-      isLogin={false}
-      formData={formData}
-      onChange={handleChange}
-      onSubmit={handleSubmit}
-      loading={loading}
-      error={error}
-      showPassword={showPassword}
-      togglePassword={() => setShowPassword(!showPassword)}
-      showConfirmPassword={showConfirmPassword}
-      toggleConfirmPassword={() => setShowConfirmPassword(!showConfirmPassword)}
-    />
-  );
-};
-
 // Dashboard Component (Dummy)
 const Dashboard = ({ user, onLogout }) => {
   return (
@@ -315,7 +251,6 @@ const Dashboard = ({ user, onLogout }) => {
 
 // Main App Component
 const App = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState(null);
 
   const handleAuthSuccess = (userData) => {
@@ -379,60 +314,26 @@ const App = () => {
               <h1 className="text-2xl font-bold text-gray-900">HRM System</h1>
             </div>
 
-            {/* Auth Toggle */}
-            <div className="bg-gray-100 p-1 rounded-lg flex mb-8">
-              <button
-                onClick={() => setIsLogin(true)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  isLogin
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => setIsLogin(false)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  !isLogin
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Register
-              </button>
-            </div>
-
-            {/* Form Card */}
+            {/* Only Login Form */}
             <div className="bg-white py-8 px-6 shadow-xl rounded-xl border border-gray-100">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {isLogin ? 'Welcome back' : 'Create your account'}
+                  Welcome back
                 </h2>
                 <p className="text-gray-600 mt-2">
-                  {isLogin 
-                    ? 'Please sign in to your account' 
-                    : 'Fill in your information to get started'
-                  }
+                  Please sign in to your account
                 </p>
               </div>
-
-              {isLogin ? (
-                <Login onSuccess={handleAuthSuccess} />
-              ) : (
-                <Register onSuccess={handleAuthSuccess} />
-              )}
+              <Login onSuccess={handleAuthSuccess} />
             </div>
 
             {/* Demo Credentials */}
-            {isLogin && (
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-purple-800 font-medium mb-2">Demo Credentials:</p>
-                <p className="text-sm text-blue-700">
-                  <span className="font-mono">admin@hrm.com</span> / <span className="font-mono">admin123</span>
-                </p>
-              </div>
-            )}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-purple-800 font-medium mb-2">Demo Credentials:</p>
+              <p className="text-sm text-blue-700">
+                <span className="font-mono">admin@hrm.com</span> / <span className="font-mono">admin123</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
