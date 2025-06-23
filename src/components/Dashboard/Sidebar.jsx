@@ -45,7 +45,7 @@ const Sidebar = ({
       {/* Sidebar */}
       <div
         className={`
-        h-full bg-white border-r border-gray-200 shadow-lg z-50
+        min-h-screen bg-white border-r border-gray-200 shadow-lg z-50
         transform transition-transform duration-300 ease-in-out
         w-64
         fixed left-0 top-0

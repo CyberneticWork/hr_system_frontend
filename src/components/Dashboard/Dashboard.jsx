@@ -34,17 +34,17 @@ const Dashboard = ({ user, onLogout }) => {
                 </button>
               </div>
               <div className="hidden lg:flex items-center">
-                <Building2 className="h-8 w-8 text-indigo-600" />
-                <span className="ml-2 text-xl font-bold text-gray-900">HRM System</span>
+                {/* <Building2 className="h-8 w-8 text-indigo-600" />
+                <span className="ml-2 text-xl font-bold text-gray-900">HRM System</span> */}
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-gray-700">Welcome, {user.name}</span>
-                <button
+                {/* <button
                   onClick={onLogout}
                   className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200"
                 >
                   Logout
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
