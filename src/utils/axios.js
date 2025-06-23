@@ -1,8 +1,11 @@
 import axiosLib from "axios";
 import { getToken } from "../services/TokenService";
+import config from '../config';
+
+const apiUrl = config.apiBaseUrl;
 
 const axios = axiosLib.create({
-  baseURL: "http://127.0.0.1:8000/api", // Adjust as needed for your backend
+  baseURL: apiUrl, 
   headers: {
     Accept: "application/json",
   },
