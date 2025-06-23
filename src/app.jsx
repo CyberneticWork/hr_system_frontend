@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { Building2, Users, Shield } from 'lucide-react';
-import Login from './components/Login/Login';
-import Dashboard from './components/Dashboard/Dashboard';
-
-
+import React, { useState } from "react";
+import { Building2, Users, Shield } from "lucide-react";
+import Login from "./components/Login/Login";
+import Dashboard from "./components/Dashboard/Dashboard";
 
 // Main App Component
 function App() {
@@ -33,7 +31,8 @@ function App() {
               <Building2 className="h-16 w-16 mb-6" />
               <h1 className="text-4xl font-bold mb-4">HRM System</h1>
               <p className="text-xl text-indigo-100 leading-relaxed">
-                Streamline your human resources management with our comprehensive platform.
+                Streamline your human resources management with our
+                comprehensive platform.
               </p>
             </div>
 
@@ -44,7 +43,9 @@ function App() {
                 </div>
                 <div>
                   <h3 className="font-semibold">Employee Management</h3>
-                  <p className="text-indigo-100 text-sm">Manage your workforce efficiently</p>
+                  <p className="text-indigo-100 text-sm">
+                    Manage your workforce efficiently
+                  </p>
                 </div>
               </div>
 
@@ -54,7 +55,9 @@ function App() {
                 </div>
                 <div>
                   <h3 className="font-semibold">Secure & Reliable</h3>
-                  <p className="text-indigo-100 text-sm">Enterprise-grade security</p>
+                  <p className="text-indigo-100 text-sm">
+                    Enterprise-grade security
+                  </p>
                 </div>
               </div>
             </div>
@@ -85,9 +88,12 @@ function App() {
 
             {/* Demo Credentials */}
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-purple-800 font-medium mb-2">Demo Credentials:</p>
+              <p className="text-sm text-purple-800 font-medium mb-2">
+                Demo Credentials:
+              </p>
               <p className="text-sm text-blue-700">
-                <span className="font-mono">admin@hrm.com</span> / <span className="font-mono">admin123</span>
+                <span className="font-mono">admin@hrm.com</span> /{" "}
+                <span className="font-mono">admin123</span>
               </p>
             </div>
           </div>
