@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Building2,
   Users,
@@ -9,6 +9,7 @@ import {
   BarChart3,
   FileText,
   ChevronDown,
+  ChevronRight,
   Settings,
   LogOut,
   X,
@@ -22,14 +23,34 @@ const Sidebar = ({
   isOpen,
   setIsOpen,
 }) => {
+  const [expandedItems, setExpandedItems] = useState({
+    hrMaster: false,
+  });
+
+  const toggleHrMaster = () => {
+    setExpandedItems(prev => ({ ...prev, hrMaster: !prev.hrMaster }));
+  };
+
   const menuItems = [
     { id: "dashboard", name: "Dashboard", icon: Home, badge: null },
-    { id: "employees", name: "Employees", icon: Users, badge: "24" },
-    { id: "attendance", name: "Attendance", icon: UserCheck, badge: null },
-    { id: "payroll", name: "Payroll", icon: DollarSign, badge: "3" },
-    { id: "calendar", name: "Calendar", icon: Calendar, badge: null },
+    { 
+      id: "hrMaster", 
+      name: "HR Master", 
+      icon: Users, 
+      badge: null,
+      subItems: [
+        { id: "employeeMaster", name: "Employee Master" },
+        { id: "departmentMaster", name: "Department Master" },
+        { id: "shiftTime", name: "Shift Time" },
+        // { id: "", name: "" },
+        // { id: "", name: "" },
+      ]
+    },
+    // { id: "attendance", name: "Attendance", icon: UserCheck, badge: null },
+    // { id: "payroll", name: "Payroll", icon: DollarSign, badge: null },
+    // { id: "calendar", name: "Calendar", icon: Calendar, badge: null },
     { id: "reports", name: "Reports", icon: BarChart3, badge: null },
-    { id: "documents", name: "Documents", icon: FileText, badge: "12" },
+    { id: "utilities", name: "Utilities", icon: FileText, badge: null },
   ];
 
   return (
@@ -37,7 +58,7 @@ const Sidebar = ({
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -98,41 +119,114 @@ const Sidebar = ({
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.id}>
-                <button
-                  onClick={() => setActiveItem(item.id)}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-                    transition-all duration-200 group
-                    ${
-                      activeItem === item.id
-                        ? "bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }
-                  `}
-                >
-                  <item.icon
-                    className={`h-5 w-5 ${
-                      activeItem === item.id
-                        ? "text-indigo-600"
-                        : "text-gray-400 group-hover:text-gray-600"
-                    }`}
-                  />
-                  <span className="flex-1 text-left">{item.name}</span>
-                  {item.badge && (
-                    <span
+                {item.subItems ? (
+                  <>
+                    <button
+                      onClick={toggleHrMaster}
                       className={`
-                      px-2 py-0.5 text-xs rounded-full font-medium
+                        w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                        transition-all duration-200 group
+                        ${
+                          activeItem === item.id || item.subItems.some(subItem => activeItem === subItem.id)
+                            ? "bg-indigo-50 text-indigo-700"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon
+                          className={`h-5 w-5 ${
+                            activeItem === item.id || item.subItems.some(subItem => activeItem === subItem.id)
+                              ? "text-indigo-600"
+                              : "text-gray-400 group-hover:text-gray-600"
+                          }`}
+                        />
+                        <span>{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {item.badge && (
+                          <span
+                            className={`
+                              px-2 py-0.5 text-xs rounded-full font-medium
+                              ${
+                                activeItem === item.id || item.subItems.some(subItem => activeItem === subItem.id)
+                                  ? "bg-indigo-100 text-indigo-700"
+                                  : "bg-gray-100 text-gray-600"
+                              }
+                            `}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                        {expandedItems.hrMaster ? (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                        )}
+                      </div>
+                    </button>
+                    
+                    {expandedItems.hrMaster && (
+                      <ul className="ml-4 mt-1 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <li key={subItem.id}>
+                            <button
+                              onClick={() => setActiveItem(subItem.id)}
+                              className={`
+                                w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                                transition-all duration-200
+                                ${
+                                  activeItem === subItem.id
+                                    ? "bg-indigo-50 text-indigo-700"
+                                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                }
+                              `}
+                            >
+                              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                              <span>{subItem.name}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setActiveItem(item.id)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                      transition-all duration-200 group
                       ${
                         activeItem === item.id
-                          ? "bg-indigo-100 text-indigo-700"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                       }
                     `}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
+                  >
+                    <item.icon
+                      className={`h-5 w-5 ${
+                        activeItem === item.id
+                          ? "text-indigo-600"
+                          : "text-gray-400 group-hover:text-gray-600"
+                      }`}
+                    />
+                    <span className="flex-1 text-left">{item.name}</span>
+                    {item.badge && (
+                      <span
+                        className={`
+                        px-2 py-0.5 text-xs rounded-full font-medium
+                        ${
+                          activeItem === item.id
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "bg-gray-100 text-gray-600"
+                        }
+                      `}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
