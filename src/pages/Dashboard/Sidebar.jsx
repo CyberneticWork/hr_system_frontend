@@ -39,7 +39,8 @@ const Sidebar = ({
       icon: Users, 
       badge: null,
       subItems: [
-        { id: "employeeMaster", name: "Employee Master" },
+        { id: "show", name: "Show Employee", icon: UserCheck },
+        { id: "employeeMaster", name: " Add Employee Master" },
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
         // { id: "", name: "" },

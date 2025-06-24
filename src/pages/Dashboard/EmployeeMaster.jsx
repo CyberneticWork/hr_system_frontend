@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import EmpPersonalDetails from '../EmpPersonalDetails';
-
+import AddressDetails from '../AddressDetails';
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
 
@@ -40,7 +40,7 @@ const EmployeeMaster = () => {
       </div>
       <div className="p-4">
         {activeCategory === 'personal' && <EmpPersonalDetails />}
-        {activeCategory === 'address' && <div>Address Details Form</div>}
+        {activeCategory === 'address' && <AddressDetails />}
         {activeCategory === 'salary' && <div>Salary Details Form</div>}
       </div>
     </div>

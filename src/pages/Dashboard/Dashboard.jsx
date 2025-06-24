@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Building2, Users } from 'lucide-react';
 import Sidebar from './Sidebar';
 import EmployeeMaster from './EmployeeMaster';
+import ShowEmployee from './ShowEmployee';
 
 const Dashboard = ({ user, onLogout }) => {
   // Sidebar state
   const [activeItem, setActiveItem] = useState("dashboard");
   const [isOpen, setIsOpen] = useState(false);
+  
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -64,7 +67,10 @@ const Dashboard = ({ user, onLogout }) => {
           <div className="px-4 py-6 sm:px-0 h-full">
             {activeItem === 'employeeMaster' ? (
               <EmployeeMaster />
+          ) : activeItem === "show" ? (
+              <ShowEmployee />
             ) : (
+
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
                   <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
