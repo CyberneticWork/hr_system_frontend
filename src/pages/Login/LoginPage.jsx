@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { login, loadUser } from "../services/AuthService";
-import Login from "../components/Login/Login";
-import { setUser } from "../services/UserService";
+import { login, loadUser } from "../../services/AuthService";
+import Login from "./Login";
+import { setUser } from "../../services/UserService";
 
 function LoginPage({ onSuccess }) {
   const [error, setError] = useState(null);

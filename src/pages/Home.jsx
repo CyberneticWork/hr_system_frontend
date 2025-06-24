@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Building2, Users, Shield } from "lucide-react";
-import Dashboard from "../components/Dashboard/Dashboard";
-import LoginPage from "./LoginPage";
+import Dashboard from "./Dashboard/Dashboard";
+import LoginPage from "./Login/LoginPage";
 import { loadUser, logout } from "../services/AuthService";
 import {
   getUser,

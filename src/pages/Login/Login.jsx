@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import AuthForm from "../AuthForm/AuthForm";
+import AuthForm from "../../components/AuthForm/AuthForm";
 
 // Login Page Component
 const Login = ({ onSuccess, loading: parentLoading }) => {

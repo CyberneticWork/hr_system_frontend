@@ -1,0 +1,50 @@
+import React, { useState } from 'react';
+import EmpPersonalDetails from '../EmpPersonalDetails';
+
+const EmployeeMaster = () => {
+  const [activeCategory, setActiveCategory] = useState('personal');
+
+  return (
+    <div>
+      <div className="flex gap-2 px-4 py-2 border-b border-gray-200 bg-white">
+        <button
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            activeCategory === 'personal'
+              ? 'bg-indigo-600 text-white'
+              : 'text-indigo-700 hover:bg-indigo-100'
+          }`}
+          onClick={() => setActiveCategory('personal')}
+        >
+          Personal
+        </button>
+        <button
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            activeCategory === 'address'
+              ? 'bg-indigo-600 text-white'
+              : 'text-indigo-700 hover:bg-indigo-100'
+          }`}
+          onClick={() => setActiveCategory('address')}
+        >
+          Address
+        </button>
+        <button
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            activeCategory === 'salary'
+              ? 'bg-indigo-600 text-white'
+              : 'text-indigo-700 hover:bg-indigo-100'
+          }`}
+          onClick={() => setActiveCategory('salary')}
+        >
+          Salary
+        </button>
+      </div>
+      <div className="p-4">
+        {activeCategory === 'personal' && <EmpPersonalDetails />}
+        {activeCategory === 'address' && <div>Address Details Form</div>}
+        {activeCategory === 'salary' && <div>Salary Details Form</div>}
+      </div>
+    </div>
+  );
+};
+
+export default EmployeeMaster;
