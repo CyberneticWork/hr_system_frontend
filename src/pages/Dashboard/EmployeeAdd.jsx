@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 const MultiStepForm = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [formData, setFormData] = useState({
     // Step 1 - Basic Details
     firstName: "",
@@ -20,25 +21,89 @@ const MultiStepForm = () => {
     comments: "",
   });
 
-  // In a real app, you would use localStorage here
-  // useEffect(() => {
-  //   const savedData = localStorage.getItem('formData');
-  //   const savedStep = localStorage.getItem('currentStep');
-  //   if (savedData) {
-  //     setFormData(JSON.parse(savedData));
-  //   }
-  //   if (savedStep) {
-  //     setCurrentStep(parseInt(savedStep));
-  //   }
-  // }, []);
+  // Check if localStorage is available
+  const isLocalStorageAvailable = () => {
+    try {
+      const test = "__localStorage_test__";
+      localStorage.setItem(test, test);
+      localStorage.removeItem(test);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
 
-  // useEffect(() => {
-  //   localStorage.setItem('formData', JSON.stringify(formData));
-  //   localStorage.setItem('currentStep', currentStep.toString());
-  // }, [formData, currentStep]);
+  // Load saved data on component mount - this runs ONCE when component mounts
+  useEffect(() => {
+    console.log("🔄 Component mounted, checking for saved data...");
+
+    if (isLocalStorageAvailable()) {
+      try {
+        const savedData = localStorage.getItem("multiStepFormData");
+        const savedStep = localStorage.getItem("multiStepFormStep");
+        const savedModalState = localStorage.getItem("multiStepFormModalOpen");
+
+        console.log("📦 Raw saved data:", {
+          savedData,
+          savedStep,
+          savedModalState,
+        });
+
+        if (savedData && savedData !== "null") {
+          const parsedData = JSON.parse(savedData);
+          console.log("✅ Parsed form data:", parsedData);
+          setFormData(parsedData);
+        }
+
+        if (savedStep && savedStep !== "null") {
+          const stepNumber = parseInt(savedStep);
+          console.log("✅ Restored step:", stepNumber);
+          setCurrentStep(stepNumber);
+        }
+
+        if (savedModalState === "true") {
+          console.log("✅ Restoring modal open state");
+          setIsModalOpen(true);
+        }
+      } catch (error) {
+        console.error("❌ Error loading data from localStorage:", error);
+      }
+    } else {
+      console.warn("⚠️ localStorage is not available in this environment");
+    }
+
+    setIsLoaded(true);
+    console.log("✅ Component loaded");
+  }, []); // Empty dependency array - runs only once
+
+  // Save data whenever formData, currentStep, or modal state changes - but NOT on initial load
+  useEffect(() => {
+    // Don't save during initial load
+    if (!isLoaded) return;
+
+    if (isLocalStorageAvailable()) {
+      try {
+        console.log("💾 Saving data to localStorage...", {
+          formData,
+          currentStep,
+          isModalOpen,
+        });
+        localStorage.setItem("multiStepFormData", JSON.stringify(formData));
+        localStorage.setItem("multiStepFormStep", currentStep.toString());
+        localStorage.setItem("multiStepFormModalOpen", isModalOpen.toString());
+        console.log("✅ Data saved successfully");
+      } catch (error) {
+        console.error("❌ Error saving data to localStorage:", error);
+      }
+    }
+  }, [formData, currentStep, isModalOpen, isLoaded]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    console.log("📝 Input changed:", {
+      name,
+      value: type === "checkbox" ? checked : value,
+    });
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -47,21 +112,24 @@ const MultiStepForm = () => {
 
   const handleNext = () => {
     if (currentStep < 3) {
+      console.log("➡️ Moving to next step:", currentStep + 1);
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
+      console.log("⬅️ Moving to previous step:", currentStep - 1);
       setCurrentStep(currentStep - 1);
     }
   };
 
   const handleSubmit = () => {
-    console.log("Form submitted:", formData);
-    alert("Form submitted successfully!");
+    console.log("📤 Form submitted:", formData);
+    alert("Form submitted successfully! Check console for submitted data.");
+
     // Reset form
-    setFormData({
+    const initialFormData = {
       firstName: "",
       lastName: "",
       email: "",
@@ -73,15 +141,47 @@ const MultiStepForm = () => {
       newsletter: false,
       notifications: false,
       comments: "",
-    });
+    };
+
+    setFormData(initialFormData);
     setCurrentStep(1);
     setIsModalOpen(false);
-    // localStorage.removeItem('formData');
-    // localStorage.removeItem('currentStep');
+
+    // Clear saved data from localStorage
+    if (isLocalStorageAvailable()) {
+      try {
+        localStorage.removeItem("multiStepFormData");
+        localStorage.removeItem("multiStepFormStep");
+        localStorage.removeItem("multiStepFormModalOpen");
+        console.log("🗑️ Form data cleared from localStorage");
+      } catch (error) {
+        console.error("❌ Error clearing localStorage:", error);
+      }
+    }
   };
 
   const closeModal = () => {
+    console.log("❌ Closing modal");
     setIsModalOpen(false);
+  };
+
+  const openModal = () => {
+    console.log("✅ Opening modal");
+    setIsModalOpen(true);
+  };
+
+  // Add a manual test function
+  const testLocalStorage = () => {
+    if (isLocalStorageAvailable()) {
+      const testData = { test: "Hello World", timestamp: Date.now() };
+      localStorage.setItem("test-key", JSON.stringify(testData));
+      const retrieved = JSON.parse(localStorage.getItem("test-key"));
+      console.log("🧪 localStorage test:", retrieved);
+      alert("localStorage test successful! Check console.");
+      localStorage.removeItem("test-key");
+    } else {
+      alert("localStorage is not available!");
+    }
   };
 
   const renderStep = () => {
@@ -269,15 +369,41 @@ const MultiStepForm = () => {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading form data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      {/* Trigger Button */}
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-lg transition-colors duration-200"
-      >
-        Open Multi-Step Form
-      </button>
+    <div className="flex gap-2 px-4 py-2 border-b border-gray-200 bg-white">
+      {/* Trigger Buttons */}
+      <div className="text-center space-x-4">
+        <button
+          onClick={openModal}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-lg transition-colors duration-200"
+        >
+          Open Multi-Step Form
+        </button>
+        <button
+          onClick={testLocalStorage}
+          className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg shadow-lg transition-colors duration-200"
+        >
+          Test localStorage
+        </button>
+
+        {/* <button
+          onClick={clearLocalStorage}
+          className="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg shadow-lg transition-colors duration-200"
+        >
+          Clear localStorage
+        </button> */}
+      </div>
 
       {/* Modal Overlay */}
       {isModalOpen && (
@@ -357,11 +483,56 @@ const MultiStepForm = () => {
       )}
 
       {/* Debug Info */}
-      <div className="fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs">
-        <h4 className="font-semibold text-sm mb-2">Current Form Data:</h4>
-        <pre className="text-xs text-gray-600 overflow-x-auto">
-          {JSON.stringify(formData, null, 2)}
-        </pre>
+      <div className="fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-sm">
+        <h4 className="font-semibold text-sm mb-2">Debug Information:</h4>
+        <div className="text-xs text-gray-600 space-y-1">
+          <div>
+            <strong>Loaded:</strong> {isLoaded ? "✅ Yes" : "❌ No"}
+          </div>
+          <div>
+            <strong>Current Step:</strong> {currentStep}
+          </div>
+          <div>
+            <strong>Modal Open:</strong> {isModalOpen ? "Yes" : "No"}
+          </div>
+          <div>
+            <strong>localStorage:</strong>
+            <span
+              className={
+                isLocalStorageAvailable() ? "text-green-600" : "text-red-600"
+              }
+            >
+              {isLocalStorageAvailable()
+                ? " ✅ Available"
+                : " ❌ Not Available"}
+            </span>
+          </div>
+          <div>
+            <strong>Has Data:</strong>{" "}
+            {Object.values(formData).some((v) => v !== "" && v !== false)
+              ? "✅ Yes"
+              : "❌ No"}
+          </div>
+        </div>
+        <details className="text-xs mt-2">
+          <summary className="cursor-pointer text-gray-700 font-medium">
+            Raw localStorage
+          </summary>
+          <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono">
+            <div>
+              <strong>Data:</strong>{" "}
+              {localStorage.getItem("multiStepFormData") || "null"}
+            </div>
+            <div>
+              <strong>Step:</strong>{" "}
+              {localStorage.getItem("multiStepFormStep") || "null"}
+            </div>
+            <div>
+              <strong>Modal:</strong>{" "}
+              {localStorage.getItem("multiStepFormModalOpen") || "null"}
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   );
