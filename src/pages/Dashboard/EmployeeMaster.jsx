@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import EmpPersonalDetails from '../../Pages/EmpPersonalDetails';
+import EmpPersonalDetails from '../EmpPersonalDetails';
 
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
