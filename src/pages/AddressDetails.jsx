@@ -11,32 +11,32 @@ import {
 
 const initialState = {
   // Personal Details
-  empName: "PERERA",
-  empNo: "10",
-  status: "ACTIVE",
-  type: "PERMANENT",
+  empName: "",
+  empNo: "",
+  status: "",
+  type: "",
 
   // Address Details
-  name: "VINOD SANJEEWA",
-  permanentAddress: "NO 40/A, DUNGALPITIYA",
-  temporaryAddress: "NEGAMBO",
-  email: "11504",
-  landLine: "0315615110",
-  mobileLine: "0717597856",
+  name: "",
+  permanentAddress: "",
+  temporaryAddress: "",
+  email: "",
+  landLine: "",
+  mobileLine: "",
   gnDivision: "",
   policeStation: "",
-  district: "GAMPAHA",
+  district: "",
 
   // Location Details
-  province: "SRI LANKA",
+  province: "",
   electoralDivision: "",
 
   // Emergency Contact
   emergencyContact: {
     relationship: "",
-    contactName: "ContactContactContactName",
-    contactAddress: "NO 40/A, DUNGALPITIYA",
-    contactTel: "0315615110",
+    contactName: "",
+    contactAddress: "",
+    contactTel: "",
   },
 };
 
