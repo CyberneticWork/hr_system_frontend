@@ -80,9 +80,10 @@ const Dashboard = ({ user, onLogout }) => {
               <ShowEmployee />
             ) : activeItem === "createNewDeduction" ? (
               <CreateNewDeduction />
-            ) : activeItem === "shiftTime" ? (
+           ) : activeItem === "shiftTime" ? (
               <ShiftSchedule />
             ) : (
+              
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
                   <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
