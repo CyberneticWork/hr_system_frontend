@@ -203,67 +203,84 @@ const CreateNewDeduction = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredDeductions.map((deduction) => (
-              <tr key={deduction.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {deduction.deductionCode}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {deduction.deductionDescription}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {deduction.amount}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {deduction.applicableFor}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      deduction.deductionType === "Fixed"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-purple-100 text-purple-800"
-                    }`}
-                  >
-                    {deduction.deductionType}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div
-                      className="relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      style={{
-                        backgroundColor: deduction.active
-                          ? "#3b82f6"
-                          : "#e5e7eb",
-                      }}
-                      onClick={() => handleToggleDeductionStatus(deduction.id)}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          deduction.active ? "translate-x-5" : "translate-x-1"
-                        }`}
-                      />
-                    </div>
+            {filteredDeductions.length > 0 ? (
+              filteredDeductions.map((deduction) => (
+                <tr key={deduction.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {deduction.deductionCode}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {deduction.deductionDescription}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {deduction.amount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {deduction.applicableFor}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span
-                      className={`ml-2 text-xs font-medium ${
-                        deduction.active ? "text-green-600" : "text-red-600"
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        deduction.deductionType === "Fixed"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-purple-100 text-purple-800"
                       }`}
                     >
-                      {deduction.active ? "Active" : "Inactive"}
+                      {deduction.deductionType}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div
+                        className="relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        style={{
+                          backgroundColor: deduction.active
+                            ? "#3b82f6"
+                            : "#e5e7eb",
+                        }}
+                        onClick={() =>
+                          handleToggleDeductionStatus(deduction.id)
+                        }
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            deduction.active ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </div>
+                      <span
+                        className={`ml-2 text-xs font-medium ${
+                          deduction.active ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {deduction.active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-900 mr-3">
+                      Edit
+                    </button>
+                    <button className="text-red-600 hover:text-red-900">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex flex-col items-center">
+                    <Search className="h-12 w-12 text-gray-300 mb-2" />
+                    <p className="text-lg font-medium">No deductions found</p>
+                    <p className="text-sm">
+                      Try adjusting your search or filter to find what you're
+                      looking for
+                    </p>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">
-                    Edit
-                  </button>
-                  <button className="text-red-600 hover:text-red-900">
-                    Delete
-                  </button>
-                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
