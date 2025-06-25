@@ -3,6 +3,7 @@ import { Building2, Users } from "lucide-react";
 import Sidebar from "./Sidebar";
 import EmployeeMaster from "./EmployeeMaster";
 import EmployeeAdd from "./EmployeeAdd";
+import ShowEmployee from "./ShowEmployee";
 
 const Dashboard = ({ user, onLogout }) => {
   // Sidebar state
@@ -67,6 +68,8 @@ const Dashboard = ({ user, onLogout }) => {
               <EmployeeMaster />
             ) : activeItem === "employeeAdd" ? (
               <EmployeeAdd />
+            ) : activeItem === "show" ? (
+              <ShowEmployee />
             ) : (
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
