@@ -12,11 +12,7 @@ import {
 const STORAGE_KEY = "employeeFormData";
 
 const initialState = {
-  // Personal Details
-  empName: "",
-  empNo: "",
-  status: "",
-  type: "",
+
 
   // Address Details
   name: "",

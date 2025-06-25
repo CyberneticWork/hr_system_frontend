@@ -39,6 +39,7 @@ const OrganizationDetails = () => {
     currentStatus: 'Active',
     dayOff: ''
   });
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   // Load organizationDetails from localStorage on mount
@@ -56,8 +57,31 @@ const OrganizationDetails = () => {
       }
     } catch (e) {
       // ignore
+    } finally {
+      setIsDataLoaded(true);
     }
   }, []);
+
+  // Save to localStorage whenever formData changes (after initial load)
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const saveData = () => {
+      let allData = {};
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && saved !== 'undefined' && saved !== 'null') {
+          allData = JSON.parse(saved);
+        }
+      } catch (e) {
+        // ignore
+      }
+      allData.organizationDetails = formData;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+      setIsSaved(true);
+    };
+    const timeoutId = setTimeout(saveData, 300);
+    return () => clearTimeout(timeoutId);
+  }, [formData, isDataLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -68,23 +92,6 @@ const OrganizationDetails = () => {
     setIsSaved(false);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Save only organizationDetails under the main key, merging with previous data if exists
-    let allData = {};
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && saved !== 'undefined' && saved !== 'null') {
-        allData = JSON.parse(saved);
-      }
-    } catch (e) {
-      // ignore
-    }
-    allData.organizationDetails = formData;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
-    setIsSaved(true);
-  };
-
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -92,7 +99,7 @@ const OrganizationDetails = () => {
         Organization Details
       </h1>
       
-      <form onSubmit={handleSubmit}>
+      <form>
         {/* Company Information Section */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
@@ -487,19 +494,12 @@ const OrganizationDetails = () => {
               <RefreshCw size={16} />
               Cancel
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
-            >
-              <Save size={16} />
-              Save Organization Details
-            </button>
           </div>
         </div>
         {isSaved && (
           <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center gap-2">
             <CheckCircle className="text-green-600" size={18} />
-            Organization details saved successfully!
+            Organization details saved automatically!
           </div>
         )}
       </form>
