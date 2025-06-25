@@ -69,6 +69,7 @@ const AddressDetails = () => {
   return (
     <>
       {/* Address And Contact Details */}
+         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 rounded-xl">
@@ -358,6 +359,7 @@ const AddressDetails = () => {
             Save Address Details
           </button>
         </div>
+      </div>
       </div>
     </>
   );
