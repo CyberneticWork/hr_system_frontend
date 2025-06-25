@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MapPin,
   Phone,
@@ -8,6 +8,8 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+
+const STORAGE_KEY = 'employeeFormData';
 
 const initialState = {
   // Personal Details
@@ -42,6 +44,55 @@ const initialState = {
 
 const AddressDetails = () => {
   const [form, setForm] = useState(initialState);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const loadData = () => {
+      try {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData && savedData !== 'undefined' && savedData !== 'null') {
+          const parsedData = JSON.parse(savedData);
+          // Load address data if exists in storage
+          if (parsedData.address) {
+            setForm(parsedData.address);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+      } finally {
+        setIsDataLoaded(true);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Save to localStorage whenever form changes
+  useEffect(() => {
+    if (!isDataLoaded) return; // Don't save until initial load is complete
+
+    const saveData = () => {
+      try {
+        // Get existing data from localStorage
+        const existingData = localStorage.getItem(STORAGE_KEY);
+        const currentStorage = existingData ? JSON.parse(existingData) : {};
+        
+        // Update only the address section
+        const dataToSave = {
+          ...currentStorage,
+          address: form
+        };
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      } catch (error) {
+        console.error('Error saving data to localStorage:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveData, 300);
+    return () => clearTimeout(timeoutId);
+  }, [form, isDataLoaded]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
