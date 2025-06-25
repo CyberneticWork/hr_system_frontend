@@ -6,6 +6,7 @@ import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
 import CreateNewDeduction from "./Deduction/CreateNewDeduction";
 import ShiftSchedule from "./ShiftSchedule";
+import CreateNewAllowance from "./CreateNewAllowance";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -163,6 +164,8 @@ const Dashboard = ({ user, onLogout }) => {
               <CreateNewDeduction />
             ) : activeItem === "shiftTime" ? (
               <ShiftSchedule />
+            ) : activeItem === "createNewAllowance" ? (
+              <CreateNewAllowance />
             ) : (
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 
