@@ -95,6 +95,14 @@ const CompensationManagement = () => {
     }));
   };
 
+  // Toggle handler for boolean values
+  const handleToggleChange = (field) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Form submitted:", formData);
@@ -225,112 +233,158 @@ const CompensationManagement = () => {
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="secondaryEmp"
-                      checked={formData.secondaryEmp}
-                      onChange={(e) =>
-                        handleInputChange("secondaryEmp", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="secondaryEmp"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Secondary Employment
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.secondaryEmp
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("secondaryEmp")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.secondaryEmp
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="enableEpfEtf"
-                      checked={formData.enableEpfEtf}
-                      onChange={(e) =>
-                        handleInputChange("enableEpfEtf", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="enableEpfEtf"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Enable EPF/ETF
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.enableEpfEtf
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("enableEpfEtf")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.enableEpfEtf
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="otActive"
-                      checked={formData.otActive}
-                      onChange={(e) =>
-                        handleInputChange("otActive", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="otActive"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       OT Active
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.otActive
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("otActive")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.otActive ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="incrementActive"
-                      checked={formData.incrementActive}
-                      onChange={(e) =>
-                        handleInputChange("incrementActive", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="incrementActive"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Increment Active
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.incrementActive
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("incrementActive")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.incrementActive
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="nopayActive"
-                      checked={formData.nopayActive}
-                      onChange={(e) =>
-                        handleInputChange("nopayActive", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="nopayActive"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       No-pay Active
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.nopayActive
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("nopayActive")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.nopayActive
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="earlyDeduction"
-                      checked={formData.earlyDeduction}
-                      onChange={(e) =>
-                        handleInputChange("earlyDeduction", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="earlyDeduction"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Early Deduction
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.earlyDeduction
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("earlyDeduction")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.earlyDeduction
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -343,40 +397,52 @@ const CompensationManagement = () => {
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="morningOt"
-                      checked={formData.morningOt}
-                      onChange={(e) =>
-                        handleInputChange("morningOt", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="morningOt"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Morning OT
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.morningOt
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("morningOt")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.morningOt ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-3 bg-white rounded-lg border">
-                    <input
-                      type="checkbox"
-                      id="eveningOt"
-                      checked={formData.eveningOt}
-                      onChange={(e) =>
-                        handleInputChange("eveningOt", e.target.checked)
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <label
                       htmlFor="eveningOt"
-                      className="ml-3 text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Evening OT
                     </label>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.eveningOt
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("eveningOt")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.eveningOt ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -495,18 +561,23 @@ const CompensationManagement = () => {
                         BR1 Relief allowance for 2015
                       </p>
                     </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="br2015"
-                        checked={formData.budgetaryReliefAllowance2015}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "budgetaryReliefAllowance2015",
-                            e.target.checked
-                          )
-                        }
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.budgetaryReliefAllowance2015
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() =>
+                        handleToggleChange("budgetaryReliefAllowance2015")
+                      }
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.budgetaryReliefAllowance2015
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
                       />
                     </div>
                   </div>
@@ -520,18 +591,23 @@ const CompensationManagement = () => {
                         BR2 Relief allowance for 2016
                       </p>
                     </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="br2016"
-                        checked={formData.budgetaryReliefAllowance2016}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "budgetaryReliefAllowance2016",
-                            e.target.checked
-                          )
-                        }
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.budgetaryReliefAllowance2016
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() =>
+                        handleToggleChange("budgetaryReliefAllowance2016")
+                      }
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.budgetaryReliefAllowance2016
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
                       />
                     </div>
                   </div>
@@ -544,50 +620,50 @@ const CompensationManagement = () => {
                   Primary Employment Basic
                 </h2>
 
-                <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                  <label className="text-sm font-medium text-gray-700">
+                    Primary Employment Status
+                  </label>
                   <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="primaryTrue"
-                      name="primaryEmploymentBasic"
-                      value="true"
-                      checked={formData.primaryEmploymentBasic === "true"}
-                      onChange={(e) =>
+                    <span
+                      className={`mr-2 text-sm ${
+                        formData.primaryEmploymentBasic === "false"
+                          ? "font-medium text-gray-900"
+                          : "text-gray-500"
+                      }`}
+                    ></span>
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor:
+                          formData.primaryEmploymentBasic === "true"
+                            ? "#3b82f6"
+                            : "#e5e7eb",
+                      }}
+                      onClick={() =>
                         handleInputChange(
                           "primaryEmploymentBasic",
-                          e.target.value
+                          formData.primaryEmploymentBasic === "true"
+                            ? "false"
+                            : "true"
                         )
                       }
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="primaryTrue"
-                      className="ml-3 text-sm font-medium text-gray-700"
                     >
-                      True
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="primaryFalse"
-                      name="primaryEmploymentBasic"
-                      value="false"
-                      checked={formData.primaryEmploymentBasic === "false"}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "primaryEmploymentBasic",
-                          e.target.value
-                        )
-                      }
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="primaryFalse"
-                      className="ml-3 text-sm font-medium text-gray-700"
-                    >
-                      False
-                    </label>
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.primaryEmploymentBasic === "true"
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </div>
+                    <span
+                      className={`ml-2 text-sm ${
+                        formData.primaryEmploymentBasic === "true"
+                          ? "font-medium text-gray-900"
+                          : "text-gray-500"
+                      }`}
+                    ></span>
                   </div>
                 </div>
               </div>
