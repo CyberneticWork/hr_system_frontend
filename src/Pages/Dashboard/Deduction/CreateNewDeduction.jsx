@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Save, X, DollarSign } from "lucide-react";
+import { Save, X, DollarSign, Plus } from "lucide-react";
 
 const CreateNewDeduction = () => {
   const [deductions, setDeductions] = useState([
@@ -45,11 +45,20 @@ const CreateNewDeduction = () => {
     active: true,
   });
 
+  const [showModal, setShowModal] = useState(false);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleToggleChange = (name) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: !prev[name],
     }));
   };
 
@@ -69,121 +78,38 @@ const CreateNewDeduction = () => {
       applicableFor: "All Employees",
       active: true,
     });
+    setShowModal(false);
+  };
+
+  const handleToggleDeductionStatus = (id) => {
+    setDeductions((prevDeductions) =>
+      prevDeductions.map((deduction) =>
+        deduction.id === id
+          ? { ...deduction, active: !deduction.active }
+          : deduction
+      )
+    );
   };
 
   return (
     <div className="p-6 bg-white rounded-2xl shadow-xl">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-gradient-to-r from-red-500 to-orange-500 p-3 rounded-xl">
-          <DollarSign className="w-6 h-6 text-white" />
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-r from-red-500 to-orange-500 p-3 rounded-xl">
+            <DollarSign className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800">
+            Deductions Management
+          </h2>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800">
-          Create New Deduction
-        </h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 shadow-md"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add New Deduction</span>
+        </button>
       </div>
-
-      {/* Form Section */}
-      <form
-        onSubmit={handleSubmit}
-        className="mb-8 bg-gray-50 p-6 rounded-xl border border-gray-200"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Deduction Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              name="deductionCode"
-              value={formData.deductionCode}
-              onChange={handleInputChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="e.g., EPF, LOAN"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <input
-              name="deductionDescription"
-              value={formData.deductionDescription}
-              onChange={handleInputChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="Enter deduction description"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Amount/Percentage <span className="text-red-500">*</span>
-            </label>
-            <input
-              name="amount"
-              value={formData.amount}
-              onChange={handleInputChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              placeholder="e.g., 500, 8%, Variable"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Applicable For
-            </label>
-            <select
-              name="applicableFor"
-              value={formData.applicableFor}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
-            >
-              <option value="All Employees">All Employees</option>
-              <option value="Selected Employees">Selected Employees</option>
-              <option value="Permanent Only">Permanent Only</option>
-              <option value="Contract Only">Contract Only</option>
-              <option value="Loan Holders">Loan Holders</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white h-full">
-            <input
-              type="checkbox"
-              id="active"
-              name="active"
-              checked={formData.active}
-              onChange={handleInputChange}
-              className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
-            />
-            <label
-              htmlFor="active"
-              className="text-sm font-medium text-gray-700"
-            >
-              Active
-            </label>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end space-x-4">
-          <button
-            type="button"
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-          >
-            <X className="w-4 h-4" />
-            <span>Cancel</span>
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center space-x-2"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save Deduction</span>
-          </button>
-        </div>
-      </form>
-
       {/* Table Section */}
       <div className="overflow-x-auto">
         <div className="text-lg font-semibold text-gray-800 mb-4">
@@ -228,15 +154,30 @@ const CreateNewDeduction = () => {
                   {deduction.applicableFor}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      deduction.active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {deduction.active ? "Active" : "Inactive"}
-                  </span>
+                  <div className="flex items-center">
+                    <div
+                      className="relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      style={{
+                        backgroundColor: deduction.active
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleDeductionStatus(deduction.id)}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          deduction.active ? "translate-x-5" : "translate-x-1"
+                        }`}
+                      />
+                    </div>
+                    <span
+                      className={`ml-2 text-xs font-medium ${
+                        deduction.active ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {deduction.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                   <button className="text-blue-600 hover:text-blue-900 mr-3">
@@ -251,6 +192,136 @@ const CreateNewDeduction = () => {
           </tbody>
         </table>
       </div>
+      {/* Modal Form */}
+      {showModal && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h3 className="text-xl font-semibold text-gray-800 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-orange-500" />
+                Create New Deduction
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Form Section */}
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Deduction Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name="deductionCode"
+                    value={formData.deductionCode}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="e.g., EPF, LOAN"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name="deductionDescription"
+                    value={formData.deductionDescription}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter deduction description"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Amount/Percentage <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="e.g., 500, 8%, Variable"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Applicable For
+                  </label>
+                  <select
+                    name="applicableFor"
+                    value={formData.applicableFor}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                  >
+                    <option value="All Employees">All Employees</option>
+                    <option value="Selected Employees">
+                      Selected Employees
+                    </option>
+                    <option value="Permanent Only">Permanent Only</option>
+                    <option value="Contract Only">Contract Only</option>
+                    <option value="Loan Holders">Loan Holders</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                    <div
+                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                      style={{
+                        backgroundColor: formData.active
+                          ? "#3b82f6"
+                          : "#e5e7eb",
+                      }}
+                      onClick={() => handleToggleChange("active")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          formData.active ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {formData.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-4 border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Cancel</span>
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center space-x-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Deduction</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
