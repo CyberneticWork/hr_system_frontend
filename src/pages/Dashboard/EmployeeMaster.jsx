@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import EmpPersonalDetails from '../EmpPersonalDetails';
-import AddressDetails from '../AddressDetails';
-import OrganizationDetails from '../OrganizationDetails';
-import CompensationManagement from '../CompensationManagement';
+import EmpPersonalDetails from './EmpPersonalDetails';
+import AddressDetails from './AddressDetails';
+import OrganizationDetails from './OrganizationDetails';
+import CompensationManagement from './CompensationManagement';
 
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');

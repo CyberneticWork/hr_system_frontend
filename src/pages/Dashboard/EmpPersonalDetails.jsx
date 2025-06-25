@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { User, Users, Baby, Briefcase, Plus, Trash2 } from "lucide-react";
 
-const STORAGE_KEY = 'employeeFormData';
+const STORAGE_KEY = "employeeFormData";
 
 const initialState = {
   title: "",
@@ -21,9 +21,7 @@ const initialState = {
   spouseAge: "",
   spouseDob: "",
   spouseNic: "",
-  children: [
-    { name: "", age: "", dob: "", nic: "" }
-  ],
+  children: [{ name: "", age: "", dob: "", nic: "" }],
 };
 
 const EmpPersonalDetails = () => {
@@ -32,20 +30,21 @@ const EmpPersonalDetails = () => {
 
   // Load data from localStorage on component mount
   useEffect(() => {
+
     const loadData = () => {
       try {
-        console.log('Attempting to load data from localStorage...');
+        // console.log("Attempting to load data from localStorage...");
         const savedData = localStorage.getItem(STORAGE_KEY);
-        
-        if (savedData && savedData !== 'undefined' && savedData !== 'null') {
+
+        if (savedData && savedData !== "undefined" && savedData !== "null") {
           const parsedData = JSON.parse(savedData);
-          console.log('Data loaded from localStorage:', parsedData);
+          // console.log("Data loaded from localStorage:", parsedData);
           setForm(parsedData);
         } else {
-          console.log('No saved data found in localStorage');
+          // console.log("No saved data found in localStorage");
         }
       } catch (error) {
-        console.error('Error loading saved data:', error);
+        // console.error("Error loading saved data:", error);
         // If there's an error, clear the corrupted data
         localStorage.removeItem(STORAGE_KEY);
       } finally {
@@ -64,22 +63,22 @@ const EmpPersonalDetails = () => {
       try {
         const dataToSave = JSON.stringify(form);
         localStorage.setItem(STORAGE_KEY, dataToSave);
-        console.log('Data saved to localStorage:', form);
-        
+        // console.log("Data saved to localStorage:", form);
+
         // Verify the save worked
         const verification = localStorage.getItem(STORAGE_KEY);
         if (verification) {
-          console.log('✅ Save verified successfully');
+          // console.log("✅ Save verified successfully");
         } else {
-          console.error('❌ Save verification failed');
+          // console.error("❌ Save verification failed");
         }
       } catch (error) {
-        console.error('Error saving data to localStorage:', error);
+        // console.error("Error saving data to localStorage:", error);
         // Check if localStorage is available
-        if (typeof(Storage) === "undefined") {
-          console.error('localStorage is not supported in this browser');
-        } else if (error.name === 'QuotaExceededError') {
-          console.error('localStorage quota exceeded');
+        if (typeof Storage === "undefined") {
+          // console.error("localStorage is not supported in this browser");
+        } else if (error.name === "QuotaExceededError") {
+          // console.error("localStorage quota exceeded");
         }
       }
     };
@@ -109,7 +108,7 @@ const EmpPersonalDetails = () => {
   const addChild = () => {
     setForm((prev) => ({
       ...prev,
-      children: [...prev.children, { name: "", age: "", dob: "", nic: "" }]
+      children: [...prev.children, { name: "", age: "", dob: "", nic: "" }],
     }));
   };
 
@@ -117,13 +116,13 @@ const EmpPersonalDetails = () => {
     if (form.children.length > 1) {
       setForm((prev) => ({
         ...prev,
-        children: prev.children.filter((_, index) => index !== idx)
+        children: prev.children.filter((_, index) => index !== idx),
       }));
     }
   };
 
   const handleSubmit = () => {
-    console.log('Form submitted:', form);
+    console.log("Form submitted:", form);
     // Optional: Clear localStorage after successful submission
     // clearForm();
     alert("Employee details saved successfully!");
@@ -133,50 +132,46 @@ const EmpPersonalDetails = () => {
     try {
       setForm(initialState);
       localStorage.removeItem(STORAGE_KEY);
-      console.log('✅ Form cleared and localStorage data removed');
-      
+      // console.log("✅ Form cleared and localStorage data removed");
+
       // Verify the clear worked
       const verification = localStorage.getItem(STORAGE_KEY);
       if (!verification) {
-        console.log('✅ Clear verified successfully');
+        // console.log("✅ Clear verified successfully");
       } else {
-        console.error('❌ Clear verification failed');
+        // console.error("❌ Clear verification failed");
       }
     } catch (error) {
-      console.error('Error clearing localStorage:', error);
+      // console.error("Error clearing localStorage:", error);
     }
   };
 
   // Test localStorage function
   const testLocalStorage = () => {
     try {
-      const testKey = 'test_key';
-      const testValue = 'test_value';
-      
+      const testKey = "test_key";
+      const testValue = "test_value";
+
       localStorage.setItem(testKey, testValue);
       const retrieved = localStorage.getItem(testKey);
       localStorage.removeItem(testKey);
-      
+
       if (retrieved === testValue) {
-        console.log('✅ localStorage is working correctly');
-        alert('localStorage is working correctly');
+        // console.log("✅ localStorage is working correctly");
+        alert("localStorage is working correctly");
       } else {
-        console.error('❌ localStorage test failed');
-        alert('localStorage test failed');
+        // console.error("❌ localStorage test failed");
+        alert("localStorage test failed");
       }
     } catch (error) {
-      console.error('❌ localStorage is not available:', error);
-      alert('localStorage is not available: ' + error.message);
+      // console.error("❌ localStorage is not available:", error);
+      alert("localStorage is not available: " + error.message);
     }
   };
 
   return (
-      
-    <div className="w-full max-w-7xl mx-auto">
-      {/* Header */}
-  <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="rounded-2xl overflow-hidden">
       <div className="bg-white rounded-2xl shadow-xl mb-6 p-6">
-             
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl">
@@ -186,7 +181,9 @@ const EmpPersonalDetails = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Employee Personal Details
               </h1>
-              <p className="text-gray-600 mt-1">Complete employee information management system</p>
+              <p className="text-gray-600 mt-1">
+                Complete employee information management system
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -213,9 +210,11 @@ const EmpPersonalDetails = () => {
             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-2 rounded-lg">
               <User className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Basic Information
+            </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Title */}
             <div className="space-y-2">
@@ -319,7 +318,9 @@ const EmpPersonalDetails = () => {
 
             {/* Religion */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Religion</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Religion
+              </label>
               <input
                 name="religion"
                 value={form.religion}
@@ -331,7 +332,9 @@ const EmpPersonalDetails = () => {
 
             {/* Country of Birth */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Country of Birth</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Country of Birth
+              </label>
               <input
                 name="countryOfBirth"
                 value={form.countryOfBirth}
@@ -349,9 +352,11 @@ const EmpPersonalDetails = () => {
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Employment Status</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Employment Status
+            </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { value: "employeeActive", label: "Employee Active" },
@@ -360,7 +365,10 @@ const EmpPersonalDetails = () => {
               { value: "contractBasis", label: "Contract Basis" },
               { value: "dailyWagesSalary", label: "Daily Wages Salary" },
             ].map((item) => (
-              <label key={item.value} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
+              <label
+                key={item.value}
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
                 <input
                   type="radio"
                   name="employmentStatus"
@@ -369,7 +377,9 @@ const EmpPersonalDetails = () => {
                   onChange={handleChange}
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
                 />
-                <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {item.label}
+                </span>
               </label>
             ))}
           </div>
@@ -381,9 +391,11 @@ const EmpPersonalDetails = () => {
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-2 rounded-lg">
               <User className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Name Details</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Name Details
+            </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -427,7 +439,9 @@ const EmpPersonalDetails = () => {
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Marital Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Marital Status
+            </label>
             <select
               name="maritalStatus"
               value={form.maritalStatus}
@@ -449,12 +463,16 @@ const EmpPersonalDetails = () => {
             <div className="bg-gradient-to-r from-rose-500 to-pink-500 p-2 rounded-lg">
               <Users className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Spouse Details</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Spouse Details
+            </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Spouse Name</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Spouse Name
+              </label>
               <input
                 name="spouseName"
                 value={form.spouseName}
@@ -464,7 +482,9 @@ const EmpPersonalDetails = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Spouse Age</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Spouse Age
+              </label>
               <input
                 name="spouseAge"
                 type="number"
@@ -476,7 +496,9 @@ const EmpPersonalDetails = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Spouse DOB</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Spouse DOB
+              </label>
               <input
                 name="spouseDob"
                 type="date"
@@ -486,7 +508,9 @@ const EmpPersonalDetails = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Spouse NIC</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Spouse NIC
+              </label>
               <input
                 name="spouseNic"
                 value={form.spouseNic}
@@ -505,7 +529,9 @@ const EmpPersonalDetails = () => {
               <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2 rounded-lg">
                 <Baby className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">Children Details</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Children Details
+              </h2>
             </div>
             <button
               onClick={addChild}
@@ -515,12 +541,14 @@ const EmpPersonalDetails = () => {
               Add Child
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {form.children.map((child, idx) => (
               <div key={idx} className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-600">Child {idx + 1}</h3>
+                  <h3 className="text-sm font-medium text-gray-600">
+                    Child {idx + 1}
+                  </h3>
                   {form.children.length > 1 && (
                     <button
                       onClick={() => removeChild(idx)}
@@ -571,14 +599,16 @@ const EmpPersonalDetails = () => {
         <div className="flex justify-center gap-4 pb-6">
           <button
             type="button"
-            onClick={() => { handleSubmit(); clearForm(); }}
+            onClick={() => {
+              handleSubmit();
+              clearForm();
+            }}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-blue-300"
           >
             Save Employee Details
           </button>
         </div>
       </div>
-    </div>
     </div>
   );
 };
