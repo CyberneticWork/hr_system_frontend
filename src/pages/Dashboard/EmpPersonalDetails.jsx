@@ -33,18 +33,18 @@ const EmpPersonalDetails = () => {
 
     const loadData = () => {
       try {
-        console.log("Attempting to load data from localStorage...");
+        // console.log("Attempting to load data from localStorage...");
         const savedData = localStorage.getItem(STORAGE_KEY);
 
         if (savedData && savedData !== "undefined" && savedData !== "null") {
           const parsedData = JSON.parse(savedData);
-          console.log("Data loaded from localStorage:", parsedData);
+          // console.log("Data loaded from localStorage:", parsedData);
           setForm(parsedData);
         } else {
-          console.log("No saved data found in localStorage");
+          // console.log("No saved data found in localStorage");
         }
       } catch (error) {
-        console.error("Error loading saved data:", error);
+        // console.error("Error loading saved data:", error);
         // If there's an error, clear the corrupted data
         localStorage.removeItem(STORAGE_KEY);
       } finally {
@@ -63,22 +63,22 @@ const EmpPersonalDetails = () => {
       try {
         const dataToSave = JSON.stringify(form);
         localStorage.setItem(STORAGE_KEY, dataToSave);
-        console.log("Data saved to localStorage:", form);
+        // console.log("Data saved to localStorage:", form);
 
         // Verify the save worked
         const verification = localStorage.getItem(STORAGE_KEY);
         if (verification) {
-          console.log("✅ Save verified successfully");
+          // console.log("✅ Save verified successfully");
         } else {
-          console.error("❌ Save verification failed");
+          // console.error("❌ Save verification failed");
         }
       } catch (error) {
-        console.error("Error saving data to localStorage:", error);
+        // console.error("Error saving data to localStorage:", error);
         // Check if localStorage is available
         if (typeof Storage === "undefined") {
-          console.error("localStorage is not supported in this browser");
+          // console.error("localStorage is not supported in this browser");
         } else if (error.name === "QuotaExceededError") {
-          console.error("localStorage quota exceeded");
+          // console.error("localStorage quota exceeded");
         }
       }
     };
@@ -132,17 +132,17 @@ const EmpPersonalDetails = () => {
     try {
       setForm(initialState);
       localStorage.removeItem(STORAGE_KEY);
-      console.log("✅ Form cleared and localStorage data removed");
+      // console.log("✅ Form cleared and localStorage data removed");
 
       // Verify the clear worked
       const verification = localStorage.getItem(STORAGE_KEY);
       if (!verification) {
-        console.log("✅ Clear verified successfully");
+        // console.log("✅ Clear verified successfully");
       } else {
-        console.error("❌ Clear verification failed");
+        // console.error("❌ Clear verification failed");
       }
     } catch (error) {
-      console.error("Error clearing localStorage:", error);
+      // console.error("Error clearing localStorage:", error);
     }
   };
 
@@ -157,14 +157,14 @@ const EmpPersonalDetails = () => {
       localStorage.removeItem(testKey);
 
       if (retrieved === testValue) {
-        console.log("✅ localStorage is working correctly");
+        // console.log("✅ localStorage is working correctly");
         alert("localStorage is working correctly");
       } else {
-        console.error("❌ localStorage test failed");
+        // console.error("❌ localStorage test failed");
         alert("localStorage test failed");
       }
     } catch (error) {
-      console.error("❌ localStorage is not available:", error);
+      // console.error("❌ localStorage is not available:", error);
       alert("localStorage is not available: " + error.message);
     }
   };
