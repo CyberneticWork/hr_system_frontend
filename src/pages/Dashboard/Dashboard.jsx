@@ -4,6 +4,13 @@ import Sidebar from "./Sidebar";
 import EmployeeMaster from "./EmployeeMaster";
 import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
+import CreateNewDeduction from "./Deduction/CreateNewDeduction";
+
+const STORAGE_KEY = "employeeFormData";
+
+const clearForm = () => {
+  localStorage.removeItem(STORAGE_KEY);
+};
 
 const Dashboard = ({ user, onLogout }) => {
   // Sidebar state
@@ -70,6 +77,8 @@ const Dashboard = ({ user, onLogout }) => {
               <EmployeeAdd />
             ) : activeItem === "show" ? (
               <ShowEmployee />
+            ) : activeItem === "createNewDeduction" ? (
+              <CreateNewDeduction />
             ) : (
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
