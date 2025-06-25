@@ -171,9 +171,12 @@ const EmpPersonalDetails = () => {
   };
 
   return (
+      
     <div className="w-full max-w-7xl mx-auto">
       {/* Header */}
+  <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
       <div className="bg-white rounded-2xl shadow-xl mb-6 p-6">
+             
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl">
@@ -575,6 +578,7 @@ const EmpPersonalDetails = () => {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };
