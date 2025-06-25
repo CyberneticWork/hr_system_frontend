@@ -5,6 +5,12 @@ import EmployeeMaster from "./EmployeeMaster";
 import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
 
+const STORAGE_KEY = "employeeFormData";
+
+const clearForm = () => {
+      localStorage.removeItem(STORAGE_KEY);
+};
+
 const Dashboard = ({ user, onLogout }) => {
   // Sidebar state
   const [activeItem, setActiveItem] = useState("dashboard");
@@ -79,6 +85,12 @@ const Dashboard = ({ user, onLogout }) => {
                   </h3>
                   <p className="text-gray-500">
                     Your dashboard content will go here.
+                    <button
+                      onClick={clearForm}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                    >
+                      Clear Form
+                    </button>
                   </p>
                 </div>
               </div>
