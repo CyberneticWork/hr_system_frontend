@@ -12,12 +12,6 @@ const clearForm = () => {
   localStorage.removeItem(STORAGE_KEY);
 };
 
-const STORAGE_KEY = "employeeFormData";
-
-const clearForm = () => {
-      localStorage.removeItem(STORAGE_KEY);
-};
-
 const Dashboard = ({ user, onLogout }) => {
   // Sidebar state
   const [activeItem, setActiveItem] = useState("dashboard");
