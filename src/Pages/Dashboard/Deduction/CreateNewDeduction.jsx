@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Save, X, DollarSign, Plus } from "lucide-react";
+import { Save, X, DollarSign, Plus, Search } from "lucide-react";
 
 const CreateNewDeduction = () => {
   const [deductions, setDeductions] = useState([
@@ -9,6 +9,7 @@ const CreateNewDeduction = () => {
       deductionDescription: "Employee Provident Fund",
       amount: "8%",
       applicableFor: "All Employees",
+      deductionType: "Fixed",
       active: true,
     },
     {
@@ -17,6 +18,7 @@ const CreateNewDeduction = () => {
       deductionDescription: "Employee Trust Fund",
       amount: "3%",
       applicableFor: "All Employees",
+      deductionType: "Fixed",
       active: true,
     },
     {
@@ -25,6 +27,7 @@ const CreateNewDeduction = () => {
       deductionDescription: "Advance Recovery",
       amount: "Variable",
       applicableFor: "Selected Employees",
+      deductionType: "Variable",
       active: true,
     },
     {
@@ -33,6 +36,7 @@ const CreateNewDeduction = () => {
       deductionDescription: "Loan Recovery",
       amount: "Variable",
       applicableFor: "Loan Holders",
+      deductionType: "Variable",
       active: true,
     },
   ]);
@@ -42,10 +46,37 @@ const CreateNewDeduction = () => {
     deductionDescription: "",
     amount: "",
     applicableFor: "All Employees",
+    deductionType: "Fixed", // Added deduction type field
     active: true,
   });
 
   const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchFilter, setSearchFilter] = useState("all");
+
+  // Filter deductions based on search term and selected filter
+  const filteredDeductions = deductions.filter((deduction) => {
+    const searchLower = searchTerm.toLowerCase();
+
+    if (searchTerm === "") return true;
+
+    switch (searchFilter) {
+      case "deductionCode":
+        return deduction.deductionCode.toLowerCase().includes(searchLower);
+      case "deductionType":
+        return deduction.deductionType.toLowerCase().includes(searchLower);
+      case "applicableFor":
+        return deduction.applicableFor.toLowerCase().includes(searchLower);
+      default:
+        // Search in all fields
+        return (
+          deduction.deductionCode.toLowerCase().includes(searchLower) ||
+          deduction.deductionType.toLowerCase().includes(searchLower) ||
+          deduction.applicableFor.toLowerCase().includes(searchLower) ||
+          deduction.deductionDescription.toLowerCase().includes(searchLower)
+        );
+    }
+  });
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -76,6 +107,7 @@ const CreateNewDeduction = () => {
       deductionDescription: "",
       amount: "",
       applicableFor: "All Employees",
+      deductionType: "Fixed", // Reset deductionType field
       active: true,
     });
     setShowModal(false);
@@ -110,6 +142,35 @@ const CreateNewDeduction = () => {
           <span>Add New Deduction</span>
         </button>
       </div>
+
+      {/* Search Section */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-grow">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search deductions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="bg-white border border-gray-300 text-gray-700 rounded-lg px-4 py-2.5 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Fields</option>
+            <option value="deductionCode">Deduction Code</option>
+            <option value="deductionType">Deduction Type</option>
+            <option value="applicableFor">Applicable For</option>
+          </select>
+        </div>
+      </div>
+
       {/* Table Section */}
       <div className="overflow-x-auto">
         <div className="text-lg font-semibold text-gray-800 mb-4">
@@ -131,6 +192,9 @@ const CreateNewDeduction = () => {
                 Applicable For
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                Deduction Type
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
                 Status
               </th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
@@ -139,7 +203,7 @@ const CreateNewDeduction = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {deductions.map((deduction) => (
+            {filteredDeductions.map((deduction) => (
               <tr key={deduction.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {deduction.deductionCode}
@@ -152,6 +216,17 @@ const CreateNewDeduction = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {deduction.applicableFor}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      deduction.deductionType === "Fixed"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-purple-100 text-purple-800"
+                    }`}
+                  >
+                    {deduction.deductionType}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -252,6 +327,48 @@ const CreateNewDeduction = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="e.g., 500, 8%, Variable"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Deduction Type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id="fixed"
+                        name="deductionType"
+                        value="Fixed"
+                        checked={formData.deductionType === "Fixed"}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="fixed"
+                        className="ml-2 text-sm font-medium text-gray-700"
+                      >
+                        Fixed
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id="variable"
+                        name="deductionType"
+                        value="Variable"
+                        checked={formData.deductionType === "Variable"}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="variable"
+                        className="ml-2 text-sm font-medium text-gray-700"
+                      >
+                        Variable
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
