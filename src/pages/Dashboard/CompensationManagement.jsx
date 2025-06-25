@@ -10,43 +10,83 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const CompensationManagement = () => {
-  // Load saved data from localStorage if it exists
-  const savedData = localStorage.getItem("compensationFormData");
-  const initialFormData = savedData
-    ? JSON.parse(savedData)
-    : {
-        basicSalary: "",
-        incrementValue: "",
-        incrementEffectiveFrom: "2025-06-20",
-        bankName: "1/1/1900",
-        branchName: "1/1/1900",
-        bankCode: "",
-        branchCode: "",
-        bankAccountNo: "",
-        comments: "",
-        secondaryEmp: false,
-        primaryEmploymentBasic: "false",
-        enableEpfEtf: true,
-        otActive: true,
-        earlyDeduction: false,
-        incrementActive: false,
-        nopayActive: true,
-        morningOt: false,
-        eveningOt: true,
-        budgetaryReliefAllowance2015: true,
-        budgetaryReliefAllowance2016: true,
-      };
+const STORAGE_KEY = "employeeFormData";
 
-  const [formData, setFormData] = useState(initialFormData);
+const initialCompensationData = {
+  basicSalary: "",
+  incrementValue: "",
+  incrementEffectiveFrom: "2025-06-20",
+  bankName: "1/1/1900",
+  branchName: "1/1/1900",
+  bankCode: "",
+  branchCode: "",
+  bankAccountNo: "",
+  comments: "",
+  secondaryEmp: false,
+  primaryEmploymentBasic: "false",
+  enableEpfEtf: true,
+  otActive: true,
+  earlyDeduction: false,
+  incrementActive: false,
+  nopayActive: true,
+  morningOt: false,
+  eveningOt: true,
+  budgetaryReliefAllowance2015: true,
+  budgetaryReliefAllowance2016: true,
+};
+
+const CompensationManagement = () => {
+  const [formData, setFormData] = useState(initialCompensationData);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Save form data to localStorage whenever it changes
+  // Load data from localStorage on component mount
   useEffect(() => {
-    if (!isSubmitted) {
-      localStorage.setItem("compensationFormData", JSON.stringify(formData));
-    }
-  }, [formData, isSubmitted]);
+    const loadData = () => {
+      try {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData && savedData !== "undefined" && savedData !== "null") {
+          const parsedData = JSON.parse(savedData);
+          // Load compensation data if exists in storage
+          if (parsedData.compensation) {
+            setFormData(parsedData.compensation);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading saved data:", error);
+      } finally {
+        setIsDataLoaded(true);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Save to localStorage whenever formData changes
+  useEffect(() => {
+    if (!isDataLoaded) return; // Don't save until initial load is complete
+
+    const saveData = () => {
+      try {
+        // Get existing data from localStorage
+        const existingData = localStorage.getItem(STORAGE_KEY);
+        const currentStorage = existingData ? JSON.parse(existingData) : {};
+
+        // Update only the compensation section
+        const dataToSave = {
+          ...currentStorage,
+          compensation: formData,
+        };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      } catch (error) {
+        console.error("Error saving data to localStorage:", error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveData, 300);
+    return () => clearTimeout(timeoutId);
+  }, [formData, isDataLoaded]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -58,32 +98,38 @@ const CompensationManagement = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Form submitted:", formData);
-    // Clear localStorage and reset form on submit
-    localStorage.removeItem("compensationFormData");
+
+    // Clear only the compensation section
+    const existingData = localStorage.getItem(STORAGE_KEY);
+    const currentStorage = existingData ? JSON.parse(existingData) : {};
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...currentStorage,
+        compensation: initialCompensationData,
+      })
+    );
+
     setIsSubmitted(true);
-    setFormData({
-      basicSalary: "",
-      incrementValue: "",
-      incrementEffectiveFrom: "2025-06-20",
-      bankName: "1/1/1900",
-      branchName: "1/1/1900",
-      bankCode: "",
-      branchCode: "",
-      bankAccountNo: "",
-      comments: "",
-      secondaryEmp: false,
-      primaryEmploymentBasic: "false",
-      enableEpfEtf: true,
-      otActive: true,
-      earlyDeduction: false,
-      incrementActive: false,
-      nopayActive: true,
-      morningOt: false,
-      eveningOt: true,
-      budgetaryReliefAllowance2015: true,
-      budgetaryReliefAllowance2016: true,
-    });
-    setTimeout(() => setIsSubmitted(false), 1000); // Reset submission status
+    setFormData(initialCompensationData);
+    setTimeout(() => setIsSubmitted(false), 1000);
+  };
+
+  const clearForm = () => {
+    // Clear only the compensation section
+    const existingData = localStorage.getItem(STORAGE_KEY);
+    const currentStorage = existingData ? JSON.parse(existingData) : {};
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...currentStorage,
+        compensation: initialCompensationData,
+      })
+    );
+
+    setFormData(initialCompensationData);
   };
 
   return (
@@ -569,31 +615,7 @@ const CompensationManagement = () => {
           <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-4">
             <button
               type="button"
-              onClick={() => {
-                localStorage.removeItem("compensationFormData");
-                setFormData({
-                  basicSalary: "",
-                  incrementValue: "",
-                  incrementEffectiveFrom: "2025-06-20",
-                  bankName: "1/1/1900",
-                  branchName: "1/1/1900",
-                  bankCode: "",
-                  branchCode: "",
-                  bankAccountNo: "",
-                  comments: "",
-                  secondaryEmp: false,
-                  primaryEmploymentBasic: "false",
-                  enableEpfEtf: true,
-                  otActive: true,
-                  earlyDeduction: false,
-                  incrementActive: false,
-                  nopayActive: true,
-                  morningOt: false,
-                  eveningOt: true,
-                  budgetaryReliefAllowance2015: true,
-                  budgetaryReliefAllowance2016: true,
-                });
-              }}
+              onClick={clearForm}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
             >
               <X className="w-4 h-4" />

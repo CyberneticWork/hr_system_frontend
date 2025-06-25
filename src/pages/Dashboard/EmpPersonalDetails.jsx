@@ -30,7 +30,7 @@ const EmpPersonalDetails = () => {
 
   // Load data from localStorage on component mount
   useEffect(() => {
-    // localStorage.removeItem(STORAGE_KEY);
+
     const loadData = () => {
       try {
         console.log("Attempting to load data from localStorage...");

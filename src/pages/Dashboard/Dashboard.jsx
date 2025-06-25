@@ -5,22 +5,10 @@ import EmployeeMaster from "./EmployeeMaster";
 import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
 
-const clearForm = () => {
-  try {
-    setForm(initialState);
-    localStorage.removeItem(STORAGE_KEY);
-    console.log("✅ Form cleared and localStorage data removed");
+const STORAGE_KEY = "employeeFormData";
 
-    // Verify the clear worked
-    const verification = localStorage.getItem(STORAGE_KEY);
-    if (!verification) {
-      console.log("✅ Clear verified successfully");
-    } else {
-      console.error("❌ Clear verification failed");
-    }
-  } catch (error) {
-    console.error("Error clearing localStorage:", error);
-  }
+const clearForm = () => {
+      localStorage.removeItem(STORAGE_KEY);
 };
 
 const Dashboard = ({ user, onLogout }) => {
