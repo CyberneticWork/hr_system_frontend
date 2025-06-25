@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import EmpPersonalDetails from '../EmpPersonalDetails';
 import AddressDetails from '../AddressDetails';
+import OrganizationDetails from '../OrganizationDetails';
 import CompensationManagement from '../CompensationManagement';
+
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
 
@@ -41,20 +43,20 @@ const EmployeeMaster = () => {
         </button>
         <button
           className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-            activeCategory === 'salary'
+            activeCategory === 'organization'
               ? 'bg-indigo-600 text-white'
               : 'text-indigo-700 hover:bg-indigo-100'
           }`}
-          onClick={() => setActiveCategory('salary')}
+          onClick={() => setActiveCategory('organization')}
         >
-          Salary
+          Organization
         </button>
       </div>
       <div className="p-4">
         {activeCategory === 'personal' && <EmpPersonalDetails />}
         {activeCategory === 'address' && <AddressDetails />}
         {activeCategory === 'compensation' && <CompensationManagement />}
-        {activeCategory === 'salary' && <div>Salary Details Form</div>}
+        {activeCategory === 'organization' && <OrganizationDetails/>}
       </div>
     </div>
   );
