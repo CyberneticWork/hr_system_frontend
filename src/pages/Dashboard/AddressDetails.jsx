@@ -114,7 +114,8 @@ const AddressDetails = () => {
   };
 
   const handleSave = () => {
-    alert("Address details saved successfully!");
+    const userData = localStorage.getItem(STORAGE_KEY);
+    console.log("FINAL ", JSON.stringify(JSON.parse(userData), null, 2));
   };
 
   return (
