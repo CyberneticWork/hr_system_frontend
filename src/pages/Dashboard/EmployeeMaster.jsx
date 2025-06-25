@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import EmpPersonalDetails from '../EmpPersonalDetails';
 import AddressDetails from '../AddressDetails';
 import OrganizationDetails from '../OrganizationDetails';
+import CompensationManagement from '../CompensationManagement';
 
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
@@ -54,6 +55,7 @@ const EmployeeMaster = () => {
       <div className="p-4">
         {activeCategory === 'personal' && <EmpPersonalDetails />}
         {activeCategory === 'address' && <AddressDetails />}
+        {activeCategory === 'compensation' && <CompensationManagement />}
         {activeCategory === 'organization' && <OrganizationDetails/>}
       </div>
     </div>
