@@ -86,11 +86,7 @@ const Sidebar = ({
           id: "deduction",
           name: "Deduction",
           icon: DollarSign,
-          subItems: [
-            { id: "createNewDeduction", name: "Create New Deduction" },
-            { id: "variableDeduction", name: "Variable Deduction" },
-            { id: "fixedDeduction", name: "Fixed Deduction" },
-          ],
+          subItems: [{ id: "createNewDeduction", name: "View Deduction" }],
         },
         {
           id: "loans",
