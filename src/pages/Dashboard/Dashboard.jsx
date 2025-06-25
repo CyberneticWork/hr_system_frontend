@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import { Building2, Users } from 'lucide-react';
-import Sidebar from './Sidebar';
-import EmployeeMaster from './EmployeeMaster';
-import ShowEmployee from './ShowEmployee';
+import React, { useState } from "react";
+import { Building2, Users } from "lucide-react";
+import Sidebar from "./Sidebar";
+import EmployeeMaster from "./EmployeeMaster";
+import EmployeeAdd from "./EmployeeAdd";
+import ShowEmployee from "./ShowEmployee";
 
 const Dashboard = ({ user, onLogout }) => {
   // Sidebar state
   const [activeItem, setActiveItem] = useState("dashboard");
   const [isOpen, setIsOpen] = useState(false);
-  
-
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -65,17 +64,22 @@ const Dashboard = ({ user, onLogout }) => {
         </nav>
         <div className="py-6 sm:px-6 lg:px-8 flex-1">
           <div className="px-4 py-6 sm:px-0 h-full">
-            {activeItem === 'employeeMaster' ? (
+            {activeItem === "employeeMaster" ? (
               <EmployeeMaster />
-          ) : activeItem === "show" ? (
+            ) : activeItem === "employeeAdd" ? (
+              <EmployeeAdd />
+            ) : activeItem === "show" ? (
               <ShowEmployee />
             ) : (
-
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
                   <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to HRM Dashboard</h3>
-                  <p className="text-gray-500">Your dashboard content will go here.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Welcome to HRM Dashboard
+                  </h3>
+                  <p className="text-gray-500">
+                    Your dashboard content will go here.
+                  </p>
                 </div>
               </div>
             )}
