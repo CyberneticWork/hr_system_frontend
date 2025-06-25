@@ -13,6 +13,8 @@ import {
   Settings,
   LogOut,
   X,
+  User2,
+  UserPlus,
 } from "lucide-react";
 
 const Sidebar = ({
@@ -45,14 +47,21 @@ const Sidebar = ({
     setExpandedItems((prev) => ({ ...prev, loans: !prev.loans }));
   };
   const toggleSalaryProcess = () => {
-    setExpandedItems((prev) => ({ ...prev, salaryProcess: !prev.salaryProcess }));
+    setExpandedItems((prev) => ({
+      ...prev,
+      salaryProcess: !prev.salaryProcess,
+    }));
   };
   const toggleTimeAttendance = () => {
-    setExpandedItems((prev) => ({ ...prev, timeAttendance: !prev.timeAttendance }));
+    setExpandedItems((prev) => ({
+      ...prev,
+      timeAttendance: !prev.timeAttendance,
+    }));
   };
 
   const menuItems = [
     { id: "dashboard", name: "Dashboard", icon: Home, badge: null },
+    { id: "employeeAdd", name: "Employee Add", icon: UserPlus, badge: null },
     {
       id: "hrMaster",
       name: "HR Master",
@@ -278,7 +287,9 @@ const Sidebar = ({
                                     transition-all duration-200
                                     ${
                                       activeItem === subItem.id ||
-                                      subItem.subItems.some((s) => activeItem === s.id)
+                                      subItem.subItems.some(
+                                        (s) => activeItem === s.id
+                                      )
                                         ? "bg-indigo-50 text-indigo-700"
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                                     }
@@ -299,7 +310,9 @@ const Sidebar = ({
                                     {subItem.subItems.map((subSubItem) => (
                                       <li key={subSubItem.id}>
                                         <button
-                                          onClick={() => setActiveItem(subSubItem.id)}
+                                          onClick={() =>
+                                            setActiveItem(subSubItem.id)
+                                          }
                                           className={`
                                             w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
                                             transition-all duration-200
