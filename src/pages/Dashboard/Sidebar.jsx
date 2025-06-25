@@ -77,8 +77,9 @@ const Sidebar = ({
           name: "Allowance",
           icon: DollarSign,
           subItems: [
-            { id: "allowanceMaster", name: "Allowance Master" },
-            { id: "allowanceProcess", name: "Allowance Process" },
+            { id: "createNewAllowance", name: "Create New Allowence" },
+            { id: "variableAllowance", name: "Variable Allowance" },
+            { id: "fixedAllowance", name: "Fixed Allowance" },
           ],
         },
         {
@@ -86,8 +87,9 @@ const Sidebar = ({
           name: "Deduction",
           icon: DollarSign,
           subItems: [
-            { id: "deductionMaster", name: "Deduction Master" },
-            { id: "deductionProcess", name: "Deduction Process" },
+            { id: "createNewDeduction", name: "Create New Deduction" },
+            { id: "variableDeduction", name: "Variable Deduction" },
+            { id: "fixedDeduction", name: "Fixed Deduction" },
           ],
         },
         {
