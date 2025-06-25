@@ -51,12 +51,24 @@ const EmployeeMaster = () => {
         >
           Organization
         </button>
+        <button
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            activeCategory === 'salary'
+              ? 'bg-indigo-600 text-white'
+              : 'text-indigo-700 hover:bg-indigo-100'
+          }`}
+          onClick={() => setActiveCategory('salary')}
+
+        >
+          Salary
+        </button>
       </div>
       <div className="p-4">
         {activeCategory === 'personal' && <EmpPersonalDetails />}
         {activeCategory === 'address' && <AddressDetails />}
         {activeCategory === 'compensation' && <CompensationManagement />}
         {activeCategory === 'organization' && <OrganizationDetails/>}
+        {activeCategory === 'salary' && <div>Salary Details</div>}
       </div>
     </div>
   );
