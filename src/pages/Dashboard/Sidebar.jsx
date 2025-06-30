@@ -27,8 +27,7 @@ const Sidebar = ({
 }) => {
   const [expandedItems, setExpandedItems] = useState({
     hrMaster: false,
-    allowance: false,
-    deduction: false,
+    allowanceDeduction: false, // Replace allowance and deduction with this
     loans: false,
     salaryProcess: false,
     timeAttendance: false,
@@ -37,11 +36,11 @@ const Sidebar = ({
   const toggleHrMaster = () => {
     setExpandedItems((prev) => ({ ...prev, hrMaster: !prev.hrMaster }));
   };
-  const toggleAllowance = () => {
-    setExpandedItems((prev) => ({ ...prev, allowance: !prev.allowance }));
-  };
-  const toggleDeduction = () => {
-    setExpandedItems((prev) => ({ ...prev, deduction: !prev.deduction }));
+  const toggleAllowanceDeduction = () => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      allowanceDeduction: !prev.allowanceDeduction,
+    }));
   };
   const toggleLoans = () => {
     setExpandedItems((prev) => ({ ...prev, loans: !prev.loans }));
@@ -61,7 +60,7 @@ const Sidebar = ({
 
   const menuItems = [
     { id: "dashboard", name: "Dashboard", icon: Home, badge: null },
-    
+
     {
       id: "hrMaster",
       name: "HR Master",
@@ -72,21 +71,26 @@ const Sidebar = ({
         { id: "employeeMaster", name: " Add Employee Master" },
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
+        // {
+        //   id: "Allowance",
+        //   name: "Allowance",
+        //   icon: DollarSign,
+        //   subItems: [{ id: "createNewAllowance", name: "View Allowance" }],
+        // },
+        // {
+        //   id: "deduction",
+        //   name: "Deduction",
+        //   icon: DollarSign,
+        //   subItems: [{ id: "createNewDeduction", name: "View Deduction" }],
+        // },
         {
-          id: "Allowance",
-          name: "Allowance",
+          id: "allowanceDeduction",
+          name: "Compensation",
           icon: DollarSign,
           subItems: [
-            { id: "createNewAllowance", name: "Create New Allowence" },
-            { id: "variableAllowance", name: "Variable Allowance" },
-            { id: "fixedAllowance", name: "Fixed Allowance" },
+            { id: "createNewAllowance", name: "Allowance" },
+            { id: "createNewDeduction", name: "Deduction" },
           ],
-        },
-        {
-          id: "deduction",
-          name: "Deduction",
-          icon: DollarSign,
-          subItems: [{ id: "createNewDeduction", name: "View Deduction" }],
         },
         {
           id: "loans",
@@ -253,13 +257,9 @@ const Sidebar = ({
                         {item.subItems.map((subItem) => {
                           // Map subItem.id to its toggle and expanded state
                           const subDropdowns = {
-                            Allowance: {
-                              toggle: toggleAllowance,
-                              expanded: expandedItems.allowance,
-                            },
-                            deduction: {
-                              toggle: toggleDeduction,
-                              expanded: expandedItems.deduction,
+                            allowanceDeduction: {
+                              toggle: toggleAllowanceDeduction,
+                              expanded: expandedItems.allowanceDeduction,
                             },
                             loans: {
                               toggle: toggleLoans,
