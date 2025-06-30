@@ -13,7 +13,8 @@ import {
   XCircle,
   Save,
   RefreshCw,
-  ChevronDown
+  ChevronDown,
+  Plus
 } from 'lucide-react';
 
 const STORAGE_KEY = 'employeeFormData';
@@ -42,7 +43,28 @@ const OrganizationDetails = () => {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Load organizationDetails from localStorage on mount
+  // Dropdown data state
+  const [companies, setCompanies] = useState([
+    'Company A', 'Company B'
+  ]);
+  const [departments, setDepartments] = useState([
+    'HR', 'IT', 'Finance'
+  ]);
+  const [subDepartments, setSubDepartments] = useState([
+    'Recruitment', 'Development', 'Accounting'
+  ]);
+
+  // Modal state
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [showSubDepartmentModal, setShowSubDepartmentModal] = useState(false);
+
+  // New values for modals
+  const [newCompany, setNewCompany] = useState('');
+  const [newDepartment, setNewDepartment] = useState('');
+  const [newSubDepartment, setNewSubDepartment] = useState('');
+
+  // Load organizationDetails and dropdowns from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -54,15 +76,21 @@ const OrganizationDetails = () => {
             ...parsed.organizationDetails
           }));
         }
+        if (parsed.dropdownData) {
+          setCompanies(parsed.dropdownData.companies || companies);
+          setDepartments(parsed.dropdownData.departments || departments);
+          setSubDepartments(parsed.dropdownData.subDepartments || subDepartments);
+        }
       }
     } catch (e) {
       // ignore
     } finally {
       setIsDataLoaded(true);
     }
+    // eslint-disable-next-line
   }, []);
 
-  // Save to localStorage whenever formData changes (after initial load)
+  // Save to localStorage whenever formData or dropdowns change (after initial load)
   useEffect(() => {
     if (!isDataLoaded) return;
     const saveData = () => {
@@ -76,12 +104,17 @@ const OrganizationDetails = () => {
         // ignore
       }
       allData.organizationDetails = formData;
+      allData.dropdownData = {
+        companies,
+        departments,
+        subDepartments
+      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
       setIsSaved(true);
     };
     const timeoutId = setTimeout(saveData, 300);
     return () => clearTimeout(timeoutId);
-  }, [formData, isDataLoaded]);
+  }, [formData, companies, departments, subDepartments, isDataLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -90,6 +123,113 @@ const OrganizationDetails = () => {
       [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : value
     }));
     setIsSaved(false);
+  };
+
+  // Add handlers for modals
+  const handleAddCompany = () => {
+    if (newCompany.trim() && !companies.includes(newCompany.trim())) {
+      setCompanies(prev => [...prev, newCompany.trim()]);
+      setNewCompany('');
+      setShowCompanyModal(false);
+    }
+  };
+  const handleAddDepartment = () => {
+    if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
+      setDepartments(prev => [...prev, newDepartment.trim()]);
+      setNewDepartment('');
+      setShowDepartmentModal(false);
+    }
+  };
+  const handleAddSubDepartment = () => {
+    if (newSubDepartment.trim() && !subDepartments.includes(newSubDepartment.trim())) {
+      setSubDepartments(prev => [...prev, newSubDepartment.trim()]);
+      setNewSubDepartment('');
+      setShowSubDepartmentModal(false);
+    }
+  };
+
+  // Modal components (improved with delete support)
+  const Modal = ({
+    show,
+    onClose,
+    title,
+    value,
+    setValue,
+    onAdd,
+    placeholder,
+    items,
+    onDelete,
+  }) => {
+    if (!show) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 backdrop-blur-sm">
+        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs">
+          <h3 className="text-lg font-semibold mb-4">{title}</h3>
+          <input
+            type="text"
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500"
+            placeholder={placeholder}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 mb-4">
+            <button
+              onClick={onClose}
+              className="px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onAdd}
+              className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+              disabled={!value.trim()}
+            >
+              Add
+            </button>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 mb-2">Existing:</h4>
+            <ul className="space-y-1 max-h-32 overflow-y-auto">
+              {items.map((item) => (
+                <li key={item} className="flex items-center justify-between group px-2 py-1 rounded hover:bg-gray-50">
+                  <span className="truncate">{item}</span>
+                  <button
+                    type="button"
+                    className="ml-2 p-1 rounded-full bg-red-100 hover:bg-red-200 text-red-600 opacity-70 group-hover:opacity-100 transition"
+                    title="Delete"
+                    onClick={() => onDelete(item)}
+                  >
+                    <XCircle size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add delete handlers
+  const handleDeleteCompany = (company) => {
+    setCompanies(prev => prev.filter(c => c !== company));
+    // Remove from form if selected
+    if (formData.company === company) {
+      setFormData(prev => ({ ...prev, company: '' }));
+    }
+  };
+  const handleDeleteDepartment = (department) => {
+    setDepartments(prev => prev.filter(d => d !== department));
+    if (formData.department === department) {
+      setFormData(prev => ({ ...prev, department: '' }));
+    }
+  };
+  const handleDeleteSubDepartment = (subDepartment) => {
+    setSubDepartments(prev => prev.filter(s => s !== subDepartment));
+    if (formData.subDepartment === subDepartment) {
+      setFormData(prev => ({ ...prev, subDepartment: '' }));
+    }
   };
 
   return (
@@ -109,67 +249,101 @@ const OrganizationDetails = () => {
           <p className="text-gray-500 mb-4 pl-7">Basic company and employee details</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Company */}
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Building2 className="text-gray-500" size={16} />
                 Company <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <select
-                  name="company"
-                  value={formData.company}
-                  onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <select
+                    name="company"
+                    value={formData.company}
+                    onChange={handleChange}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 px-2 py-2 rounded-md bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow hover:from-blue-600 hover:to-blue-800 transition"
+                  title="Add Company"
+                  onClick={() => setShowCompanyModal(true)}
                 >
-                  <option value="">Select Company</option>
-                  <option value="Company A">Company A</option>
-                  <option value="Company B">Company B</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                  <Plus size={16} />
+                </button>
               </div>
             </div>
-            
+
+            {/* Department */}
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Layers className="text-gray-500" size={16} />
                 Department
               </label>
-              <div className="relative">
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 px-2 py-2 rounded-md bg-gradient-to-r from-green-500 to-green-700 text-white shadow hover:from-green-600 hover:to-green-800 transition"
+                  title="Add Department"
+                  onClick={() => setShowDepartmentModal(true)}
                 >
-                  <option value="">Select Department</option>
-                  <option value="HR">HR</option>
-                  <option value="IT">IT</option>
-                  <option value="Finance">Finance</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                  <Plus size={16} />
+                </button>
               </div>
             </div>
-            
+
+            {/* Sub Department */}
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Layers className="text-gray-500" size={16} />
                 Sub Department <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <select
-                  name="subDepartment"
-                  value={formData.subDepartment}
-                  onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <select
+                    name="subDepartment"
+                    value={formData.subDepartment}
+                    onChange={handleChange}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Sub Department</option>
+                    {subDepartments.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-1 px-2 py-2 rounded-md bg-gradient-to-r from-purple-500 to-purple-700 text-white shadow hover:from-purple-600 hover:to-purple-800 transition"
+                  title="Add Sub Department"
+                  onClick={() => setShowSubDepartmentModal(true)}
                 >
-                  <option value="">Select Sub Department</option>
-                  <option value="Recruitment">Recruitment</option>
-                  <option value="Development">Development</option>
-                  <option value="Accounting">Accounting</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                  <Plus size={16} />
+                </button>
               </div>
             </div>
             
@@ -339,7 +513,7 @@ const OrganizationDetails = () => {
             
             <div>
               <h3 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <BookOpen className="text-blue-500" size={20} />
+                <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
                 Contract Period
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -489,10 +663,43 @@ const OrganizationDetails = () => {
             <button
               type="button"
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                // Only clear organizationDetails from localStorage
+                try {
+                  const saved = localStorage.getItem(STORAGE_KEY);
+                  if (saved && saved !== 'undefined' && saved !== 'null') {
+                    const parsed = JSON.parse(saved);
+                    delete parsed.organizationDetails;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+                  }
+                } catch (e) {
+                  // ignore
+                }
+                setFormData({
+                  company: '',
+                  department: '',
+                  subDepartment: '',
+                  currentSupervisor: '',
+                  dateOfJoined: '',
+                  designation: '',
+                  probationFrom: '',
+                  probationTo: '',
+                  trainingFrom: '',
+                  trainingTo: '',
+                  contractFrom: '',
+                  contractTo: '',
+                  confirmationDate: '',
+                  resignationDate: '',
+                  resignationLetter: null,
+                  resignationApproved: false,
+                  currentStatus: 'Active',
+                  dayOff: ''
+                });
+                setIsSaved(false);
+              }}
             >
               <RefreshCw size={16} />
-              Cancel
+              Clear
             </button>
           </div>
         </div>
@@ -503,6 +710,40 @@ const OrganizationDetails = () => {
           </div>
         )}
       </form>
+      {/* Modals */}
+      <Modal
+        show={showCompanyModal}
+        onClose={() => setShowCompanyModal(false)}
+        title="Add New Company"
+        value={newCompany}
+        setValue={setNewCompany}
+        onAdd={handleAddCompany}
+        placeholder="Enter company name"
+        items={companies}
+        onDelete={handleDeleteCompany}
+      />
+      <Modal
+        show={showDepartmentModal}
+        onClose={() => setShowDepartmentModal(false)}
+        title="Add New Department"
+        value={newDepartment}
+        setValue={setNewDepartment}
+        onAdd={handleAddDepartment}
+        placeholder="Enter department name"
+        items={departments}
+        onDelete={handleDeleteDepartment}
+      />
+      <Modal
+        show={showSubDepartmentModal}
+        onClose={() => setShowSubDepartmentModal(false)}
+        title="Add New Sub Department"
+        value={newSubDepartment}
+        setValue={setNewSubDepartment}
+        onAdd={handleAddSubDepartment}
+        placeholder="Enter sub department name"
+        items={subDepartments}
+        onDelete={handleDeleteSubDepartment}
+      />
     </div>
   );
 };
