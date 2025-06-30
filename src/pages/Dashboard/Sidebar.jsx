@@ -122,7 +122,8 @@ const Sidebar = ({
           icon: UserCheck,
           subItems: [
             { id: "TimeCard", name: "Time Card" },
-            { id: "timeAttendanceProcess", name: "Time Attendance Process" },
+            {id : "leavecalendar", name: "Leave Calendar"},
+            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
         //add more i needed

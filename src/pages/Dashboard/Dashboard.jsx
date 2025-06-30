@@ -11,6 +11,7 @@ import EmployeeLoan from './EmployeeLoan';
 import TimeCard from "./TimeCard";
 import Department from "./Department"; 
 import Grouproster from "./Grouproster";
+import LeaveCalendar from "./LeaveCalendar";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -178,6 +179,8 @@ const Dashboard = ({ user, onLogout }) => {
               <Department />
             ) : activeItem === "grouproster" ? (
               <Grouproster />
+              ) : activeItem === "leavecalendar" ? (
+                <LeaveCalendar />
             ) : (
               
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
