@@ -61,7 +61,7 @@ const Sidebar = ({
 
   const menuItems = [
     { id: "dashboard", name: "Dashboard", icon: Home, badge: null },
-    
+
     {
       id: "hrMaster",
       name: "HR Master",
@@ -76,11 +76,7 @@ const Sidebar = ({
           id: "Allowance",
           name: "Allowance",
           icon: DollarSign,
-          subItems: [
-            { id: "createNewAllowance", name: "Create New Allowence" },
-            { id: "variableAllowance", name: "Variable Allowance" },
-            { id: "fixedAllowance", name: "Fixed Allowance" },
-          ],
+          subItems: [{ id: "createNewAllowance", name: "View Allowance" }],
         },
         {
           id: "deduction",
