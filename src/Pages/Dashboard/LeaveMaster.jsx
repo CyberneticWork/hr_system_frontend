@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { 
-  Calendar, 
-  User, 
-  Briefcase, 
-  Clock, 
-  CheckCircle, 
-  Search, 
-  Building, 
+import {
+  Calendar,
+  User,
+  Briefcase,
+  Clock,
+  CheckCircle,
+  Search,
+  Building,
   FileText,
-  X
+  X,
 } from "lucide-react";
 
 const LeaveMaster = () => {
@@ -23,14 +23,14 @@ const LeaveMaster = () => {
     leaveType: "",
     leaveDate: {
       from: getCurrentDate(),
-      to: getCurrentDate()
+      to: getCurrentDate(),
     },
     leaveFormat: "fullDay", // fullDay, halfDay, hourLeave
     leaveCancel: {
       from: getCurrentDate(),
-      to: getCurrentDate()
+      to: getCurrentDate(),
     },
-    reason: ""
+    reason: "",
   });
 
   // Sample leave usage data
@@ -44,37 +44,55 @@ const LeaveMaster = () => {
   const locations = ["Head Office", "Branch Office", "Factory", "Warehouse"];
 
   // Sample leave types
-  const leaveTypes = ["Annual Leave", "Casual Leave", "Medical Leave", "Unpaid Leave", "Special Leave"];
+  const leaveTypes = [
+    "Annual Leave",
+    "Casual Leave",
+    "Medical Leave",
+    "Unpaid Leave",
+    "Special Leave",
+  ];
 
   // Sample leave records
   const [leaveRecords, setLeaveRecords] = useState([
-    { id: 1, leaveDate: "2025-06-15", reportDate: "2025-06-14", fullHalfDay: "Full Day", leaveType: "Annual Leave" },
-    { id: 2, leaveDate: "2025-06-20", reportDate: "2025-06-18", fullHalfDay: "Half Day", leaveType: "Casual Leave" },
+    {
+      id: 1,
+      leaveDate: "2025-06-15",
+      reportDate: "2025-06-14",
+      fullHalfDay: "Full Day",
+      leaveType: "Annual Leave",
+    },
+    {
+      id: 2,
+      leaveDate: "2025-06-20",
+      reportDate: "2025-06-18",
+      fullHalfDay: "Half Day",
+      leaveType: "Casual Leave",
+    },
   ]);
 
   // Helper function to get current date in YYYY-MM-DD format
   function getCurrentDate() {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return today.toISOString().split("T")[0];
   }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Handle nested objects in state
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
       setFormData({
         ...formData,
         [parent]: {
           ...formData[parent],
-          [child]: value
-        }
+          [child]: value,
+        },
       });
     } else {
       setFormData({
         ...formData,
-        [name]: value
+        [name]: value,
       });
     }
   };
@@ -83,19 +101,23 @@ const LeaveMaster = () => {
     e.preventDefault();
     // Process leave request submission
     console.log("Leave request submitted:", formData);
-    
+
     // Add to leave records (in a real app, this would be an API call)
     const newRecord = {
       id: leaveRecords.length + 1,
       leaveDate: formData.leaveDate.from,
       reportDate: formData.reportingDate,
-      fullHalfDay: formData.leaveFormat === "fullDay" ? "Full Day" : 
-                  formData.leaveFormat === "halfDay" ? "Half Day" : "Hour Leave",
-      leaveType: formData.leaveType
+      fullHalfDay:
+        formData.leaveFormat === "fullDay"
+          ? "Full Day"
+          : formData.leaveFormat === "halfDay"
+          ? "Half Day"
+          : "Hour Leave",
+      leaveType: formData.leaveType,
     };
-    
+
     setLeaveRecords([...leaveRecords, newRecord]);
-    
+
     // Reset form or show success message
     alert("Leave request submitted successfully!");
   };
@@ -135,7 +157,9 @@ const LeaveMaster = () => {
                 >
                   <option value="">Select Location</option>
                   {locations.map((location) => (
-                    <option key={location} value={location}>{location}</option>
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -160,7 +184,7 @@ const LeaveMaster = () => {
                             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             placeholder="Enter attendance no"
                           />
-                          <button 
+                          <button
                             type="button"
                             className="ml-2 p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
                           >
@@ -256,7 +280,9 @@ const LeaveMaster = () => {
                         >
                           <option value="">Select Leave Type</option>
                           {leaveTypes.map((type) => (
-                            <option key={type} value={type}>{type}</option>
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -271,7 +297,9 @@ const LeaveMaster = () => {
                           </label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-xs text-gray-500">From</label>
+                              <label className="text-xs text-gray-500">
+                                From
+                              </label>
                               <input
                                 type="date"
                                 name="leaveDate.from"
@@ -282,7 +310,9 @@ const LeaveMaster = () => {
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500">To</label>
+                              <label className="text-xs text-gray-500">
+                                To
+                              </label>
                               <input
                                 type="date"
                                 name="leaveDate.to"
@@ -310,7 +340,9 @@ const LeaveMaster = () => {
                                 onChange={handleInputChange}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                               />
-                              <span className="ml-2 text-sm text-gray-700">Full Day</span>
+                              <span className="ml-2 text-sm text-gray-700">
+                                Full Day
+                              </span>
                             </label>
                             <label className="flex items-center">
                               <input
@@ -321,7 +353,9 @@ const LeaveMaster = () => {
                                 onChange={handleInputChange}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                               />
-                              <span className="ml-2 text-sm text-gray-700">Half Day</span>
+                              <span className="ml-2 text-sm text-gray-700">
+                                Half Day
+                              </span>
                             </label>
                             <label className="flex items-center">
                               <input
@@ -332,7 +366,9 @@ const LeaveMaster = () => {
                                 onChange={handleInputChange}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                               />
-                              <span className="ml-2 text-sm text-gray-700">Hour Leave</span>
+                              <span className="ml-2 text-sm text-gray-700">
+                                Hour Leave
+                              </span>
                             </label>
                           </div>
                         </div>
@@ -341,7 +377,9 @@ const LeaveMaster = () => {
 
                     {/* Leave Cancel Section */}
                     <div className="mt-6 border-t pt-4">
-                      <h3 className="font-medium text-gray-700 mb-3">Leave Cancel</h3>
+                      <h3 className="font-medium text-gray-700 mb-3">
+                        Leave Cancel
+                      </h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-xs text-gray-500">From</label>
@@ -393,7 +431,9 @@ const LeaveMaster = () => {
 
                   {/* Leave Usage Summary Section */}
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                    <h3 className="font-medium text-gray-800 mb-4">Leave Usage Summary</h3>
+                    <h3 className="font-medium text-gray-800 mb-4">
+                      Leave Usage Summary
+                    </h3>
                     <div className="overflow-x-auto">
                       <table className="min-w-full bg-white border-collapse">
                         <thead>
@@ -418,10 +458,18 @@ const LeaveMaster = () => {
                         <tbody>
                           {leaveUsageData.map((item) => (
                             <tr key={item.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 border text-sm">{item.id}</td>
-                              <td className="px-4 py-3 border text-sm">{item.leaveType}</td>
-                              <td className="px-4 py-3 border text-sm">{item.total}</td>
-                              <td className="px-4 py-3 border text-sm">{item.usage}</td>
+                              <td className="px-4 py-3 border text-sm">
+                                {item.id}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {item.leaveType}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {item.total}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {item.usage}
+                              </td>
                               <td className="px-4 py-3 border text-sm font-medium text-blue-600">
                                 {item.balance}
                               </td>
@@ -431,7 +479,10 @@ const LeaveMaster = () => {
                       </table>
                     </div>
                     <div className="mt-4 text-xs text-gray-500">
-                      <p>Marked with <span className="text-red-500">*</span> are required</p>
+                      <p>
+                        Marked with <span className="text-red-500">*</span> are
+                        required
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -439,7 +490,9 @@ const LeaveMaster = () => {
                 {/* Right Column - Leave Records */}
                 <div>
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                    <h3 className="font-medium text-gray-800 mb-4">Employee Leave Record</h3>
+                    <h3 className="font-medium text-gray-800 mb-4">
+                      Employee Leave Record
+                    </h3>
                     <div className="overflow-x-auto">
                       <table className="min-w-full bg-white border-collapse">
                         <thead>
@@ -464,16 +517,29 @@ const LeaveMaster = () => {
                         <tbody>
                           {leaveRecords.map((record) => (
                             <tr key={record.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 border text-sm">{record.id}</td>
-                              <td className="px-4 py-3 border text-sm">{record.leaveDate}</td>
-                              <td className="px-4 py-3 border text-sm">{record.reportDate}</td>
-                              <td className="px-4 py-3 border text-sm">{record.fullHalfDay}</td>
-                              <td className="px-4 py-3 border text-sm">{record.leaveType}</td>
+                              <td className="px-4 py-3 border text-sm">
+                                {record.id}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {record.leaveDate}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {record.reportDate}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {record.fullHalfDay}
+                              </td>
+                              <td className="px-4 py-3 border text-sm">
+                                {record.leaveType}
+                              </td>
                             </tr>
                           ))}
                           {leaveRecords.length === 0 && (
                             <tr>
-                              <td colSpan="5" className="px-4 py-8 border text-center text-gray-500">
+                              <td
+                                colSpan="5"
+                                className="px-4 py-8 border text-center text-gray-500"
+                              >
                                 No leave records found
                               </td>
                             </tr>
