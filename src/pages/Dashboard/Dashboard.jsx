@@ -11,6 +11,7 @@ import EmployeeLoan from './EmployeeLoan';
 import TimeCard from "./TimeCard";
 import Department from "./Department"; 
 import Grouproster from "./Grouproster";
+import LeaveMaster from "./LeaveMaster";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -172,6 +173,8 @@ const Dashboard = ({ user, onLogout }) => {
               <CreateNewAllowance />
             ) : activeItem === "employeeLoan" ? (
               <EmployeeLoan />
+            ) : activeItem === "leaveMaster" ? (
+              <LeaveMaster />
             ) : activeItem === "TimeCard" ? (
               <TimeCard />
             ) : activeItem === "departmentMaster" ? ( 
