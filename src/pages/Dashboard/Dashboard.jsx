@@ -9,6 +9,7 @@ import ShiftSchedule from "./ShiftSchedule";
 import CreateNewAllowance from "./CreateNewAllowance";
 import EmployeeLoan from "./EmployeeLoan";
 import TimeCard from "./TimeCard";
+import Overtime from './Overtime';
 import Department from "./Department";
 import Grouproster from "./Grouproster";
 import LeaveMaster from "./LeaveMaster";
@@ -181,6 +182,8 @@ const Dashboard = ({ user, onLogout }) => {
               <LeaveMaster />
             ) : activeItem === "TimeCard" ? (
               <TimeCard />
+            ) : activeItem === "Overtime" ? (
+              <Overtime />
             ) : activeItem === "departmentMaster" ? (
               <Department />
             ) : activeItem === "grouproster" ? (
