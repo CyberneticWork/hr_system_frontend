@@ -232,6 +232,38 @@ const OrganizationDetails = () => {
     }
   };
 
+  // Add toggle state and helpers
+  const [toggleStates, setToggleStates] = useState({
+    probationEnabled: false,
+    trainingEnabled: false,
+    contractEnabled: false,
+    confirmationEnabled: false
+  });
+
+  const handleToggle = (section) => {
+    setToggleStates(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const ToggleButton = ({ enabled, onToggle, label }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        enabled ? 'bg-blue-600' : 'bg-gray-200'
+      }`}
+      aria-label={`Toggle ${label}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          enabled ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  );
+
   return (
     <div className=" p-4 md:p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -409,13 +441,25 @@ const OrganizationDetails = () => {
             Employment Periods
           </h2>
           <p className="text-gray-500 mb-4 pl-7">Define training, probation, and contract periods</p>
-          
           <div className="space-y-6">
+            {/* Probation Period */}
             <div>
-              <h3 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
-                Probation Period
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-gray-700 flex items-center gap-2">
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+                  Probation Period
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${toggleStates.probationEnabled ? 'text-blue-600' : 'text-red-400'}`}>
+                    {toggleStates.probationEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <ToggleButton
+                    enabled={toggleStates.probationEnabled}
+                    onToggle={() => handleToggle('probationEnabled')}
+                    label="Probation Period"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-600 mb-1">From Date</label>
@@ -425,9 +469,12 @@ const OrganizationDetails = () => {
                       name="probationFrom"
                       value={formData.probationFrom}
                       onChange={handleChange}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!toggleStates.probationEnabled}
+                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        !toggleStates.probationEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                      }`}
                     />
-                    <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.probationEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
                   </div>
                 </div>
                 <div>
@@ -438,19 +485,34 @@ const OrganizationDetails = () => {
                       name="probationTo"
                       value={formData.probationTo}
                       onChange={handleChange}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!toggleStates.probationEnabled}
+                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        !toggleStates.probationEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                      }`}
                     />
-                    <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.probationEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
                   </div>
                 </div>
               </div>
             </div>
-            
+            {/* Training Period */}
             <div>
-              <h3 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
-                Training Period
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-gray-700 flex items-center gap-2">
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
+                  Training Period
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${toggleStates.trainingEnabled ? 'text-blue-600' : 'text-red-400'}`}>
+                    {toggleStates.trainingEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <ToggleButton
+                    enabled={toggleStates.trainingEnabled}
+                    onToggle={() => handleToggle('trainingEnabled')}
+                    label="Training Period"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-600 mb-1">From Date</label>
@@ -460,9 +522,12 @@ const OrganizationDetails = () => {
                       name="trainingFrom"
                       value={formData.trainingFrom}
                       onChange={handleChange}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!toggleStates.trainingEnabled}
+                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        !toggleStates.trainingEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                      }`}
                     />
-                    <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.trainingEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
                   </div>
                 </div>
                 <div>
@@ -473,19 +538,34 @@ const OrganizationDetails = () => {
                       name="trainingTo"
                       value={formData.trainingTo}
                       onChange={handleChange}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!toggleStates.trainingEnabled}
+                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        !toggleStates.trainingEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                      }`}
                     />
-                    <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.trainingEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
                   </div>
                 </div>
               </div>
             </div>
-            
+            {/* Contract Period */}
             <div>
-              <h3 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
-                Contract Period
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-gray-700 flex items-center gap-2">
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
+                  Contract Period
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${toggleStates.contractEnabled ? 'text-blue-600' : 'text-red-400'}`}>
+                    {toggleStates.contractEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <ToggleButton
+                    enabled={toggleStates.contractEnabled}
+                    onToggle={() => handleToggle('contractEnabled')}
+                    label="Contract Period"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-600 mb-1">From Date</label>
@@ -495,9 +575,12 @@ const OrganizationDetails = () => {
                       name="contractFrom"
                       value={formData.contractFrom}
                       onChange={handleChange}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!toggleStates.contractEnabled}
+                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        !toggleStates.contractEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                      }`}
                     />
-                    <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.contractEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
                   </div>
                 </div>
                 <div>
@@ -508,28 +591,46 @@ const OrganizationDetails = () => {
                       name="contractTo"
                       value={formData.contractTo}
                       onChange={handleChange}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!toggleStates.contractEnabled}
+                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        !toggleStates.contractEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                      }`}
                     />
-                    <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.contractEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
                   </div>
                 </div>
               </div>
             </div>
-            
+            {/* Confirmation Date */}
             <div className="md:w-1/2">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
-                <CheckCircle className="text-gray-500" size={16} />
-                Confirmation Date
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-gray-700 font-medium flex items-center gap-1">
+                  <CheckCircle className="text-gray-500" size={16} />
+                  Confirmation Date
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${toggleStates.confirmationEnabled ? 'text-blue-600' : 'text-red-400'}`}>
+                    {toggleStates.confirmationEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <ToggleButton
+                    enabled={toggleStates.confirmationEnabled}
+                    onToggle={() => handleToggle('confirmationEnabled')}
+                    label="Confirmation Date"
+                  />
+                </div>
+              </div>
               <div className="relative">
                 <input
                   type="date"
                   name="confirmationDate"
                   value={formData.confirmationDate}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!toggleStates.confirmationEnabled}
+                  className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !toggleStates.confirmationEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                  }`}
                 />
-                <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                <Calendar className={`absolute left-2 top-2.5 ${toggleStates.confirmationEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
               </div>
             </div>
           </div>
