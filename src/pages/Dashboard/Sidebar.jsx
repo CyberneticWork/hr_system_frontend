@@ -122,6 +122,8 @@ const Sidebar = ({
             { id: "leaveMaster", name: "Leave Master" },
             { id: "noPayManagement", name: "Non Working Days" }, // Add this line
             { id: "timeAttendanceProcess", name: "Time Attendance Process" },
+            { id: "leavecalendar", name: "Leave Calendar" },
+            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
         //add more i needed
