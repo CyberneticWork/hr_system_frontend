@@ -119,7 +119,8 @@ const Sidebar = ({
           icon: UserCheck,
           subItems: [
             { id: "TimeCard", name: "Time Card" },
-            { id: "leaveMaster", name: "Leave Master" }, // Add this line
+            { id: "leaveMaster", name: "Leave Master" },
+            { id: "noPayManagement", name: "Non Working Days" }, // Add this line
             { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },

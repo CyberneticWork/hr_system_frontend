@@ -7,11 +7,12 @@ import ShowEmployee from "./ShowEmployee";
 import CreateNewDeduction from "./Deduction/CreateNewDeduction";
 import ShiftSchedule from "./ShiftSchedule";
 import CreateNewAllowance from "./CreateNewAllowance";
-import EmployeeLoan from './EmployeeLoan';
+import EmployeeLoan from "./EmployeeLoan";
 import TimeCard from "./TimeCard";
-import Department from "./Department"; 
+import Department from "./Department";
 import Grouproster from "./Grouproster";
 import LeaveMaster from "./LeaveMaster";
+import NoPayManagement from "./NoPayManagement";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -173,16 +174,17 @@ const Dashboard = ({ user, onLogout }) => {
               <CreateNewAllowance />
             ) : activeItem === "employeeLoan" ? (
               <EmployeeLoan />
+            ) : activeItem === "noPayManagement" ? (
+              <NoPayManagement />
             ) : activeItem === "leaveMaster" ? (
               <LeaveMaster />
             ) : activeItem === "TimeCard" ? (
               <TimeCard />
-            ) : activeItem === "departmentMaster" ? ( 
+            ) : activeItem === "departmentMaster" ? (
               <Department />
             ) : activeItem === "grouproster" ? (
               <Grouproster />
             ) : (
-              
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
                   <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
