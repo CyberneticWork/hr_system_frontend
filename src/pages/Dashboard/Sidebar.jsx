@@ -27,8 +27,7 @@ const Sidebar = ({
 }) => {
   const [expandedItems, setExpandedItems] = useState({
     hrMaster: false,
-    allowance: false,
-    deduction: false,
+    allowanceDeduction: false, // Replace allowance and deduction with this
     loans: false,
     salaryProcess: false,
     timeAttendance: false,
@@ -37,11 +36,11 @@ const Sidebar = ({
   const toggleHrMaster = () => {
     setExpandedItems((prev) => ({ ...prev, hrMaster: !prev.hrMaster }));
   };
-  const toggleAllowance = () => {
-    setExpandedItems((prev) => ({ ...prev, allowance: !prev.allowance }));
-  };
-  const toggleDeduction = () => {
-    setExpandedItems((prev) => ({ ...prev, deduction: !prev.deduction }));
+  const toggleAllowanceDeduction = () => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      allowanceDeduction: !prev.allowanceDeduction,
+    }));
   };
   const toggleLoans = () => {
     setExpandedItems((prev) => ({ ...prev, loans: !prev.loans }));
@@ -61,7 +60,7 @@ const Sidebar = ({
 
   const menuItems = [
     { id: "dashboard", name: "Dashboard", icon: Home, badge: null },
-    { id: "employeeAdd", name: "Employee Add", icon: UserPlus, badge: null },
+
     {
       id: "hrMaster",
       name: "HR Master",
@@ -72,29 +71,36 @@ const Sidebar = ({
         { id: "employeeMaster", name: " Add Employee Master" },
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
+        { id: "grouproster", name: "Group Roster" },
+        // {
+        //   id: "Allowance",
+        //   name: "Allowance",
+        //   icon: DollarSign,
+        //   subItems: [{ id: "createNewAllowance", name: "View Allowance" }],
+        // },
+        // {
+        //   id: "deduction",
+        //   name: "Deduction",
+        //   icon: DollarSign,
+        //   subItems: [{ id: "createNewDeduction", name: "View Deduction" }],
+        // },
         {
-          id: "Allowance",
-          name: "Allowance",
+          id: "allowanceDeduction",
+          name: "Compensation",
           icon: DollarSign,
           subItems: [
-            { id: "createNewAllowance", name: "Create New Allowence" },
-            { id: "variableAllowance", name: "Variable Allowance" },
-            { id: "fixedAllowance", name: "Fixed Allowance" },
+            { id: "createNewAllowance", name: "Allowance" },
+            { id: "createNewDeduction", name: "Deduction" },
           ],
         },
-        {
-          id: "deduction",
-          name: "Deduction",
-          icon: DollarSign,
-          subItems: [{ id: "createNewDeduction", name: "View Deduction" }],
-        },
+
         {
           id: "loans",
           name: "Loans",
           icon: DollarSign,
           subItems: [
             { id: "loanMaster", name: "Loan Master" },
-            { id: "employeeLoan", name: "Employee Wise Loan" }, // <-- Must match
+            { id: "employeeLoan", name: "Employee Wise Loan" },
             { id: "loanProcess", name: "Loan Process" },
           ],
         },
@@ -114,7 +120,11 @@ const Sidebar = ({
           subItems: [
             { id: "TimeCard", name: "Time Card" },
             { id: "Overtime", name: "Over Time" }, // <-- Add this line
+            { id: "leaveMaster", name: "Leave Master" },
+            { id: "noPayManagement", name: "Non Working Days" }, // Add this line
             { id: "timeAttendanceProcess", name: "Time Attendance Process" },
+            { id: "leavecalendar", name: "Leave Calendar" },
+            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
         //add more i needed
@@ -254,13 +264,9 @@ const Sidebar = ({
                         {item.subItems.map((subItem) => {
                           // Map subItem.id to its toggle and expanded state
                           const subDropdowns = {
-                            Allowance: {
-                              toggle: toggleAllowance,
-                              expanded: expandedItems.allowance,
-                            },
-                            deduction: {
-                              toggle: toggleDeduction,
-                              expanded: expandedItems.deduction,
+                            allowanceDeduction: {
+                              toggle: toggleAllowanceDeduction,
+                              expanded: expandedItems.allowanceDeduction,
                             },
                             loans: {
                               toggle: toggleLoans,

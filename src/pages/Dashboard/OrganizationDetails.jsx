@@ -287,30 +287,20 @@ const OrganizationDetails = () => {
                 <Building2 className="text-gray-500" size={16} />
                 Company <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <select
-                    name="company"
-                    value={formData.company}
-                    onChange={handleChange}
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Company</option>
-                    {companies.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-1 px-2 py-2 rounded-md bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow hover:from-blue-600 hover:to-blue-800 transition"
-                  title="Add Company"
-                  onClick={() => setShowCompanyModal(true)}
+              <div className="relative flex-1">
+                <select
+                  name="company"
+                  value={formData.company}
+                  onChange={handleChange}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                 >
-                  <Plus size={16} />
-                </button>
+                  <option value="">Select Company</option>
+                  {companies.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
@@ -320,29 +310,19 @@ const OrganizationDetails = () => {
                 <Layers className="text-gray-500" size={16} />
                 Department
               </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <select
-                    name="department"
-                    value={formData.department}
-                    onChange={handleChange}
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Department</option>
-                    {departments.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-1 px-2 py-2 rounded-md bg-gradient-to-r from-green-500 to-green-700 text-white shadow hover:from-green-600 hover:to-green-800 transition"
-                  title="Add Department"
-                  onClick={() => setShowDepartmentModal(true)}
+              <div className="relative flex-1">
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <Plus size={16} />
-                </button>
+                  <option value="">Select Department</option>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
@@ -352,30 +332,20 @@ const OrganizationDetails = () => {
                 <Layers className="text-gray-500" size={16} />
                 Sub Department <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <select
-                    name="subDepartment"
-                    value={formData.subDepartment}
-                    onChange={handleChange}
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Sub Department</option>
-                    {subDepartments.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-1 px-2 py-2 rounded-md bg-gradient-to-r from-purple-500 to-purple-700 text-white shadow hover:from-purple-600 hover:to-purple-800 transition"
-                  title="Add Sub Department"
-                  onClick={() => setShowSubDepartmentModal(true)}
+              <div className="relative flex-1">
+                <select
+                  name="subDepartment"
+                  value={formData.subDepartment}
+                  onChange={handleChange}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                 >
-                  <Plus size={16} />
-                </button>
+                  <option value="">Select Sub Department</option>
+                  {subDepartments.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
             
@@ -410,7 +380,7 @@ const OrganizationDetails = () => {
                   onChange={handleChange}
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                {/* <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
             
@@ -432,7 +402,7 @@ const OrganizationDetails = () => {
                   <option value="Developer">Developer</option>
                   <option value="Accountant">Accountant</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
@@ -458,7 +428,7 @@ const OrganizationDetails = () => {
                   <option value="Friday">Friday</option>
                   <option value="Saturday">Saturday</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} />
+                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
           </div>
