@@ -73,6 +73,7 @@ const Sidebar = ({
         { id: "employeeMaster", name: " Add Employee Master" },
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
+        { id: "grouproster", name: "Group Roster" },
         {
           id: "Allowance",
           name: "Allowance",
@@ -89,6 +90,8 @@ const Sidebar = ({
           icon: DollarSign,
           subItems: [{ id: "createNewDeduction", name: "View Deduction" }],
         },
+        
+
         {
           id: "loans",
           name: "Loans",

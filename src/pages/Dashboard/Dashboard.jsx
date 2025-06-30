@@ -10,6 +10,7 @@ import CreateNewAllowance from "./CreateNewAllowance";
 import EmployeeLoan from './EmployeeLoan';
 import TimeCard from "./TimeCard";
 import Department from "./Department"; 
+import Grouproster from "./Grouproster";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -175,7 +176,10 @@ const Dashboard = ({ user, onLogout }) => {
               <TimeCard />
             ) : activeItem === "departmentMaster" ? ( 
               <Department />
+            ) : activeItem === "grouproster" ? (
+              <Grouproster />
             ) : (
+              
               <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
                   <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
