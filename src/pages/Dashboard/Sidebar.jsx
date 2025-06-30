@@ -113,6 +113,7 @@ const Sidebar = ({
           icon: UserCheck,
           subItems: [
             { id: "TimeCard", name: "Time Card" },
+            { id: "Overtime", name: "Over Time" }, // <-- Add this line
             { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
