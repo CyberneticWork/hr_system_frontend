@@ -94,6 +94,7 @@ const Sidebar = ({
           icon: DollarSign,
           subItems: [
             { id: "loanMaster", name: "Loan Master" },
+            { id: "employeeLoan", name: "Employee Wise Loan" }, // <-- Must match
             { id: "loanProcess", name: "Loan Process" },
           ],
         },
@@ -111,7 +112,7 @@ const Sidebar = ({
           name: "Time Attendance",
           icon: UserCheck,
           subItems: [
-            { id: "timeAttendanceMaster", name: "Time Attendance Master" },
+            { id: "TimeCard", name: "Time Card" },
             { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
