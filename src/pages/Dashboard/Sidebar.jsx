@@ -17,6 +17,7 @@ import {
   UserPlus,
 } from "lucide-react";
 
+
 const Sidebar = ({
   user,
   onLogout,
@@ -71,6 +72,7 @@ const Sidebar = ({
         { id: "employeeMaster", name: " Add Employee Master" },
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
+        { id: "grouproster", name: "Group Roster" },
         // {
         //   id: "Allowance",
         //   name: "Allowance",
@@ -92,13 +94,16 @@ const Sidebar = ({
             { id: "createNewDeduction", name: "Deduction" },
           ],
         },
+       
+        
+
         {
           id: "loans",
           name: "Loans",
           icon: DollarSign,
           subItems: [
             { id: "loanMaster", name: "Loan Master" },
-            { id: "employeeLoan", name: "Employee Wise Loan" }, // <-- Must match
+            { id: "employeeLoan", name: "Employee Wise Loan" }, 
             { id: "loanProcess", name: "Loan Process" },
           ],
         },
