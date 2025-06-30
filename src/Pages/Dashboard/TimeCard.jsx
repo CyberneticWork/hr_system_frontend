@@ -85,6 +85,13 @@ const TimeCard = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editRecord, setEditRecord] = useState(null);
+  const [editInTime, setEditInTime] = useState('');
+  const [editOutTime, setEditOutTime] = useState('');
+  const [editDate, setEditDate] = useState('');
+
   // Sample data for dropdowns
   const locations = ['Main Office', 'Warehouse', 'Branch 1', 'Branch 2'];
   const months = [
@@ -143,6 +150,49 @@ const TimeCard = () => {
     setEmployeeName('');
     setDepartment('');
     setAttendanceData([]);
+  };
+
+  // Handle delete
+  const handleDelete = (index) => {
+    if (window.confirm('Are you sure you want to delete this record?')) {
+      setAttendanceData((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  // Handle edit open
+  const handleEdit = (record, index) => {
+    setEditRecord({ ...record, index });
+    setEditDate(record.date);
+    // Allow editing time for all types (IN, OUT, Absent, Leave)
+    setEditInTime(record.inOut === 'IN' ? record.time : '');
+    setEditOutTime(record.inOut === 'OUT' ? record.time : '');
+    setShowEditModal(true);
+  };
+
+  // Handle edit save
+  const handleEditSave = () => {
+    setAttendanceData((prev) =>
+      prev.map((rec, idx) => {
+        if (idx !== editRecord.index) return rec;
+        if (editRecord.status === 'Absent' || editRecord.status === 'Leave') {
+          return {
+            ...rec,
+            date: editDate,
+            inOut: '', // keep as is or allow user to set if you want
+            time: '',  // not used for Absent/Leave, but you could store editInTime/editOutTime if needed
+            editInTime,
+            editOutTime,
+          };
+        }
+        return {
+          ...rec,
+          date: editDate,
+          time: editRecord.inOut === 'IN' ? editInTime : editOutTime,
+        };
+      })
+    );
+    setShowEditModal(false);
+    setEditRecord(null);
   };
 
   return (
@@ -386,6 +436,7 @@ const TimeCard = () => {
                         <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Date</th>
                         <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Entry</th>
                         <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Status</th>
+                        <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -411,14 +462,36 @@ const TimeCard = () => {
                                 {record.status === 'Present' ? record.inOut : record.status}
                               </span>
                             </td>
+                            <td className="py-4 px-3 sm:px-6 flex gap-2">
+                              <button
+                                className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-150 text-xs sm:text-sm font-semibold shadow-sm"
+                                onClick={() => handleEdit(record, index)}
+                                title="Edit"
+                              >
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6m-2 2h6v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2h2v6z" />
+                                </svg>
+                                Edit
+                              </button>
+                              <button
+                                className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 border border-red-200 rounded-lg hover:bg-red-600 hover:text-white transition-all duration-150 text-xs sm:text-sm font-semibold shadow-sm"
+                                onClick={() => handleDelete(index)}
+                                title="Delete"
+                              >
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="7" className="py-16 text-center text-slate-500">
+                          <td colSpan="8" className="py-16 text-center text-slate-500">
                             <div className="flex flex-col items-center space-y-3">
                               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                               </svg>
                               <div>
                                 <p className="text-sm sm:text-base font-medium">No attendance records found</p>
@@ -436,6 +509,90 @@ const TimeCard = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && editRecord && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative animate-fade-in">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition"
+              onClick={() => setShowEditModal(false)}
+              title="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Edit Attendance Record
+            </h2>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Employee EPF Number</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={editRecord.empNo}
+                readOnly
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Date</label>
+              <input
+                type="date"
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+              />
+            </div>
+            {(editRecord.inOut === 'IN' || editRecord.status === 'Absent' || editRecord.status === 'Leave') && (
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-1">IN Time</label>
+                <input
+                  type="text"
+                  className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  value={editInTime}
+                  onChange={e => setEditInTime(e.target.value)}
+                  placeholder="e.g. 08:45 AM"
+                />
+              </div>
+            )}
+            {(editRecord.inOut === 'OUT' || editRecord.status === 'Absent' || editRecord.status === 'Leave') && (
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-1">OUT Time</label>
+                <input
+                  type="text"
+                  className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  value={editOutTime}
+                  onChange={e => setEditOutTime(e.target.value)}
+                  placeholder="e.g. 05:30 PM"
+                />
+              </div>
+            )}
+            <div className="flex justify-end gap-3 mt-8">
+              <button
+                className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-semibold shadow"
+                onClick={handleEditSave}
+                disabled={
+                  (editRecord.inOut === 'IN' && !editInTime) ||
+                  (editRecord.inOut === 'OUT' && !editOutTime) ||
+                  !editDate
+                }
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
