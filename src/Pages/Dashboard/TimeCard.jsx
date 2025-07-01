@@ -91,6 +91,24 @@ const TimeCard = () => {
   const [editInTime, setEditInTime] = useState('');
   const [editOutTime, setEditOutTime] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [editEntry, setEditEntry] = useState('');
+  const [editStatus, setEditStatus] = useState('');
+
+  // Add new record modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRecord, setNewRecord] = useState({
+    empNo: '',
+    name: '',
+    fingerprintClock: '',
+    time: '',
+    date: '',
+    entry: '',
+    department: '',
+    status: '',
+  });
+
+  // Import Data section toggle state
+  const [showImport, setShowImport] = useState(true);
 
   // Sample data for dropdowns
   const locations = ['Main Office', 'Warehouse', 'Branch 1', 'Branch 2'];
@@ -163,7 +181,8 @@ const TimeCard = () => {
   const handleEdit = (record, index) => {
     setEditRecord({ ...record, index });
     setEditDate(record.date);
-    // Allow editing time for all types (IN, OUT, Absent, Leave)
+    setEditEntry(record.entry || '');
+    setEditStatus(record.status || '');
     setEditInTime(record.inOut === 'IN' ? record.time : '');
     setEditOutTime(record.inOut === 'OUT' ? record.time : '');
     setShowEditModal(true);
@@ -174,25 +193,64 @@ const TimeCard = () => {
     setAttendanceData((prev) =>
       prev.map((rec, idx) => {
         if (idx !== editRecord.index) return rec;
-        if (editRecord.status === 'Absent' || editRecord.status === 'Leave') {
-          return {
-            ...rec,
-            date: editDate,
-            inOut: '', // keep as is or allow user to set if you want
-            time: '',  // not used for Absent/Leave, but you could store editInTime/editOutTime if needed
-            editInTime,
-            editOutTime,
-          };
-        }
         return {
           ...rec,
           date: editDate,
-          time: editRecord.inOut === 'IN' ? editInTime : editOutTime,
+          entry: editEntry,
+          status: editStatus,
+          // Optionally update time/inOut if you want to allow that as well
+          time:
+            editStatus === 'IN'
+              ? editInTime
+              : editStatus === 'OUT'
+              ? editOutTime
+              : '',
+          inOut: editStatus === 'IN' || editStatus === 'OUT' ? editStatus : '',
         };
       })
     );
     setShowEditModal(false);
     setEditRecord(null);
+  };
+
+  // Helper to sort by date, time, empNo, and entry
+  const insertSorted = (data, record) => {
+    const parseDateTime = (rec) => {
+      // Combine date and time for sorting, fallback to 0 if missing
+      const dt = rec.date ? rec.date : '';
+      const tm = rec.time ? rec.time : '';
+      return new Date(`${dt} ${tm}`);
+    };
+    const newData = [...data, record];
+    newData.sort((a, b) => {
+      if (a.empNo !== b.empNo) return a.empNo.localeCompare(b.empNo);
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      // If both have time, sort by time
+      if (a.time && b.time && a.time !== b.time) {
+        return parseDateTime(a) - parseDateTime(b);
+      }
+      // If both have entry, sort by entry
+      if (a.entry && b.entry && a.entry !== b.entry) {
+        return Number(a.entry) - Number(b.entry);
+      }
+      return 0;
+    });
+    return newData;
+  };
+
+  const handleAddNew = () => {
+    setAttendanceData(prev => insertSorted(prev, newRecord));
+    setShowAddModal(false);
+    setNewRecord({
+      empNo: '',
+      name: '',
+      fingerprintClock: '',
+      time: '',
+      date: '',
+      entry: '',
+      department: '',
+      status: '',
+    });
   };
 
   return (
@@ -209,90 +267,104 @@ const TimeCard = () => {
           </div>
           
           <div className="p-4 sm:p-6 lg:p-8">
-            {/* Import Section */}
-            <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl shadow-sm">
-              <div className="flex items-center mb-4 sm:mb-6">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3 shadow-md">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                  </svg>
+            {/* Import Section - Collapsible */}
+            <div className="mb-6 sm:mb-8">
+              <button
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold shadow transition-all duration-200 ${
+                  showImport
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-200 text-blue-700 hover:bg-blue-100'
+                }`}
+                onClick={() => setShowImport((v) => !v)}
+                aria-expanded={showImport}
+              >
+                <svg
+                  className={`w-5 h-5 transition-transform duration-200 ${showImport ? 'rotate-0' : 'rotate-180'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                {showImport ? 'Hide Import Data' : 'Show Import Data'}
+              </button>
+              {showImport && (
+                <div className="mt-4 p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl shadow-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Location</label>
+                      <select
+                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      >
+                        <option value="">Select Location</option>
+                        {locations.map((loc) => (
+                          <option key={loc} value={loc}>{loc}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Month</label>
+                      <select
+                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                      >
+                        <option value="">Select Month</option>
+                        {months.map((month) => (
+                          <option key={month} value={month}>{month}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Date From</label>
+                      <input
+                        type="date"
+                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Date To</label>
+                      <input
+                        type="date"
+                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <label className="block text-sm font-semibold text-slate-700 mb-4">Import Method</label>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+                      <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
+                        <input
+                          type="radio"
+                          className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                          checked={importMethod === 'fingerprint'}
+                          onChange={() => setImportMethod('fingerprint')}
+                        />
+                        <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Fingerprint</span>
+                      </label>
+                      {/* <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
+                        <input
+                          type="radio"
+                          className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                          checked={importMethod === 'excel'}
+                          onChange={() => setImportMethod('excel')}
+                        />
+                        <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Excel Sheet</span>
+                      </label> */}
+                    </div>
+                  </div>
                 </div>
-                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">Import Data</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">Location</label>
-                  <select
-                    className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  >
-                    <option value="">Select Location</option>
-                    {locations.map((loc) => (
-                      <option key={loc} value={loc}>{loc}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">Month</label>
-                  <select
-                    className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                  >
-                    <option value="">Select Month</option>
-                    {months.map((month) => (
-                      <option key={month} value={month}>{month}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">Date From</label>
-                  <input
-                    type="date"
-                    className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">Date To</label>
-                  <input
-                    type="date"
-                    className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <label className="block text-sm font-semibold text-slate-700 mb-4">Import Method</label>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-                  <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
-                    <input
-                      type="radio"
-                      className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                      checked={importMethod === 'fingerprint'}
-                      onChange={() => setImportMethod('fingerprint')}
-                    />
-                    <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Fingerprint</span>
-                  </label>
-                  <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
-                    <input
-                      type="radio"
-                      className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                      checked={importMethod === 'excel'}
-                      onChange={() => setImportMethod('excel')}
-                    />
-                    <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Excel Sheet</span>
-                  </label>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Filter Section */}
@@ -386,12 +458,12 @@ const TimeCard = () => {
               >
                 Cancel
               </button>
-              <button
+              {/* <button
                 className="px-4 sm:px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
                 disabled={attendanceData.length === 0}
               >
                 Download Fingerprint
-              </button>
+              </button> */}
               <button
                 className="px-4 sm:px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
                 onClick={handleAbsent}
@@ -409,13 +481,21 @@ const TimeCard = () => {
             {/* Attendance Table */}
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
               <div className="bg-gradient-to-r from-slate-800 to-gray-900 px-4 sm:px-6 py-4 sm:py-5">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-3">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6a2 2 0 012-2h2v6z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold text-white">Attendance Records</h3>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-white">Attendance Records</h3>
+                  <button
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold shadow hover:bg-green-700 transition"
+                    onClick={() => setShowAddModal(true)}
+                  >
+                    Add New
+                  </button>
                 </div>
               </div>
               
@@ -491,7 +571,7 @@ const TimeCard = () => {
                           <td colSpan="8" className="py-16 text-center text-slate-500">
                             <div className="flex flex-col items-center space-y-3">
                               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6a2 2 0 012-2h2v6z" />
                               </svg>
                               <div>
                                 <p className="text-sm sm:text-base font-medium">No attendance records found</p>
@@ -547,7 +627,31 @@ const TimeCard = () => {
                 onChange={e => setEditDate(e.target.value)}
               />
             </div>
-            {(editRecord.inOut === 'IN' || editRecord.status === 'Absent' || editRecord.status === 'Leave') && (
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
+              <input
+                type="text"
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                value={editEntry}
+                onChange={e => setEditEntry(e.target.value)}
+                placeholder="e.g. 1 or 2"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+              <select
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                value={editStatus}
+                onChange={e => setEditStatus(e.target.value)}
+              >
+                <option value="">Select Status</option>
+                <option value="IN">IN</option>
+                <option value="OUT">OUT</option>
+                <option value="Absent">Absent</option>
+                <option value="Leave">Leave</option>
+              </select>
+            </div>
+            {(editStatus === 'IN' || editStatus === 'Absent' || editStatus === 'Leave') && (
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">IN Time</label>
                 <input
@@ -559,7 +663,7 @@ const TimeCard = () => {
                 />
               </div>
             )}
-            {(editRecord.inOut === 'OUT' || editRecord.status === 'Absent' || editRecord.status === 'Leave') && (
+            {(editStatus === 'OUT' || editStatus === 'Absent' || editStatus === 'Leave') && (
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">OUT Time</label>
                 <input
@@ -582,12 +686,147 @@ const TimeCard = () => {
                 className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-semibold shadow"
                 onClick={handleEditSave}
                 disabled={
-                  (editRecord.inOut === 'IN' && !editInTime) ||
-                  (editRecord.inOut === 'OUT' && !editOutTime) ||
-                  !editDate
+                  !editDate ||
+                  !editEntry ||
+                  !editStatus ||
+                  (editStatus === 'IN' && !editInTime) ||
+                  (editStatus === 'OUT' && !editOutTime)
                 }
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative animate-fade-in">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition"
+              onClick={() => setShowAddModal(false)}
+              title="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+              <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Add New Attendance Record
+            </h2>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Employee EPF Number</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.empNo}
+                onChange={e => setNewRecord({ ...newRecord, empNo: e.target.value })}
+                placeholder="Enter employee EPF number"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Name</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.name}
+                onChange={e => setNewRecord({ ...newRecord, name: e.target.value })}
+                placeholder="Enter employee name"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Fingerprint Clock</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.fingerprintClock}
+                onChange={e => setNewRecord({ ...newRecord, fingerprintClock: e.target.value })}
+                placeholder="Enter fingerprint clock"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Time</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.time}
+                onChange={e => setNewRecord({ ...newRecord, time: e.target.value })}
+                placeholder="e.g. 08:45 AM"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Date</label>
+              <input
+                type="date"
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                value={newRecord.date}
+                onChange={e => setNewRecord({ ...newRecord, date: e.target.value })}
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.entry}
+                onChange={e => setNewRecord({ ...newRecord, entry: e.target.value })}
+                placeholder="e.g. 1 or 2"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Department</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.department}
+                onChange={e => setNewRecord({ ...newRecord, department: e.target.value })}
+              >
+                <option value="">Select Department</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.status}
+                onChange={e => setNewRecord({ ...newRecord, status: e.target.value })}
+              >
+                <option value="">Select Status</option>
+                <option value="IN">IN</option>
+                <option value="OUT">OUT</option>
+                <option value="Absent">Absent</option>
+                <option value="Leave">Leave</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 mt-8">
+              <button
+                className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setShowAddModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-semibold shadow"
+                onClick={handleAddNew}
+                disabled={
+                  !newRecord.empNo ||
+                  !newRecord.name ||
+                  !newRecord.fingerprintClock ||
+                  !newRecord.time ||
+                  !newRecord.date ||
+                  !newRecord.entry ||
+                  !newRecord.department ||
+                  !newRecord.status
+                }
+              >
+                Add Record
               </button>
             </div>
           </div>
