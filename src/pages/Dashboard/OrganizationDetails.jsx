@@ -277,22 +277,27 @@ const OrganizationDetails = () => {
   };
 
   const ToggleButton = ({ enabled, onToggle, label, value }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      value={value}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        enabled ? "bg-blue-600" : "bg-gray-200"
-      }`}
+  <label className="relative inline-flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      onChange={onToggle}
+      // checked={value}
+      className="sr-only peer"
       aria-label={`Toggle ${label}`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          enabled ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </button>
-  );
+    />
+    <div
+      className={`w-11 h-6 rounded-full transition-colors ${
+        enabled ? "bg-blue-600" : "bg-gray-300"
+      } peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2`}
+    ></div>
+    <div
+      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+        enabled ? "translate-x-5" : "translate-x-0"
+      }`}
+    ></div>
+  </label>
+);
+
 
   return (
     <div className=" p-4 md:p-6 bg-white rounded-lg shadow-md">
@@ -505,7 +510,7 @@ const OrganizationDetails = () => {
                     {toggleStates.probationEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
-                    enabled={toggleStates.probationEnabled}
+                    enabled={formData.probationPeriod}
                     onToggle={() => handleToggle("probationEnabled")}
                     label="Probation Period"
                     value={formData.probationPeriod}
@@ -585,7 +590,7 @@ const OrganizationDetails = () => {
                     {toggleStates.trainingEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
-                    enabled={toggleStates.trainingEnabled}
+                    enabled={formData.trainingPeriod}
                     onToggle={() => handleToggle("trainingEnabled")}
                     value={formData.trainingPeriod}
                     label="Training Period"
@@ -665,7 +670,7 @@ const OrganizationDetails = () => {
                     {toggleStates.contractEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
-                    enabled={toggleStates.contractEnabled}
+                    enabled={formData.contractPeriod}
                     onToggle={() => {
                       const updatedValue = !toggleStates.contractEnabled;
                       handleToggle("contractEnabled", updatedValue);
