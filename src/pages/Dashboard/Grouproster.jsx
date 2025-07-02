@@ -278,36 +278,13 @@ const RosterManagementSystem = () => {
 
           <div className="p-4 flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-6">
-              <button 
-                onClick={() => setShowAddShift(true)}
-                className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-2 px-4 rounded-lg text-sm flex items-center space-x-2 font-semibold shadow-md transition-all duration-200 transform hover:scale-105"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add New Shift</span>
-              </button>
+             
               <button className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm font-semibold shadow-md transition-all duration-200">
                 Export & Print
               </button>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Shift Code</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Emp. Code</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Employee Name</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">Department</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-            </div>
+            
 
             <div className="flex-1 overflow-y-auto border border-gray-300 rounded-lg shadow-sm">
               <table className="w-full text-sm">
@@ -317,7 +294,7 @@ const RosterManagementSystem = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">Shift Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">Start Time</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">End Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold">Actions</th>
+                   
                   </tr>
                 </thead>
                 <tbody>
@@ -333,24 +310,7 @@ const RosterManagementSystem = () => {
                       </td>
                       <td className="px-4 py-3 border-r border-gray-200 font-mono text-green-600 font-semibold">{shift.shiftStart}</td>
                       <td className="px-4 py-3 border-r border-gray-200 font-mono text-red-600 font-semibold">{shift.shiftEnd}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => setEditingShift(shift)}
-                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded transition-all duration-150"
-                            title="Edit Shift"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteShift(shift.scode)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-all duration-150"
-                            title="Delete Shift"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                      
                     </tr>
                   ))}
                 </tbody>
