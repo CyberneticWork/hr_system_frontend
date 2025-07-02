@@ -24,15 +24,15 @@ const initialCompensationData = {
   comments: "",
   secondaryEmp: false,
   primaryEmploymentBasic: "false",
-  enableEpfEtf: true,
-  otActive: true,
+  enableEpfEtf: false,
+  otActive: false,
   earlyDeduction: false,
   incrementActive: false,
-  nopayActive: true,
+  nopayActive: false,
   morningOt: false,
-  eveningOt: true,
-  budgetaryReliefAllowance2015: true,
-  budgetaryReliefAllowance2016: true,
+  eveningOt: false,
+  budgetaryReliefAllowance2015: false,
+  budgetaryReliefAllowance2016: false,
 };
 
 const CompensationManagement = () => {

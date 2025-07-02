@@ -9,7 +9,7 @@ import ShiftSchedule from "./ShiftSchedule";
 import CreateNewAllowance from "./CreateNewAllowance";
 import EmployeeLoan from "./EmployeeLoan";
 import TimeCard from "./TimeCard";
-import Overtime from './Overtime';
+import Overtime from "./Overtime";
 import Department from "./Department";
 import Grouproster from "./Grouproster";
 import LeaveMaster from "./LeaveMaster";
@@ -150,7 +150,20 @@ const Dashboard = ({ user, onLogout }) => {
                 <span className="ml-2 text-xl font-bold text-gray-900">HRM System</span> */}
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-gray-700">Welcome, {user.name}</span>
+                <span className="text-gray-700 flex items-center gap-2">
+                  Welcome, {user.name}
+                  <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded">
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M10 2a4 4 0 00-4 4v1H4a2 2 0 00-2 2v2h16V9a2 2 0 00-2-2h-2V6a4 4 0 00-4-4zm-2 5V6a2 2 0 114 0v1H8zm-4 6v3a2 2 0 002 2h8a2 2 0 002-2v-3H4z" />
+                    </svg>
+                    {user.role}
+                  </span>
+                </span>
                 <button
                   onClick={onLogout}
                   className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200"
