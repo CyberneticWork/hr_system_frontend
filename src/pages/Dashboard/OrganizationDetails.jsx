@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Building2,
   Users,
@@ -14,44 +14,45 @@ import {
   Save,
   RefreshCw,
   ChevronDown,
-  Plus
-} from 'lucide-react';
+  Plus,
+} from "lucide-react";
 
-const STORAGE_KEY = 'employeeFormData';
+const STORAGE_KEY = "employeeFormData";
 
 const OrganizationDetails = () => {
   const [formData, setFormData] = useState({
-    company: '',
-    department: '',
-    subDepartment: '',
-    currentSupervisor: '',
-    dateOfJoined: '',
-    designation: '',
-    probationFrom: '',
-    probationTo: '',
-    trainingFrom: '',
-    trainingTo: '',
-    contractFrom: '',
-    contractTo: '',
-    confirmationDate: '',
-    resignationDate: '',
+    company: "",
+    department: "",
+    subDepartment: "",
+    currentSupervisor: "",
+    dateOfJoined: "",
+    designation: "",
+    probationPeriod: false,
+    trainingPeriod: false,
+    contractPeriod: false,
+    probationFrom: "",
+    probationTo: "",
+    trainingFrom: "",
+    trainingTo: "",
+    contractFrom: "",
+    contractTo: "",
+    confirmationDate: "",
+    resignationDate: "",
     resignationLetter: null,
     resignationApproved: false,
-    currentStatus: 'Active',
-    dayOff: ''
+    currentStatus: "Active",
+    dayOff: "",
   });
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   // Dropdown data state
-  const [companies, setCompanies] = useState([
-    'Company A', 'Company B'
-  ]);
-  const [departments, setDepartments] = useState([
-    'HR', 'IT', 'Finance'
-  ]);
+  const [companies, setCompanies] = useState(["Company A", "Company B"]);
+  const [departments, setDepartments] = useState(["HR", "IT", "Finance"]);
   const [subDepartments, setSubDepartments] = useState([
-    'Recruitment', 'Development', 'Accounting'
+    "Recruitment",
+    "Development",
+    "Accounting",
   ]);
 
   // Modal state
@@ -60,26 +61,28 @@ const OrganizationDetails = () => {
   const [showSubDepartmentModal, setShowSubDepartmentModal] = useState(false);
 
   // New values for modals
-  const [newCompany, setNewCompany] = useState('');
-  const [newDepartment, setNewDepartment] = useState('');
-  const [newSubDepartment, setNewSubDepartment] = useState('');
+  const [newCompany, setNewCompany] = useState("");
+  const [newDepartment, setNewDepartment] = useState("");
+  const [newSubDepartment, setNewSubDepartment] = useState("");
 
   // Load organizationDetails and dropdowns from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && saved !== 'undefined' && saved !== 'null') {
+      if (saved && saved !== "undefined" && saved !== "null") {
         const parsed = JSON.parse(saved);
         if (parsed.organizationDetails) {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            ...parsed.organizationDetails
+            ...parsed.organizationDetails,
           }));
         }
         if (parsed.dropdownData) {
           setCompanies(parsed.dropdownData.companies || companies);
           setDepartments(parsed.dropdownData.departments || departments);
-          setSubDepartments(parsed.dropdownData.subDepartments || subDepartments);
+          setSubDepartments(
+            parsed.dropdownData.subDepartments || subDepartments
+          );
         }
       }
     } catch (e) {
@@ -97,7 +100,7 @@ const OrganizationDetails = () => {
       let allData = {};
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved && saved !== 'undefined' && saved !== 'null') {
+        if (saved && saved !== "undefined" && saved !== "null") {
           allData = JSON.parse(saved);
         }
       } catch (e) {
@@ -107,7 +110,7 @@ const OrganizationDetails = () => {
       allData.dropdownData = {
         companies,
         departments,
-        subDepartments
+        subDepartments,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
       setIsSaved(true);
@@ -118,9 +121,10 @@ const OrganizationDetails = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : value
+      [name]:
+        type === "checkbox" ? checked : type === "file" ? files[0] : value,
     }));
     setIsSaved(false);
   };
@@ -128,22 +132,25 @@ const OrganizationDetails = () => {
   // Add handlers for modals
   const handleAddCompany = () => {
     if (newCompany.trim() && !companies.includes(newCompany.trim())) {
-      setCompanies(prev => [...prev, newCompany.trim()]);
-      setNewCompany('');
+      setCompanies((prev) => [...prev, newCompany.trim()]);
+      setNewCompany("");
       setShowCompanyModal(false);
     }
   };
   const handleAddDepartment = () => {
     if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
-      setDepartments(prev => [...prev, newDepartment.trim()]);
-      setNewDepartment('');
+      setDepartments((prev) => [...prev, newDepartment.trim()]);
+      setNewDepartment("");
       setShowDepartmentModal(false);
     }
   };
   const handleAddSubDepartment = () => {
-    if (newSubDepartment.trim() && !subDepartments.includes(newSubDepartment.trim())) {
-      setSubDepartments(prev => [...prev, newSubDepartment.trim()]);
-      setNewSubDepartment('');
+    if (
+      newSubDepartment.trim() &&
+      !subDepartments.includes(newSubDepartment.trim())
+    ) {
+      setSubDepartments((prev) => [...prev, newSubDepartment.trim()]);
+      setNewSubDepartment("");
       setShowSubDepartmentModal(false);
     }
   };
@@ -168,7 +175,7 @@ const OrganizationDetails = () => {
           <input
             type="text"
             value={value}
-            onChange={e => setValue(e.target.value)}
+            onChange={(e) => setValue(e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500"
             placeholder={placeholder}
             autoFocus
@@ -189,10 +196,15 @@ const OrganizationDetails = () => {
             </button>
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 mb-2">Existing:</h4>
+            <h4 className="text-xs font-semibold text-gray-500 mb-2">
+              Existing:
+            </h4>
             <ul className="space-y-1 max-h-32 overflow-y-auto">
               {items.map((item) => (
-                <li key={item} className="flex items-center justify-between group px-2 py-1 rounded hover:bg-gray-50">
+                <li
+                  key={item}
+                  className="flex items-center justify-between group px-2 py-1 rounded hover:bg-gray-50"
+                >
                   <span className="truncate">{item}</span>
                   <button
                     type="button"
@@ -213,22 +225,22 @@ const OrganizationDetails = () => {
 
   // Add delete handlers
   const handleDeleteCompany = (company) => {
-    setCompanies(prev => prev.filter(c => c !== company));
+    setCompanies((prev) => prev.filter((c) => c !== company));
     // Remove from form if selected
     if (formData.company === company) {
-      setFormData(prev => ({ ...prev, company: '' }));
+      setFormData((prev) => ({ ...prev, company: "" }));
     }
   };
   const handleDeleteDepartment = (department) => {
-    setDepartments(prev => prev.filter(d => d !== department));
+    setDepartments((prev) => prev.filter((d) => d !== department));
     if (formData.department === department) {
-      setFormData(prev => ({ ...prev, department: '' }));
+      setFormData((prev) => ({ ...prev, department: "" }));
     }
   };
   const handleDeleteSubDepartment = (subDepartment) => {
-    setSubDepartments(prev => prev.filter(s => s !== subDepartment));
+    setSubDepartments((prev) => prev.filter((s) => s !== subDepartment));
     if (formData.subDepartment === subDepartment) {
-      setFormData(prev => ({ ...prev, subDepartment: '' }));
+      setFormData((prev) => ({ ...prev, subDepartment: "" }));
     }
   };
 
@@ -237,32 +249,55 @@ const OrganizationDetails = () => {
     probationEnabled: false,
     trainingEnabled: false,
     contractEnabled: false,
-    confirmationEnabled: false
+    confirmationEnabled: false,
   });
 
   const handleToggle = (section) => {
-    setToggleStates(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+    setToggleStates((prev) => {
+      const newValue = !prev[section];
+      // Map toggleStates key to formData key
+      const formKeyMap = {
+        probationEnabled: "probationPeriod",
+        trainingEnabled: "trainingPeriod",
+        contractEnabled: "contractPeriod",
+        confirmationEnabled: null, // No direct boolean in formData for confirmation
+      };
+      const formKey = formKeyMap[section];
+      if (formKey) {
+        setFormData((prevForm) => ({
+          ...prevForm,
+          [formKey]: newValue,
+        }));
+      }
+      return {
+        ...prev,
+        [section]: newValue,
+      };
+    });
   };
 
-  const ToggleButton = ({ enabled, onToggle, label }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        enabled ? 'bg-blue-600' : 'bg-gray-200'
-      }`}
+  const ToggleButton = ({ enabled, onToggle, label, value }) => (
+  <label className="relative inline-flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      onChange={onToggle}
+      // checked={value}
+      className="sr-only peer"
       aria-label={`Toggle ${label}`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          enabled ? 'translate-x-6' : 'translate-x-1'
-        }`}
-      />
-    </button>
-  );
+    />
+    <div
+      className={`w-11 h-6 rounded-full transition-colors ${
+        enabled ? "bg-blue-600" : "bg-gray-300"
+      } peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2`}
+    ></div>
+    <div
+      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+        enabled ? "translate-x-5" : "translate-x-0"
+      }`}
+    ></div>
+  </label>
+);
+
 
   return (
     <div className=" p-4 md:p-6 bg-white rounded-lg shadow-md">
@@ -270,7 +305,7 @@ const OrganizationDetails = () => {
         <Building2 className="text-blue-600" size={24} />
         Organization Details
       </h1>
-      
+
       <form>
         {/* Company Information Section */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -278,8 +313,10 @@ const OrganizationDetails = () => {
             <Users className="text-blue-500" size={20} />
             Company Information
           </h2>
-          <p className="text-gray-500 mb-4 pl-7">Basic company and employee details</p>
-          
+          <p className="text-gray-500 mb-4 pl-7">
+            Basic company and employee details
+          </p>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Company */}
             <div className="mb-4">
@@ -297,7 +334,9 @@ const OrganizationDetails = () => {
                 >
                   <option value="">Select Company</option>
                   {companies.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
                 {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
@@ -319,7 +358,9 @@ const OrganizationDetails = () => {
                 >
                   <option value="">Select Department</option>
                   {departments.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
                   ))}
                 </select>
                 {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
@@ -342,13 +383,15 @@ const OrganizationDetails = () => {
                 >
                   <option value="">Select Sub Department</option>
                   {subDepartments.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
                   ))}
                 </select>
                 {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
-            
+
             <div className="mb-4">
               <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <User className="text-gray-500" size={16} />
@@ -363,10 +406,13 @@ const OrganizationDetails = () => {
                   placeholder="e.g., John Doe"
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <User className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                <User
+                  className="absolute left-2 top-2.5 text-gray-400"
+                  size={16}
+                />
               </div>
             </div>
-            
+
             <div className="mb-4">
               <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Calendar className="text-gray-500" size={16} />
@@ -383,7 +429,7 @@ const OrganizationDetails = () => {
                 {/* <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
-            
+
             <div className="mb-4">
               <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Briefcase className="text-gray-500" size={16} />
@@ -414,7 +460,7 @@ const OrganizationDetails = () => {
               <div className="relative">
                 <select
                   name="dayOff"
-                  value={formData.dayOff || ''}
+                  value={formData.dayOff || ""}
                   onChange={handleChange}
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -433,30 +479,41 @@ const OrganizationDetails = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Employment Periods Section */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <Clock className="text-blue-500" size={20} />
             Employment Periods
           </h2>
-          <p className="text-gray-500 mb-4 pl-7">Define training, probation, and contract periods</p>
+          <p className="text-gray-500 mb-4 pl-7">
+            Define training, probation, and contract periods
+          </p>
           <div className="space-y-6">
             {/* Probation Period */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium text-gray-700 flex items-center gap-2">
-                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">
+                    1
+                  </span>
                   Probation Period
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm ${toggleStates.probationEnabled ? 'text-blue-600' : 'text-red-400'}`}>
-                    {toggleStates.probationEnabled ? 'Enabled' : 'Disabled'}
+                  <span
+                    className={`text-sm ${
+                      toggleStates.probationEnabled
+                        ? "text-blue-600"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {toggleStates.probationEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
-                    enabled={toggleStates.probationEnabled}
-                    onToggle={() => handleToggle('probationEnabled')}
+                    enabled={formData.probationPeriod}
+                    onToggle={() => handleToggle("probationEnabled")}
                     label="Probation Period"
+                    value={formData.probationPeriod}
                   />
                 </div>
               </div>
@@ -471,10 +528,19 @@ const OrganizationDetails = () => {
                       onChange={handleChange}
                       disabled={!toggleStates.probationEnabled}
                       className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        !toggleStates.probationEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                        !toggleStates.probationEnabled
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
                       }`}
                     />
-                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.probationEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                    <Calendar
+                      className={`absolute left-2 top-2.5 ${
+                        toggleStates.probationEnabled
+                          ? "text-gray-400"
+                          : "text-gray-300"
+                      }`}
+                      size={16}
+                    />
                   </div>
                 </div>
                 <div>
@@ -487,10 +553,19 @@ const OrganizationDetails = () => {
                       onChange={handleChange}
                       disabled={!toggleStates.probationEnabled}
                       className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        !toggleStates.probationEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                        !toggleStates.probationEnabled
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
                       }`}
                     />
-                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.probationEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                    <Calendar
+                      className={`absolute left-2 top-2.5 ${
+                        toggleStates.probationEnabled
+                          ? "text-gray-400"
+                          : "text-gray-300"
+                      }`}
+                      size={16}
+                    />
                   </div>
                 </div>
               </div>
@@ -499,16 +574,25 @@ const OrganizationDetails = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium text-gray-700 flex items-center gap-2">
-                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">
+                    2
+                  </span>
                   Training Period
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm ${toggleStates.trainingEnabled ? 'text-blue-600' : 'text-red-400'}`}>
-                    {toggleStates.trainingEnabled ? 'Enabled' : 'Disabled'}
+                  <span
+                    className={`text-sm ${
+                      toggleStates.trainingEnabled
+                        ? "text-blue-600"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {toggleStates.trainingEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
-                    enabled={toggleStates.trainingEnabled}
-                    onToggle={() => handleToggle('trainingEnabled')}
+                    enabled={formData.trainingPeriod}
+                    onToggle={() => handleToggle("trainingEnabled")}
+                    value={formData.trainingPeriod}
                     label="Training Period"
                   />
                 </div>
@@ -524,10 +608,19 @@ const OrganizationDetails = () => {
                       onChange={handleChange}
                       disabled={!toggleStates.trainingEnabled}
                       className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        !toggleStates.trainingEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                        !toggleStates.trainingEnabled
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
                       }`}
                     />
-                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.trainingEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                    <Calendar
+                      className={`absolute left-2 top-2.5 ${
+                        toggleStates.trainingEnabled
+                          ? "text-gray-400"
+                          : "text-gray-300"
+                      }`}
+                      size={16}
+                    />
                   </div>
                 </div>
                 <div>
@@ -540,10 +633,19 @@ const OrganizationDetails = () => {
                       onChange={handleChange}
                       disabled={!toggleStates.trainingEnabled}
                       className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        !toggleStates.trainingEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                        !toggleStates.trainingEnabled
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
                       }`}
                     />
-                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.trainingEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                    <Calendar
+                      className={`absolute left-2 top-2.5 ${
+                        toggleStates.trainingEnabled
+                          ? "text-gray-400"
+                          : "text-gray-300"
+                      }`}
+                      size={16}
+                    />
                   </div>
                 </div>
               </div>
@@ -552,20 +654,34 @@ const OrganizationDetails = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium text-gray-700 flex items-center gap-2">
-                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">
+                    3
+                  </span>
                   Contract Period
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm ${toggleStates.contractEnabled ? 'text-blue-600' : 'text-red-400'}`}>
-                    {toggleStates.contractEnabled ? 'Enabled' : 'Disabled'}
+                  <span
+                    className={`text-sm ${
+                      toggleStates.contractEnabled
+                        ? "text-blue-600"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {toggleStates.contractEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
-                    enabled={toggleStates.contractEnabled}
-                    onToggle={() => handleToggle('contractEnabled')}
+                    enabled={formData.contractPeriod}
+                    onToggle={() => {
+                      const updatedValue = !toggleStates.contractEnabled;
+                      handleToggle("contractEnabled", updatedValue);
+                      console.log("New Toggle Value:", updatedValue); // This logs or returns the value
+                    }}
                     label="Contract Period"
+                    value={formData.contractPeriod}
                   />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-600 mb-1">From Date</label>
@@ -577,10 +693,19 @@ const OrganizationDetails = () => {
                       onChange={handleChange}
                       disabled={!toggleStates.contractEnabled}
                       className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        !toggleStates.contractEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                        !toggleStates.contractEnabled
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
                       }`}
                     />
-                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.contractEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                    <Calendar
+                      className={`absolute left-2 top-2.5 ${
+                        toggleStates.contractEnabled
+                          ? "text-gray-400"
+                          : "text-gray-300"
+                      }`}
+                      size={16}
+                    />
                   </div>
                 </div>
                 <div>
@@ -593,10 +718,19 @@ const OrganizationDetails = () => {
                       onChange={handleChange}
                       disabled={!toggleStates.contractEnabled}
                       className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        !toggleStates.contractEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                        !toggleStates.contractEnabled
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
                       }`}
                     />
-                    <Calendar className={`absolute left-2 top-2.5 ${toggleStates.contractEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                    <Calendar
+                      className={`absolute left-2 top-2.5 ${
+                        toggleStates.contractEnabled
+                          ? "text-gray-400"
+                          : "text-gray-300"
+                      }`}
+                      size={16}
+                    />
                   </div>
                 </div>
               </div>
@@ -609,12 +743,18 @@ const OrganizationDetails = () => {
                   Confirmation Date
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm ${toggleStates.confirmationEnabled ? 'text-blue-600' : 'text-red-400'}`}>
-                    {toggleStates.confirmationEnabled ? 'Enabled' : 'Disabled'}
+                  <span
+                    className={`text-sm ${
+                      toggleStates.confirmationEnabled
+                        ? "text-blue-600"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {toggleStates.confirmationEnabled ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={toggleStates.confirmationEnabled}
-                    onToggle={() => handleToggle('confirmationEnabled')}
+                    onToggle={() => handleToggle("confirmationEnabled")}
                     label="Confirmation Date"
                   />
                 </div>
@@ -627,26 +767,39 @@ const OrganizationDetails = () => {
                   onChange={handleChange}
                   disabled={!toggleStates.confirmationEnabled}
                   className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    !toggleStates.confirmationEnabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                    !toggleStates.confirmationEnabled
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : ""
                   }`}
                 />
-                <Calendar className={`absolute left-2 top-2.5 ${toggleStates.confirmationEnabled ? 'text-gray-400' : 'text-gray-300'}`} size={16} />
+                <Calendar
+                  className={`absolute left-2 top-2.5 ${
+                    toggleStates.confirmationEnabled
+                      ? "text-gray-400"
+                      : "text-gray-300"
+                  }`}
+                  size={16}
+                />
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Resignation Section */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <FileText className="text-blue-500" size={20} />
             Resignation & Status
           </h2>
-          <p className="text-gray-500 mb-4 pl-7">Manage resignation details and current status</p>
-          
+          <p className="text-gray-500 mb-4 pl-7">
+            Manage resignation details and current status
+          </p>
+
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-gray-700 mb-2">Date of Resigning</h3>
+              <h3 className="font-medium text-gray-700 mb-2">
+                Date of Resigning
+              </h3>
               <div className="relative md:w-1/2">
                 <input
                   type="date"
@@ -655,10 +808,13 @@ const OrganizationDetails = () => {
                   onChange={handleChange}
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                <Calendar
+                  className="absolute left-2 top-2.5 text-gray-400"
+                  size={16}
+                />
               </div>
             </div>
-            
+
             <div>
               <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <FileText className="text-gray-500" size={16} />
@@ -669,10 +825,13 @@ const OrganizationDetails = () => {
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <FileText className="w-8 h-8 mb-3 text-gray-500" />
                     <p className="mb-2 text-sm text-gray-500">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formData.resignationLetter ? formData.resignationLetter.name : 'PDF, DOCX (MAX. 5MB)'}
+                      {formData.resignationLetter
+                        ? formData.resignationLetter.name
+                        : "PDF, DOCX (MAX. 5MB)"}
                     </p>
                   </div>
                   <input
@@ -684,7 +843,7 @@ const OrganizationDetails = () => {
                 </label>
               </div>
             </div>
-            
+
             <div className="flex items-center">
               <label className="inline-flex items-center cursor-pointer">
                 <input
@@ -705,7 +864,7 @@ const OrganizationDetails = () => {
                 </span>
               </label>
             </div>
-            
+
             <div>
               <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <User className="text-gray-500" size={16} />
@@ -720,16 +879,17 @@ const OrganizationDetails = () => {
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Active, On Leave, Resigned"
                 />
-                <User className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                <User
+                  className="absolute left-2 top-2.5 text-gray-400"
+                  size={16}
+                />
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
-          <p className="text-gray-500 text-sm">
-            * Required fields
-          </p>
+          <p className="text-gray-500 text-sm">* Required fields</p>
           <div className="flex gap-4">
             <button
               type="button"
@@ -738,7 +898,7 @@ const OrganizationDetails = () => {
                 // Only clear organizationDetails from localStorage
                 try {
                   const saved = localStorage.getItem(STORAGE_KEY);
-                  if (saved && saved !== 'undefined' && saved !== 'null') {
+                  if (saved && saved !== "undefined" && saved !== "null") {
                     const parsed = JSON.parse(saved);
                     delete parsed.organizationDetails;
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
@@ -747,24 +907,27 @@ const OrganizationDetails = () => {
                   // ignore
                 }
                 setFormData({
-                  company: '',
-                  department: '',
-                  subDepartment: '',
-                  currentSupervisor: '',
-                  dateOfJoined: '',
-                  designation: '',
-                  probationFrom: '',
-                  probationTo: '',
-                  trainingFrom: '',
-                  trainingTo: '',
-                  contractFrom: '',
-                  contractTo: '',
-                  confirmationDate: '',
-                  resignationDate: '',
+                  company: "",
+                  department: "",
+                  subDepartment: "",
+                  currentSupervisor: "",
+                  dateOfJoined: "",
+                  designation: "",
+                  probationPeriod: false,
+                  trainingPeriod: false,
+                  contractPeriod: false,
+                  probationFrom: "",
+                  probationTo: "",
+                  trainingFrom: "",
+                  trainingTo: "",
+                  contractFrom: "",
+                  contractTo: "",
+                  confirmationDate: "",
+                  resignationDate: "",
                   resignationLetter: null,
                   resignationApproved: false,
-                  currentStatus: 'Active',
-                  dayOff: ''
+                  currentStatus: "Active",
+                  dayOff: "",
                 });
                 setIsSaved(false);
               }}
@@ -774,12 +937,12 @@ const OrganizationDetails = () => {
             </button>
           </div>
         </div>
-        {isSaved && (
+        {/* {isSaved && (
           <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center gap-2">
             <CheckCircle className="text-green-600" size={18} />
             Organization details saved automatically!
           </div>
-        )}
+        )} */}
       </form>
       {/* Modals */}
       <Modal
