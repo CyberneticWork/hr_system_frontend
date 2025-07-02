@@ -71,7 +71,7 @@ const Sidebar = ({
         { id: "employeeMaster", name: " Add Employee Master" },
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
-        { id: "grouproster", name: "Group Roster" },
+        { id: "grouproster", name: "Roster" },
         // {
         //   id: "Allowance",
         //   name: "Allowance",
@@ -121,8 +121,8 @@ const Sidebar = ({
             { id: "TimeCard", name: "Time Card" },
             { id: "Overtime", name: "Over Time" }, // <-- Add this line
             { id: "leaveMaster", name: "Leave Master" },
-            { id: "noPayManagement", name: "Non Working Days" }, // Add this line
-            { id: "timeAttendanceProcess", name: "Time Attendance Process" },
+            { id: "noPayManagement", name: "NoPay" }, // Add this line
+            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
             { id: "leavecalendar", name: "Leave Calendar" },
             // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
