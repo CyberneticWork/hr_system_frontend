@@ -20,10 +20,13 @@ const LeaveCalendar = () => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [pendingDate, setPendingDate] = useState(null);
+  const [pendingDates, setPendingDates] = useState([]);
+  const [isSelecting, setIsSelecting] = useState(false);
   const [description, setDescription] = useState('');
   const [leaveType, setLeaveType] = useState('Annual');
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -73,7 +76,22 @@ const LeaveCalendar = () => {
   const getSelectedLeave = (day) => {
     if (!day) return null;
     const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return leaveRequests.find(req => req.date === dateString);
+    return leaveRequests.find(req => req.dates && req.dates.includes(dateString));
+  };
+
+  // Generate date range
+  const generateDateRange = (start, end) => {
+    const dates = [];
+    const startDate = new Date(start + 'T00:00:00');
+    const endDate = new Date(end + 'T00:00:00');
+    
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      dates.push(dateString);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return dates;
   };
 
   // Handle day click
@@ -81,15 +99,25 @@ const LeaveCalendar = () => {
     if (!day) return;
     
     const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const existingLeave = leaveRequests.find(req => req.date === dateString);
+    const existingLeave = leaveRequests.find(req => req.dates && req.dates.includes(dateString));
     
     if (existingLeave) {
-      // Remove date if already selected
-      setSelectedDates(prev => prev.filter(date => date !== dateString));
-      setLeaveRequests(prev => prev.filter(req => req.date !== dateString));
+      // Show confirmation before removing
+      if (window.confirm('Do you want to remove this leave request?')) {
+        // Remove all dates from this leave request
+        setSelectedDates(prev => prev.filter(date => !existingLeave.dates.includes(date)));
+        setLeaveRequests(prev => prev.filter(req => req.id !== existingLeave.id));
+      }
     } else {
-      // Add date and show description modal
-      setPendingDate(dateString);
+      // Show modal to add new leave request
+      const today = new Date();
+      const selectedDate = new Date(dateString + 'T00:00:00');
+      
+      // Set default start and end dates
+      setStartDate(dateString);
+      setEndDate(dateString);
+      setDescription('');
+      setLeaveType('Annual');
       setShowDescriptionModal(true);
     }
   };
@@ -106,19 +134,46 @@ const LeaveCalendar = () => {
 
   // Add leave request
   const addLeaveRequest = () => {
-    if (pendingDate && description.trim()) {
-      setSelectedDates(prev => [...prev, pendingDate]);
-      setLeaveRequests(prev => [...prev, {
-        date: pendingDate,
+    if (startDate && endDate && description.trim()) {
+      // Validate date range
+      if (new Date(startDate) > new Date(endDate)) {
+        alert('End date cannot be before start date!');
+        return;
+      }
+      
+      const dateRange = generateDateRange(startDate, endDate);
+      
+      // Check for overlapping dates
+      const hasOverlap = dateRange.some(date => 
+        leaveRequests.some(req => req.dates && req.dates.includes(date))
+      );
+      
+      if (hasOverlap) {
+        alert('Some dates in this range already have leave requests!');
+        return;
+      }
+      
+      const newRequest = {
+        dates: dateRange,
+        startDate,
+        endDate,
         description: description.trim(),
         type: leaveType,
         id: Date.now(),
-        status: 'Pending'
-      }]);
+        status: 'Pending',
+        duration: dateRange.length
+      };
+      
+      setSelectedDates(prev => [...prev, ...dateRange]);
+      setLeaveRequests(prev => [...prev, newRequest]);
       setDescription('');
       setLeaveType('Annual');
+      setStartDate('');
+      setEndDate('');
       setShowDescriptionModal(false);
-      setPendingDate(null);
+      
+      // Show success message
+      console.log('Leave request added:', newRequest);
     }
   };
 
@@ -126,8 +181,9 @@ const LeaveCalendar = () => {
   const cancelLeaveRequest = () => {
     setDescription('');
     setLeaveType('Annual');
+    setStartDate('');
+    setEndDate('');
     setShowDescriptionModal(false);
-    setPendingDate(null);
   };
 
   // Process leave requests
@@ -137,23 +193,38 @@ const LeaveCalendar = () => {
       return;
     }
     
-    const confirmation = window.confirm(`Process ${leaveRequests.length} leave request(s)?`);
+    const pendingRequests = leaveRequests.filter(req => req.status === 'Pending');
+    if (pendingRequests.length === 0) {
+      alert('No pending leave requests to process!');
+      return;
+    }
+    
+    const confirmation = window.confirm(`Process ${pendingRequests.length} pending leave request(s)?`);
     if (confirmation) {
-      setLeaveRequests(prev => prev.map(req => ({ ...req, status: 'Approved' })));
-      alert('Leave requests processed successfully!');
-      console.log('Processing leave requests:', leaveRequests);
+      setLeaveRequests(prev => prev.map(req => 
+        req.status === 'Pending' ? { ...req, status: 'Approved' } : req
+      ));
+      alert(`${pendingRequests.length} leave request(s) approved successfully!`);
     }
   };
 
   // Format date for display
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     });
+  };
+
+  // Format date range for display
+  const formatDateRange = (startDate, endDate) => {
+    if (startDate === endDate) {
+      return formatDate(startDate);
+    }
+    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
   };
 
   // Get leave type config
@@ -165,7 +236,7 @@ const LeaveCalendar = () => {
   const filteredLeaveRequests = leaveRequests.filter(req => 
     req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     req.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    formatDate(req.date).toLowerCase().includes(searchTerm.toLowerCase())
+    formatDateRange(req.startDate, req.endDate).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const calendarDays = generateCalendarDays();
@@ -201,6 +272,21 @@ const LeaveCalendar = () => {
               >
                 <ChevronRight size={20} />
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="p-1 bg-blue-100 rounded-full">
+              <Calendar className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900 mb-1">How to use:</h3>
+              <p className="text-blue-800 text-sm">
+                Click on any calendar day to add a leave request. You can specify date ranges for multi-day leave. Click on existing leave days to remove them.
+              </p>
             </div>
           </div>
         </div>
@@ -250,8 +336,10 @@ const LeaveCalendar = () => {
                 <p className="text-sm font-medium text-gray-600">This Month</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {leaveRequests.filter(req => {
-                    const reqDate = new Date(req.date);
-                    return reqDate.getMonth() === currentMonth && reqDate.getFullYear() === currentYear;
+                    return req.dates && req.dates.some(date => {
+                      const reqDate = new Date(date + 'T00:00:00');
+                      return reqDate.getMonth() === currentMonth && reqDate.getFullYear() === currentYear;
+                    });
                   }).length}
                 </p>
               </div>
@@ -304,8 +392,8 @@ const LeaveCalendar = () => {
                       onClick={() => handleDayClick(day)}
                       className={`
                         h-20 p-3 border border-gray-200 rounded-xl cursor-pointer transition-all duration-200 relative
-                        ${day ? 'hover:bg-blue-50 hover:border-blue-200' : 'cursor-default'}
-                        ${selectedLeave ? `${leaveConfig.color} text-white hover:opacity-90` : 'bg-white'}
+                        ${day ? 'hover:bg-blue-50 hover:border-blue-200 active:scale-95' : 'cursor-default'}
+                        ${selectedLeave ? `${leaveConfig.color} text-white hover:opacity-90 hover:shadow-lg` : 'bg-white'}
                         ${!day ? 'bg-gray-50 border-gray-100' : ''}
                       `}
                     >
@@ -318,7 +406,7 @@ const LeaveCalendar = () => {
                                 {selectedLeave.type}
                               </span>
                               <span className="text-xs opacity-75 block truncate">
-                                {selectedLeave.status}
+                                {selectedLeave.duration}d • {selectedLeave.status}
                               </span>
                             </div>
                           )}
@@ -371,7 +459,7 @@ const LeaveCalendar = () => {
                     return (
                       <div key={request.id} className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${leaveConfig.lightColor} ${leaveConfig.textColor}`}>
                               {request.type}
                             </span>
@@ -382,10 +470,13 @@ const LeaveCalendar = () => {
                             }`}>
                               {request.status}
                             </span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              {request.duration} day{request.duration > 1 ? 's' : ''}
+                            </span>
                           </div>
                         </div>
                         <div className="text-sm font-medium text-gray-900 mb-1">
-                          {formatDate(request.date)}
+                          {formatDateRange(request.startDate, request.endDate)}
                         </div>
                         <div className="text-sm text-gray-600">
                           {request.description}
@@ -399,16 +490,16 @@ const LeaveCalendar = () => {
               {/* Process Button */}
               <button
                 onClick={processLeaveRequests}
-                disabled={leaveRequests.length === 0}
+                disabled={leaveRequests.filter(req => req.status === 'Pending').length === 0}
                 className={`
                   w-full mt-6 py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 shadow-lg
-                  ${leaveRequests.length > 0 
+                  ${leaveRequests.filter(req => req.status === 'Pending').length > 0 
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl transform hover:-translate-y-0.5' 
                     : 'bg-gray-300 cursor-not-allowed shadow-none'
                   }
                 `}
               >
-                Process Requests ({leaveRequests.length})
+                Process Pending ({leaveRequests.filter(req => req.status === 'Pending').length})
               </button>
             </div>
           </div>
@@ -417,13 +508,13 @@ const LeaveCalendar = () => {
 
       {/* Description Modal */}
       {showDescriptionModal && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Add Leave Request</h3>
                 <p className="text-gray-600 text-sm mt-1">
-                  {formatDate(pendingDate)}
+                  Select date range for your leave
                 </p>
               </div>
               <button
@@ -435,6 +526,43 @@ const LeaveCalendar = () => {
             </div>
 
             <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              {startDate && endDate && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Duration:</strong> {generateDateRange(startDate, endDate).length} day{generateDateRange(startDate, endDate).length > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-blue-600 text-xs mt-1">
+                    {formatDateRange(startDate, endDate)}
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Leave Type
@@ -476,11 +604,11 @@ const LeaveCalendar = () => {
               </button>
               <button
                 onClick={addLeaveRequest}
-                disabled={!description.trim()}
+                disabled={!startDate || !endDate || !description.trim()}
                 className={`
                   px-6 py-3 rounded-xl font-medium transition-all shadow-lg
-                  ${description.trim() 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800' 
+                  ${startDate && endDate && description.trim() 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transform hover:-translate-y-0.5' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
                   }
                 `}
