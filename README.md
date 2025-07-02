@@ -1,12 +1,71 @@
-# React + Vite
+# HRM System Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a Human Resource Management (HRM) system frontend built with **React** and **Vite**. It provides a modern, responsive interface for managing employees, attendance, payroll, leave, and organizational details.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Employee management (add, view, edit, and manage employee details)
+- Attendance and time card management
+- Leave management (leave requests, calendar, leave master)
+- Payroll and compensation (allowances, deductions, salary processing)
+- Shift scheduling and group roster management
+- Organization and department management
+- Secure authentication and user roles
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- [React](https://react.dev/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Axios](https://axios-http.com/) for API requests
+
+## Project Structure
+
+```
+src
+├── assets
+│   └── ...                   # Asset files (images, fonts, etc.)
+├── components
+│   └── ...                   # Reusable components
+├── features
+│   └── ...                   # Feature-specific components and logic
+├── hooks
+│   └── ...                   # Custom React hooks
+├── layouts
+│   └── ...                   # Layout components
+├── pages
+│   └── ...                   # Page components for routing
+├── services
+│   └── ...                   # API service calls
+├── store
+│   └── ...                   # Global state management (e.g., Redux, Context API)
+├── styles
+│   └── ...                   # Global styles and CSS variables
+├── utils
+│   └── ...                   # Utility functions and helpers
+└── App.jsx                   # Main App component
+```
+
+## Getting Started
+
+To get started with the project, follow these steps:
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Open your browser and navigate to `http://localhost:5173`
+
+## Contributing
+
+Contributions are welcome! Please follow these steps to contribute:
+
+1. Fork the repository
+2. Create a new branch: `git checkout -b feature/your-feature`
+3. Make your changes
+4. Commit your changes: `git commit -m 'Add your feature'`
+5. Push to the branch: `git push origin feature/your-feature`
+6. Create a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
