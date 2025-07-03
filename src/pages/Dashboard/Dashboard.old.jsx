@@ -4,7 +4,7 @@ import Sidebar from "./Sidebar";
 import EmployeeMaster from "./EmployeeMaster";
 import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
-import CreateNewDeduction from "./Deduction/CreateNewDeduction";
+import CreateNewDeduction from "./createnewdeduction";
 import ShiftSchedule from "./ShiftSchedule";
 import CreateNewAllowance from "./CreateNewAllowance";
 import EmployeeLoan from "./EmployeeLoan";
