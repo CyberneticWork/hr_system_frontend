@@ -4,12 +4,18 @@ import Sidebar from "./Sidebar";
 import EmployeeMaster from "./EmployeeMaster";
 import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
-
+import CreateNewDeduction from "./Deduction/CreateNewDeduction";
 import ShiftSchedule from "./ShiftSchedule";
-
-
+import CreateNewAllowance from "./CreateNewAllowance";
+import EmployeeLoan from "./EmployeeLoan";
+import TimeCard from "./TimeCard";
+import Overtime from "./Overtime";
+import Department from "./Department";
+import Grouproster from "./Grouproster";
+import LeaveMaster from "./LeaveMaster";
+import NoPayManagement from "./NoPayManagement";
 import LeaveCalendar from "./LeaveCalendar";
-
+import SalaryProcessPage from "./SalaryProcessPage";
 
 const STORAGE_KEY = "employeeFormData";
 
