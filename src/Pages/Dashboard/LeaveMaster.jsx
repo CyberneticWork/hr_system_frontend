@@ -326,51 +326,52 @@ const LeaveMaster = () => {
                         </div>
 
                         {/* Leave Format Radio Buttons */}
-                        <div className="flex flex-col">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            <span className="text-red-500">*</span>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Leave Duration <span className="text-red-500">*</span>
                           </label>
-                          <div className="space-y-2">
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="leaveFormat"
-                                value="fullDay"
-                                checked={formData.leaveFormat === "fullDay"}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="ml-2 text-sm text-gray-700">
-                                Full Day
-                              </span>
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="leaveFormat"
-                                value="halfDay"
-                                checked={formData.leaveFormat === "halfDay"}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="ml-2 text-sm text-gray-700">
-                                Half Day
-                              </span>
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="leaveFormat"
-                                value="hourLeave"
-                                checked={formData.leaveFormat === "hourLeave"}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="ml-2 text-sm text-gray-700">
-                                Hour Leave
-                              </span>
-                            </label>
+                          <div className="flex space-x-2">
+                            <input
+                              type="number"
+                              name="leaveDays"
+                              min="0"
+                              step="0.5"
+                              value={formData.leaveDays || ""}
+                              onChange={handleInputChange}
+                              className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              placeholder="Days"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData({ ...formData, showHourInput: true })
+                              }
+                              className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                            >
+                              Hours
+                            </button>
                           </div>
+                          {formData.showHourInput && (
+                            <div className="mt-2">
+                              <label className="block text-xs text-gray-500 mb-1">
+                                Number of Hours <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                name="leaveHours"
+                                value={formData.leaveHours || ""}
+                                onChange={handleInputChange}
+                                className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                required
+                              >
+                                <option value="">Select hours</option>
+                                {[...Array(8)].map((_, i) => (
+                                  <option key={i + 1} value={i + 1}>
+                                    {i + 1} {i === 0 ? "hour" : "hours"}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

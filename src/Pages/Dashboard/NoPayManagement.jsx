@@ -233,7 +233,7 @@ const NoPayManagement = () => {
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200/50 overflow-hidden">
           <div className="bg-gradient-to-r from-slate-800 to-gray-900 px-4 sm:px-8 py-6 sm:py-8">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white text-center">
-              Non Working Days
+              NoPay
             </h1>
             <p className="text-slate-300 text-center mt-2 text-sm sm:text-base">
               Manage employee no pay records and absences
