@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Download, Users, Wallet, Clock, FileText, Printer, ChevronDown, Filter, CheckCircle, AlertCircle } from 'lucide-react';
+import jsPDF from "jspdf";
+
+const STORAGE_KEY = "processedSalaryData";
 
 const SalaryProcessPage = () => {
   // State for filters
@@ -82,6 +85,46 @@ const SalaryProcessPage = () => {
   const handleSalaryProcess = () => {
     setStatus('Processed');
     statusInfo.lastProcessDate = new Date().toISOString().split('T')[0];
+    // Save processed data to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(employeeData));
+  };
+
+  const handlePrintPayslips = () => {
+    // Get processed data from localStorage
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!data.length) {
+      alert("No processed salary data found.");
+      return;
+    }
+    const doc = new jsPDF();
+    data.forEach((emp, idx) => {
+      if (idx > 0) doc.addPage();
+      doc.setFontSize(16);
+      doc.text(`Payslip for ${emp.Name} (${emp.EMPNo})`, 10, 20);
+      doc.setFontSize(12);
+      let y = 35;
+      Object.entries(emp).forEach(([key, value]) => {
+        if (
+          [
+            "EMPNo", "Name", "Department", "Designation", "Location",
+            "Basic", "Budgetary1", "Budgetary2", "Basic_Salary", "NoPayMinutes", "NoPay",
+            "Epf_Purposes", "OTMinutes", "OverTime", "DoubleOTtime", "TravellingAllowance",
+            "SpecialAllowance", "AttendanceAllowance", "ProductionIncentive", "MedicalReimbursement",
+            "GrossAmount", "SalaryAdvance", "StampDuty", "MealDeduction", "OtherDeduction",
+            "BondDeduction", "Deduct_epf8", "PayeeTax", "Loan", "TotalDeduction", "NetSalary",
+            "ETF3", "EPF12"
+          ].includes(key)
+        ) {
+          doc.text(`${key}: ${value}`, 10, y);
+          y += 8;
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+        }
+      });
+    });
+    doc.save("payslips.pdf");
   };
 
   // Handle EPF filter
@@ -322,6 +365,7 @@ const SalaryProcessPage = () => {
                   }
                 `}
                 disabled={status !== 'Processed'}
+                onClick={handlePrintPayslips}
               >
                 <Printer size={18} strokeWidth={2} />
                 Print Payslips
