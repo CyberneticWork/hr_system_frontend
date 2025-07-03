@@ -21,7 +21,7 @@ const initialState = {
   spouseAge: "",
   spouseDob: "",
   spouseNic: "",
-  children: [{ name: "", age: "", dob: "", nic: "" }],
+  children: [{ name: "", age: "", dob: "", nic: "" }], // Exactly one empty child
 };
 
 const EmpPersonalDetails = () => {
@@ -97,10 +97,11 @@ const EmpPersonalDetails = () => {
   };
 
   const handleChildChange = (idx, e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setForm((prev) => {
       const children = [...prev.children];
-      children[idx][name] = value;
+      // Always store as string for controlled input
+      children[idx][name] = type === "number" ? value.toString() : value;
       return { ...prev, children };
     });
   };
@@ -122,29 +123,32 @@ const EmpPersonalDetails = () => {
   };
 
   const handleSubmit = () => {
-    console.log("Form submitted:", form);
-    // Optional: Clear localStorage after successful submission
-    // clearForm();
-    alert("Employee details saved successfully!");
-  };
+  console.log("Form submitted:", JSON.stringify(form, null, 2));
+  alert("Employee details saved successfully!");
+  // Removed the clearForm() call here - let user decide when to clear
+};
 
   const clearForm = () => {
-    try {
-      setForm(initialState);
-      localStorage.removeItem(STORAGE_KEY);
-      // console.log("✅ Form cleared and localStorage data removed");
+  try {
+    // Reset to initial state with exactly one empty child
+    setForm({
+      ...initialState,
+      children: [{ name: "", age: "", dob: "", nic: "" }]
+    });
+    localStorage.removeItem(STORAGE_KEY);
+    console.log("✅ Form cleared and localStorage data removed");
 
-      // Verify the clear worked
-      const verification = localStorage.getItem(STORAGE_KEY);
-      if (!verification) {
-        // console.log("✅ Clear verified successfully");
-      } else {
-        // console.error("❌ Clear verification failed");
-      }
-    } catch (error) {
-      // console.error("Error clearing localStorage:", error);
+    // Verify the clear worked
+    const verification = localStorage.getItem(STORAGE_KEY);
+    if (!verification) {
+      console.log("✅ Clear verified successfully");
+    } else {
+      console.error("❌ Clear verification failed");
     }
-  };
+  } catch (error) {
+    console.error("Error clearing localStorage:", error);
+  }
+};
 
   // Test localStorage function
   const testLocalStorage = () => {
