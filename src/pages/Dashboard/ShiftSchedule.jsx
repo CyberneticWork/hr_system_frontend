@@ -11,14 +11,354 @@ import {
   AlertCircle,
   Timer,
   Coffee,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
 } from "lucide-react";
+
+// Modal component for Add/Edit
+const ShiftModal = ({
+  open,
+  onClose,
+  onSave,
+  initialData = {},
+  isEdit = false,
+}) => {
+  const [form, setForm] = useState({
+    code: "",
+    description: "",
+    startTime: "",
+    endTime: "",
+    morningOTStart: "",
+    specialOTStart: "",
+    lateDeduction: "",
+    midnightRoster: false,
+    nightlyHours: 0,
+    department: "",
+    location: "",
+    breakTime: "",
+    ...initialData,
+  });
+
+  React.useEffect(() => {
+    setForm({ ...form, ...initialData });
+    // eslint-disable-next-line
+  }, [initialData, open]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(form);
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {isEdit ? "Edit Shift" : "Add New Shift"}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {isEdit ? "Update shift details" : "Create a new shift schedule"}
+            </p>
+          </div>
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+            onClick={onClose}
+          >
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="p-6 space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Basic Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Shift Code *
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder="Enter shift code"
+                  value={form.code}
+                  disabled={isEdit}
+                  onChange={(e) => setForm({ ...form, code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Department *
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter department name"
+                  value={form.department}
+                  onChange={(e) =>
+                    setForm({ ...form, department: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Description *
+              </label>
+              <input
+                required
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter shift description"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Time Settings */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Time Settings
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Start Time *
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) =>
+                    setForm({ ...form, startTime: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  End Time *
+                </label>
+                <input
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  type="time"
+                  value={form.endTime}
+                  onChange={(e) =>
+                    setForm({ ...form, endTime: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Morning OT Start
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  type="time"
+                  placeholder="Optional"
+                  value={form.morningOTStart}
+                  onChange={(e) =>
+                    setForm({ ...form, morningOTStart: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Special OT Start
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  type="time"
+                  placeholder="Optional"
+                  value={form.specialOTStart}
+                  onChange={(e) =>
+                    setForm({ ...form, specialOTStart: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Settings */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              Additional Settings
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Late Deduction
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter deduction amount"
+                  value={form.lateDeduction}
+                  onChange={(e) =>
+                    setForm({ ...form, lateDeduction: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Nightly Hours
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  type="number"
+                  step="0.1"
+                  placeholder="Enter hours (e.g., 8.5)"
+                  value={form.nightlyHours}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      nightlyHours: parseFloat(e.target.value),
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Location
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter location"
+                  value={form.location}
+                  onChange={(e) =>
+                    setForm({ ...form, location: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Break Time
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter break duration"
+                  value={form.breakTime}
+                  onChange={(e) =>
+                    setForm({ ...form, breakTime: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Special Options */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              Special Options
+            </h3>
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                checked={form.midnightRoster}
+                onChange={(e) =>
+                  setForm({ ...form, midnightRoster: e.target.checked })
+                }
+                id="midnightRoster"
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label
+                htmlFor="midnightRoster"
+                className="text-sm font-medium text-gray-700"
+              >
+                Midnight Roster
+              </label>
+              <span className="text-xs text-gray-500">
+                Check if this shift crosses midnight
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+            <button
+              type="button"
+              className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors duration-200"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
+              onClick={handleSubmit}
+            >
+              {isEdit ? "Update Shift" : "Create Shift"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal for Delete Confirmation
+const DeleteModal = ({ open, onClose, onConfirm, shift }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm relative">
+        <button
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
+          onClick={onClose}
+        >
+          <X />
+        </button>
+        <h2 className="text-lg font-bold mb-2 text-red-600 flex items-center gap-2">
+          <Trash2 className="w-5 h-5" /> Delete Shift
+        </h2>
+        <p className="mb-4">
+          Are you sure you want to delete shift{" "}
+          <span className="font-bold">{shift?.code}</span> -{" "}
+          <span>{shift?.description}</span>?
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            className="px-4 py-2 rounded bg-gray-100 text-gray-700"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            className="px-4 py-2 rounded bg-red-600 text-white font-semibold"
+            onClick={onConfirm}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ShiftSchedule = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedShifts, setSelectedShifts] = useState(new Set());
   const [filterType, setFilterType] = useState("all");
-
-  const shifts = [
+  const [shifts, setShifts] = useState([
     {
       code: "001",
       description: "No OT - WD",
@@ -285,7 +625,11 @@ const ShiftSchedule = () => {
       location: "Garage",
       breakTime: "12:00-13:00",
     },
-  ];
+  ]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editShift, setEditShift] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shiftToDelete, setShiftToDelete] = useState(null);
 
   const filteredShifts = shifts.filter((shift) => {
     const matchesSearch =
@@ -380,8 +724,54 @@ const ShiftSchedule = () => {
     ).length,
   };
 
+  // Add Shift
+  const handleAddShift = (shift) => {
+    setShifts((prev) => [...prev, shift]);
+    setModalOpen(false);
+  };
+
+  // Update Shift
+  const handleUpdateShift = (updatedShift) => {
+    setShifts((prev) =>
+      prev.map((s) => (s.code === updatedShift.code ? updatedShift : s))
+    );
+    setEditShift(null);
+    setModalOpen(false);
+  };
+
+  // Delete Shift
+  const handleDeleteShift = () => {
+    setShifts((prev) => prev.filter((s) => s.code !== shiftToDelete.code));
+    setDeleteModalOpen(false);
+    setShiftToDelete(null);
+    setSelectedShifts((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(shiftToDelete.code);
+      return newSet;
+    });
+  };
+
   return (
     <>
+      {/* Add/Edit Modal */}
+      <ShiftModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditShift(null);
+        }}
+        onSave={editShift ? handleUpdateShift : handleAddShift}
+        initialData={editShift || {}}
+        isEdit={!!editShift}
+      />
+      {/* Delete Modal */}
+      <DeleteModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteShift}
+        shift={shiftToDelete}
+      />
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
@@ -513,6 +903,17 @@ const ShiftSchedule = () => {
             </div>
           </div>
 
+          {/* Add Shift Button */}
+          <button
+            onClick={() => {
+              setEditShift(null);
+              setModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Shift
+          </button>
+
           {/* Selected Count */}
           {selectedShifts.size > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
@@ -573,6 +974,9 @@ const ShiftSchedule = () => {
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Status
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -721,6 +1125,30 @@ const ShiftSchedule = () => {
                           <span className="text-xs text-gray-500">Regular</span>
                         </div>
                       )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex gap-2">
+                      <button
+                        className="p-1 rounded hover:bg-blue-100"
+                        title="Edit"
+                        onClick={() => {
+                          setEditShift(shift);
+                          setModalOpen(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4 text-blue-600" />
+                      </button>
+                      <button
+                        className="p-1 rounded hover:bg-red-100"
+                        title="Delete"
+                        onClick={() => {
+                          setShiftToDelete(shift);
+                          setDeleteModalOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </button>
                     </div>
                   </td>
                 </tr>
