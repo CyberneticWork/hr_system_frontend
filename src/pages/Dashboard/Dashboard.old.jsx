@@ -6,16 +6,16 @@ import EmployeeAdd from "./EmployeeAdd";
 import ShowEmployee from "./ShowEmployee";
 import CreateNewDeduction from "./createnewdeduction";
 import ShiftSchedule from "./ShiftSchedule";
-import CreateNewAllowance from "./CreateNewAllowance";
-import EmployeeLoan from "./EmployeeLoan";
-import TimeCard from "./TimeCard";
-import Overtime from "./Overtime";
+import CreateNewAllowance from "./createnewallowance";
+import EmployeeLoan from "./employeeloan";
+import TimeCard from "./timecard";
+import Overtime from "./overtime";
 import Department from "./Department";
 import Grouproster from "./Grouproster";
 import LeaveMaster from "./LeaveMaster";
-import NoPayManagement from "./NoPayManagement";
-import LeaveCalendar from "./LeaveCalendar";
-import SalaryProcessPage from "./SalaryProcessPage";
+import NoPayManagement from "./nopaymanagement";
+import LeaveCalendar from "./leavecalendar";
+import SalaryProcessPage from "./salaryprocesspage";
 
 const STORAGE_KEY = "employeeFormData";
 
