@@ -109,7 +109,7 @@ const Sidebar = ({
           name: "Salary Process",
           icon: DollarSign,
           subItems: [
-            { id: "salaryMaster", name: "Salary Master" },
+            // { id: "salaryMaster", name: "Salary Master" },
             { id: "SalaryProcessPage", name: "Salary Process" },
           ],
         },
