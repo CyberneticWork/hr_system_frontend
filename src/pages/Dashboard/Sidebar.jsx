@@ -119,12 +119,12 @@ const Sidebar = ({
           icon: UserCheck,
           subItems: [
             { id: "TimeCard", name: "Time Card" },
-            { id: "Overtime", name: "Over Time" }, // <-- Add this line
+            { id: "Overtime", name: "Over Time" },
             { id: "leaveMaster", name: "Leave Master" },
-            { id: "noPayManagement", name: "NoPay" }, // Add this line
-            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
+            { id: "leaveApproval", name: "Leave Approval" },
+            { id: "hrLeaveApproval", name: "HR Leave Approval" }, // Add this new line
+            { id: "noPayManagement", name: "NoPay" },
             { id: "leavecalendar", name: "Leave Calendar" },
-            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
         //add more i needed

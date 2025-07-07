@@ -16,6 +16,8 @@ import LeaveMaster from "./LeaveMaster";
 import NoPayManagement from "./nopaymanagement";
 import LeaveCalendar from "./leavecalendar";
 import SalaryProcessPage from "./salaryprocesspage";
+import LeaveApproval from "./LeaveApproval";
+import HRLeaveApproval from "./HRLeaveApproval";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -192,6 +194,10 @@ const Dashboard = ({ user, onLogout }) => {
               <EmployeeLoan />
             ) : activeItem === "noPayManagement" ? (
               <NoPayManagement />
+            ) : activeItem === "hrLeaveApproval" ? (
+              <HRLeaveApproval />
+            ) : activeItem === "leaveApproval" ? (
+              <LeaveApproval />
             ) : activeItem === "leaveMaster" ? (
               <LeaveMaster />
             ) : activeItem === "TimeCard" ? (
