@@ -72,6 +72,7 @@ const Sidebar = ({
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
         { id: "grouproster", name: "Roster" },
+        { id: "resignation", name: "Resignation"},
         // {
         //   id: "Allowance",
         //   name: "Allowance",
@@ -99,9 +100,9 @@ const Sidebar = ({
           name: "Loans",
           icon: DollarSign,
           subItems: [
-            { id: "loanMaster", name: "Loan Master" },
+            // { id: "loanMaster", name: "Loan Master" },
             { id: "employeeLoan", name: "Employee Wise Loan" },
-            { id: "loanProcess", name: "Loan Process" },
+            // { id: "loanProcess", name: "Loan Process" },
           ],
         },
         {
@@ -135,6 +136,7 @@ const Sidebar = ({
     // { id: "calendar", name: "Calendar", icon: Calendar, badge: null },
     { id: "reports", name: "Reports", icon: BarChart3, badge: null },
     { id: "utilities", name: "Utilities", icon: FileText, badge: null },
+    
   ];
 
   return (
