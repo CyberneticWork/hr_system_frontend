@@ -1,21 +1,21 @@
 import React, { useState } from "react";
 import { Building2, Users, UserCheck, Calendar } from "lucide-react";
-import Sidebar from "./Sidebar";
-import EmployeeMaster from "./EmployeeMaster";
-import EmployeeAdd from "./EmployeeAdd";
-import ShowEmployee from "./ShowEmployee";
-import CreateNewDeduction from "./createnewdeduction";
-import ShiftSchedule from "./ShiftSchedule";
-import CreateNewAllowance from "./createnewallowance";
-import EmployeeLoan from "./employeeloan";
-import TimeCard from "./timecard";
-import Overtime from "./overtime";
-import Department from "./Department";
-import Grouproster from "./Grouproster";
-import LeaveMaster from "./LeaveMaster";
-import NoPayManagement from "./nopaymanagement";
-import LeaveCalendar from "./leavecalendar";
-import SalaryProcessPage from "./salaryprocesspage";
+import Sidebar from "@pages/Dashboard/Sidebar";
+import EmployeeMaster from "@pages/Dashboard/EmployeeMaster";
+import EmployeeAdd from "@pages/Dashboard/EmployeeAdd";
+import ShowEmployee from "@pages/Dashboard/ShowEmployee";
+import CreateNewDeduction from "@pages/Dashboard/createnewdeduction";
+import ShiftSchedule from "@pages/Dashboard/ShiftSchedule";
+import CreateNewAllowance from "@pages/Dashboard/createnewallowance";
+import EmployeeLoan from "@pages/Dashboard/employeeloan";
+import TimeCard from "@pages/Dashboard/timecard";
+import Overtime from "@pages/Dashboard/overtime";
+import Department from "@pages/Dashboard/Department";
+import Grouproster from "@pages/Dashboard/Grouproster";
+import LeaveMaster from "@pages/Dashboard/LeaveMaster";
+import NoPayManagement from "@pages/Dashboard/nopaymanagement";
+import LeaveCalendar from "@pages/Dashboard/leavecalendar";
+import SalaryProcessPage from "@pages/Dashboard/salaryprocesspage";
 
 const STORAGE_KEY = "employeeFormData";
 
