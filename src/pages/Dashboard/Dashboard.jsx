@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Building2, Users, UserCheck, Calendar } from "lucide-react";
+import { Building2, Users, UserCheck, Calendar, Clock, DollarSign, PieChart } from "lucide-react";
+import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement } from 'chart.js';
+
 import Sidebar from "@pages/Dashboard/Sidebar";
 import EmployeeMaster from "@pages/Dashboard/EmployeeMaster";
 import EmployeeAdd from "@pages/Dashboard/EmployeeAdd";
@@ -19,6 +22,18 @@ import SalaryProcessPage from "@pages/Dashboard/salaryprocesspage";
 import LeaveApproval from "@pages/Dashboard/LeaveApproval";
 import HRLeaveApproval from "@pages/Dashboard/HRLeaveApproval";
 import Resignation from "@pages/Dashboard/Resignation";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement
+);
 
 const STORAGE_KEY = "employeeFormData";
 
