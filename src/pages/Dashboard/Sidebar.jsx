@@ -99,9 +99,9 @@ const Sidebar = ({
           name: "Loans",
           icon: DollarSign,
           subItems: [
-            { id: "loanMaster", name: "Loan Master" },
+            // { id: "loanMaster", name: "Loan Master" },
             { id: "employeeLoan", name: "Employee Wise Loan" },
-            { id: "loanProcess", name: "Loan Process" },
+            // { id: "loanProcess", name: "Loan Process" },
           ],
         },
         {
@@ -109,7 +109,7 @@ const Sidebar = ({
           name: "Salary Process",
           icon: DollarSign,
           subItems: [
-            { id: "salaryMaster", name: "Salary Master" },
+            // { id: "salaryMaster", name: "Salary Master" },
             { id: "SalaryProcessPage", name: "Salary Process" },
           ],
         },
