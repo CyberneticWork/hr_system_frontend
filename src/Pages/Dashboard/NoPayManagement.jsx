@@ -105,7 +105,7 @@ const NoPayManagement = () => {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Non Working Days Report</title>
+        <title>No Pay Days Report</title>
         <style>
           body { 
             font-family: Arial, sans-serif;
@@ -150,7 +150,7 @@ const NoPayManagement = () => {
       </head>
       <body>
         <div class="report-header">
-          <h1>Non Working Days Report</h1>
+          <h1>No Pay Days Report</h1>
           <p>Generated on: ${currentDate}</p>
         </div>
         
