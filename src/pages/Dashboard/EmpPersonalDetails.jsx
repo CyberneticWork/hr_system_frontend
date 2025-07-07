@@ -174,6 +174,15 @@ const EmpPersonalDetails = () => {
     }
   };
 
+  const relationshipOptions = [
+  { value: "", label: "Select Relationship Type" },
+  { value: "husband", label: "Husband" },
+  { value: "wife", label: "Wife" },
+  { value: "relation", label: "Relation" },
+  { value: "non-relation", label: "Non-Relation" },
+  { value: "friend", label: "Friend" },
+  ];
+
   return (
     <div className="rounded-2xl overflow-hidden">
       <div className="bg-white rounded-2xl shadow-xl mb-6 p-6">
@@ -483,11 +492,11 @@ const EmpPersonalDetails = () => {
               onChange={handleChange}
               className="w-full lg:w-1/3 border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
             >
-              <option value="">Select Relationship Type</option>
-              <option value="husband/wife">Husband/Wife</option>
-              <option value="relation">Relation</option>
-              <option value="non-relation">Non-Relation</option>
-              <option value="friend">Friend</option>
+              {relationshipOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         
