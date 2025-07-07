@@ -3,7 +3,7 @@ import EmpPersonalDetails from './EmpPersonalDetails';
 import AddressDetails from './AddressDetails';
 import OrganizationDetails from './OrganizationDetails';
 import CompensationManagement from './CompensationManagement';
-
+import Employeedocument from './Employeedocument';
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
 
@@ -51,24 +51,27 @@ const EmployeeMaster = () => {
         >
           Organization
         </button>
-        <button
+        {/* <button
           className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-            activeCategory === 'salary'
+            activeCategory === 'employeedocument'
               ? 'bg-indigo-600 text-white'
               : 'text-indigo-700 hover:bg-indigo-100'
           }`}
-          onClick={() => setActiveCategory('salary')}
+          onClick={() => setActiveCategory('employeedocument')}
 
         >
-          Salary
+         Employee Document
         </button>
+          Salary
+        </button> */}
       </div>
       <div className="p-4">
         {activeCategory === 'personal' && <EmpPersonalDetails />}
         {activeCategory === 'address' && <AddressDetails />}
         {activeCategory === 'compensation' && <CompensationManagement />}
         {activeCategory === 'organization' && <OrganizationDetails/>}
-        {activeCategory === 'salary' && <div>Salary Details</div>}
+        {activeCategory === 'employeedocument' && <Employeedocument />}
+        {/* {activeCategory === 'salary' && <div>Salary Details</div>} */}
       </div>
     </div>
   );

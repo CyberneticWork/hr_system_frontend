@@ -457,7 +457,7 @@ const Department = () => {
         </div>
         <AddButton 
           onClick={() => setShowAddModal(true)}
-          text={`Add ${activeTab.slice(0, -1)}`}
+          text={`Add ${activeTab}`}
         />
       </div>
 

@@ -72,6 +72,7 @@ const Sidebar = ({
         { id: "departmentMaster", name: "Department Master" },
         { id: "shiftTime", name: "Shift Time" },
         { id: "grouproster", name: "Roster" },
+        { id: "resignation", name: "Resignation"},
         // {
         //   id: "Allowance",
         //   name: "Allowance",
@@ -99,9 +100,9 @@ const Sidebar = ({
           name: "Loans",
           icon: DollarSign,
           subItems: [
-            { id: "loanMaster", name: "Loan Master" },
+            // { id: "loanMaster", name: "Loan Master" },
             { id: "employeeLoan", name: "Employee Wise Loan" },
-            { id: "loanProcess", name: "Loan Process" },
+            // { id: "loanProcess", name: "Loan Process" },
           ],
         },
         {
@@ -109,7 +110,7 @@ const Sidebar = ({
           name: "Salary Process",
           icon: DollarSign,
           subItems: [
-            { id: "salaryMaster", name: "Salary Master" },
+            // { id: "salaryMaster", name: "Salary Master" },
             { id: "SalaryProcessPage", name: "Salary Process" },
           ],
         },
@@ -119,12 +120,12 @@ const Sidebar = ({
           icon: UserCheck,
           subItems: [
             { id: "TimeCard", name: "Time Card" },
-            { id: "Overtime", name: "Over Time" }, // <-- Add this line
+            { id: "Overtime", name: "Over Time" },
             { id: "leaveMaster", name: "Leave Master" },
-            { id: "noPayManagement", name: "NoPay" }, // Add this line
-            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
+            { id: "leaveApproval", name: "Leave Approval" },
+            { id: "hrLeaveApproval", name: "HR Leave Approval" }, // Add this new line
+            { id: "noPayManagement", name: "NoPay" },
             { id: "leavecalendar", name: "Leave Calendar" },
-            // { id: "timeAttendanceProcess", name: "Time Attendance Process" },
           ],
         },
         //add more i needed
@@ -135,6 +136,7 @@ const Sidebar = ({
     // { id: "calendar", name: "Calendar", icon: Calendar, badge: null },
     { id: "reports", name: "Reports", icon: BarChart3, badge: null },
     { id: "utilities", name: "Utilities", icon: FileText, badge: null },
+    
   ];
 
   return (
