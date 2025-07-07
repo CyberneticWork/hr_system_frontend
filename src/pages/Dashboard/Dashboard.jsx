@@ -16,6 +16,7 @@ import LeaveMaster from "./LeaveMaster";
 import NoPayManagement from "./nopaymanagement";
 import LeaveCalendar from "./leavecalendar";
 import SalaryProcessPage from "./salaryprocesspage";
+import Resignation from "./Resignation";
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement } from 'chart.js';
 
@@ -477,7 +478,10 @@ const Dashboard = ({ user, onLogout }) => {
               <LeaveCalendar />
             ) : activeItem === "SalaryProcessPage" ? (
               <SalaryProcessPage />
+            ) : activeItem === "resignation" ? (
+              <Resignation />
             ) : (
+
               <div className="space-y-8">
                 <div className="text-center mb-8">
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
