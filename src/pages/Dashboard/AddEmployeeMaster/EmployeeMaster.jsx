@@ -4,6 +4,7 @@ import AddressDetails from '@dashboard/AddEmployeeMaster/AddressDetails';
 import OrganizationDetails from '@dashboard/AddEmployeeMaster/OrganizationDetails';
 import CompensationManagement from '@dashboard/AddEmployeeMaster/CompensationManagement';
 import Employeedocument from '@dashboard/AddEmployeeMaster/Employeedocument';
+import EmployeeConfirmationModal from './EmployeeConfirmationModal';
 
 const steps = [
   'personal',
@@ -94,6 +95,17 @@ const EmployeeMaster = () => {
         >
          Employee Document      
         </button>
+        <button
+          className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            activeCategory === 'EmployeeConfirmationModal'
+              ? 'bg-indigo-600 text-white'
+              : 'text-indigo-700 hover:bg-indigo-100'
+          }`}
+          onClick={() => setActiveCategory('EmployeeConfirmationModal')}
+
+        >
+         Final
+        </button>
       </div>
         <div className="p-4">
           <div className="p-4">
@@ -126,6 +138,13 @@ const EmployeeMaster = () => {
           )}
           {activeCategory === 'employeedocument' && (
             <Employeedocument
+              onPrevious={goPrevious}
+              onSubmit={handleSubmit}
+              activeCategory={activeCategory}
+            />
+          )}
+          {activeCategory === 'EmployeeConfirmationModal' && (
+            <EmployeeConfirmationModal
               onPrevious={goPrevious}
               onSubmit={handleSubmit}
               activeCategory={activeCategory}

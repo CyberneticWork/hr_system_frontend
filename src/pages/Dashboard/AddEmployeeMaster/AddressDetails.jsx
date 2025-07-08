@@ -8,9 +8,6 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
-import Swal from "sweetalert2";
-
-import axios from "@utils/axios";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -107,39 +104,6 @@ const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
         [name]: value,
       },
     }));
-  };
-
-  const handleSave = async () => {
-    try {
-      const userData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      console.log("FINAL", JSON.stringify(userData, null, 2));
-
-      const response = await axios.post("/employees", userData);
-
-      Swal.fire({
-        icon: "success",
-        title: "Saved!",
-        text: "User data saved successfully.",
-      });
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      if (error.response?.status === 422) {
-        const errors = error.response.data.errors;
-        const errorMessages = Object.values(errors).flat().join("\n");
-
-        Swal.fire({
-          icon: "error",
-          title: "Validation Error",
-          text: errorMessages,
-        });
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error.message || "Something went wrong.",
-        });
-      }
-    }
   };
 
   return (
