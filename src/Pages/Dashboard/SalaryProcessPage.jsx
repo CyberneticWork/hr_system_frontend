@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Download, Users, Wallet, Clock, FileText, Printer, ChevronDown, Filter, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, Users, Wallet, Clock, FileText, Printer, ChevronDown, Filter, CheckCircle, AlertCircle, Search } from 'lucide-react';
 import jsPDF from "jspdf";
 
 const STORAGE_KEY = "processedSalaryData";
@@ -11,6 +11,12 @@ const SalaryProcessPage = () => {
   const [status, setStatus] = useState('Unprocessed');
   const [filteredData, setFilteredData] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [employeeHistoryData, setEmployeeHistoryData] = useState([]); // For showing history rows
+  const [showingHistory, setShowingHistory] = useState(false);
 
   // Status information
   const statusInfo = {
@@ -24,44 +30,57 @@ const SalaryProcessPage = () => {
     const locations = ['company 1', 'company 2', 'company 3', 'company 4'];
     const departments = ['Finance', 'HR', 'IT', 'Operations', 'Marketing'];
     const designations = ['Manager', 'Executive', 'Developer', 'Analyst', 'Officer'];
-    
+    // Generate 6 months of history for each employee
+    const months = [
+      '2025-02-28', '2025-03-31', '2025-04-30', '2025-05-31', '2025-06-30', '2025-07-31'
+    ];
+
     for (let i = 1; i <= 15; i++) {
       const hasEPF = i % 2 === 0;
-      employees.push({
+      const empHistory = months.map((month, idx) => ({
         EMPNo: `EMP${i.toString().padStart(3, '0')}`,
         Name: `Employee ${i}`,
-        Basic: 30000 + (i * 2000),
-        Budgetary1: 5000 + (i * 500),
-        Budgetary2: 3000 + (i * 300),
-        Basic_Salary: 38000 + (i * 2800),
+        Basic: 30000 + (i * 2000) + idx * 500,
+        Budgetary1: 5000 + (i * 500) + idx * 100,
+        Budgetary2: 3000 + (i * 300) + idx * 50,
+        Basic_Salary: 38000 + (i * 2800) + idx * 700,
         NoPayMinutes: i % 3 === 0 ? 30 : 0,
         NoPay: i % 3 === 0 ? 1000 : 0,
-        Epf_Purposes: 38000 + (i * 2800),
+        Epf_Purposes: 38000 + (i * 2800) + idx * 700,
         OTMinutes: i % 2 === 0 ? 60 : 0,
-        OverTime: i % 2 === 0 ? 3000 : 0,
+        OverTime: i % 2 === 0 ? 3000 + idx * 100 : 0,
         DoubleOTtime: i % 5 === 0 ? 30 : 0,
-        TravellingAllowance: 2000 + (i * 100),
-        SpecialAllowance: 1000 + (i * 50),
-        AttendanceAllowance: 500,
-        ProductionIncentive: i % 4 === 0 ? 1500 : 0,
-        MedicalReimbursement: i % 6 === 0 ? 2000 : 0,
-        GrossAmount: 45000 + (i * 3000),
+        TravellingAllowance: 2000 + (i * 100) + idx * 20,
+        SpecialAllowance: 1000 + (i * 50) + idx * 10,
+        AttendanceAllowance: 500 + idx * 10,
+        ProductionIncentive: i % 4 === 0 ? 1500 + idx * 50 : 0,
+        MedicalReimbursement: i % 6 === 0 ? 2000 + idx * 50 : 0,
+        GrossAmount: 45000 + (i * 3000) + idx * 1000,
         SalaryAdvance: i % 7 === 0 ? 5000 : 0,
         StampDuty: 50,
         MealDeduction: i % 3 === 0 ? 500 : 0,
         OtherDeduction: i % 5 === 0 ? 1000 : 0,
         BondDeduction: 0,
-        Deduct_epf8: hasEPF ? 3040 + (i * 224) : 0,
-        PayeeTax: i > 5 ? 2000 + (i * 100) : 0,
+        Deduct_epf8: hasEPF ? 3040 + (i * 224) + idx * 50 : 0,
+        PayeeTax: i > 5 ? 2000 + (i * 100) + idx * 50 : 0,
         Loan: i % 4 === 0 ? 2000 : 0,
-        TotalDeduction: 4000 + (i * 300),
-        NetSalary: 41000 + (i * 2700),
-        ETF3: hasEPF ? 1140 + (i * 84) : 0,
-        EPF12: hasEPF ? 4560 + (i * 336) : 0,
+        TotalDeduction: 4000 + (i * 300) + idx * 100,
+        NetSalary: 41000 + (i * 2700) + idx * 900,
+        ETF3: hasEPF ? 1140 + (i * 84) + idx * 20 : 0,
+        EPF12: hasEPF ? 4560 + (i * 336) + idx * 80 : 0,
         Department: departments[i % 5],
         Designation: designations[i % 5],
         Location: locations[i % 4],
-        HasEPF: hasEPF
+        HasEPF: hasEPF,
+        ProcessDate: month,
+      }));
+
+      // The latest month is the "current" row for the main table
+      const latest = empHistory[empHistory.length - 1];
+
+      employees.push({
+        ...latest,
+        history: empHistory
       });
     }
     return employees;
@@ -69,8 +88,9 @@ const SalaryProcessPage = () => {
 
   const allEmployeeData = generateTempData();
   const [employeeData, setEmployeeData] = useState(allEmployeeData);
-  const totalSalary = employeeData.reduce((sum, emp) => sum + emp.GrossAmount, 0);
-  const employeeCount = employeeData.length;
+  const [displayedData, setDisplayedData] = useState(allEmployeeData);
+  const totalSalary = displayedData.reduce((sum, emp) => sum + emp.GrossAmount, 0);
+  const employeeCount = displayedData.length;
 
   // Locations and months for dropdowns
   const locations = ['All Locations', 'company 1', 'company 2', 'company 3', 'company 4'];
@@ -132,6 +152,7 @@ const SalaryProcessPage = () => {
     setActiveFilter('EPF');
     const epfEmployees = allEmployeeData.filter(emp => emp.HasEPF);
     setEmployeeData(epfEmployees);
+    setDisplayedData(epfEmployees);
   };
 
   // Handle Non EPF filter
@@ -139,14 +160,20 @@ const SalaryProcessPage = () => {
     setActiveFilter('NonEPF');
     const nonEPFEmployees = allEmployeeData.filter(emp => !emp.HasEPF);
     setEmployeeData(nonEPFEmployees);
+    setDisplayedData(nonEPFEmployees);
   };
 
   // Handle reset filter
   const resetFilter = () => {
     setActiveFilter('All');
     setEmployeeData(allEmployeeData);
+    setDisplayedData(allEmployeeData);
     setLocation('All Locations');
     setMonth('');
+    setSearchTerm('');
+    setFromDate('');
+    setToDate('');
+    setShowHistory(false);
   };
 
   // Apply filters
@@ -167,9 +194,56 @@ const SalaryProcessPage = () => {
       filtered = filtered.filter((_, index) => index % 2 === 0);
     }
     
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(emp => 
+        emp.EMPNo.toLowerCase().includes(term) || 
+        emp.Name.toLowerCase().includes(term)
+      );
+    }
+    
+    // If showHistory and date range and searchTerm (for employee), show employee history rows
+    if (showHistory && fromDate && toDate && searchTerm) {
+      // Find the employee
+      const emp = allEmployeeData.find(
+        e =>
+          e.EMPNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          e.Name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      if (emp && emp.history) {
+        // Filter history by date range
+        const historyRows = emp.history.filter(h => {
+          const d = new Date(h.ProcessDate || h.Month || h.ProcessedDate);
+          return d >= new Date(fromDate) && d <= new Date(toDate);
+        });
+        setEmployeeHistoryData(historyRows);
+        setShowingHistory(true);
+        setDisplayedData([]); // Hide normal data
+        setEmployeeData([]);
+        setFilteredData([]);
+        return;
+      } else {
+        setEmployeeHistoryData([]);
+        setShowingHistory(true);
+        setDisplayedData([]);
+        setEmployeeData([]);
+        setFilteredData([]);
+        return;
+      }
+    } else {
+      setEmployeeHistoryData([]);
+      setShowingHistory(false);
+    }
+    
     setEmployeeData(filtered);
+    setDisplayedData(filtered);
     setFilteredData(filtered);
   };
+
+  // Effect to apply filters when search term changes
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm]);
 
   return (
     <div className="container mx-auto px-4 py-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
@@ -271,7 +345,24 @@ const SalaryProcessPage = () => {
           {/* Filter Section */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow">
             <h3 className="text-base font-semibold text-gray-700 mb-4">Filter Employees</h3>
-            <div className="flex flex-col md:flex-row gap-5">
+            
+            {/* Search by ID or Name */}
+            <div className="relative mb-4">
+              <label htmlFor="search" className="block text-xs font-semibold text-gray-500 mb-1">Search by ID or Name</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="search"
+                  placeholder="Enter employee ID or name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-5 mb-4">
               <div className="relative flex-1">
                 <label htmlFor="location" className="block text-xs font-semibold text-gray-500 mb-1">Location</label>
                 <select
@@ -301,15 +392,62 @@ const SalaryProcessPage = () => {
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-9 h-5 w-5 text-blue-400" />
               </div>
-              <div className="flex items-end">
-                <button 
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-base font-semibold hover:bg-blue-700 transition-colors shadow"
-                  onClick={applyFilters}
-                >
-                  <Filter size={18} strokeWidth={2} />
-                  Apply Filters
-                </button>
-              </div>
+            </div>
+            
+            {/* Date Range for History */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showHistory}
+                  onChange={(e) => setShowHistory(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Show historical data</span>
+              </label>
+              
+              {showHistory && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <div>
+                    <label htmlFor="fromDate" className="block text-xs font-semibold text-gray-500 mb-1">From Date</label>
+                    <input
+                      type="date"
+                      id="fromDate"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="toDate" className="block text-xs font-semibold text-gray-500 mb-1">To Date</label>
+                    <input
+                      type="date"
+                      id="toDate"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button 
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-base font-semibold hover:bg-blue-700 transition-colors shadow"
+                onClick={applyFilters}
+                type="button"
+              >
+                <Filter size={18} strokeWidth={2} />
+                Apply Filters
+              </button>
+              <button
+                className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-300 transition-colors shadow"
+                onClick={resetFilter}
+                type="button"
+              >
+                Clear
+              </button>
             </div>
           </div>
         </div>
@@ -383,6 +521,7 @@ const SalaryProcessPage = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">EMP No</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Process Date</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Basic</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Budgetary1</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Budgetary2</th>
@@ -414,38 +553,42 @@ const SalaryProcessPage = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {employeeData.map((employee) => (
-                <tr key={employee.EMPNo} className="hover:bg-blue-50 transition-colors">
+              {(showingHistory && employeeHistoryData.length > 0
+                ? employeeHistoryData
+                : displayedData
+              ).map((employee) => (
+                <tr key={`${employee.EMPNo}-${employee.ProcessDate || employee.Month || employee.ProcessedDate}`} className="hover:bg-blue-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{employee.EMPNo}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Basic.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Budgetary1.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Budgetary2.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Basic_Salary.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.ProcessDate || employee.Month || employee.ProcessedDate}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Basic?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Budgetary1?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Budgetary2?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Basic_Salary?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.NoPayMinutes}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.NoPay.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Epf_Purposes.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.NoPay?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Epf_Purposes?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.OTMinutes}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.OverTime.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.OverTime?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.DoubleOTtime}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.TravellingAllowance.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.SpecialAllowance.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.AttendanceAllowance.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.ProductionIncentive.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.MedicalReimbursement.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-700">{employee.GrossAmount.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.TravellingAllowance?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.SpecialAllowance?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.AttendanceAllowance?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.ProductionIncentive?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.MedicalReimbursement?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-700">{employee.GrossAmount?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.SalaryAdvance?.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.StampDuty.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.StampDuty?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.MealDeduction?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.OtherDeduction?.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.BondDeduction?.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Deduct_epf8.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.PayeeTax.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Loan.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">{employee.TotalDeduction.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">{employee.NetSalary.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.ETF3.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.EPF12.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Deduct_epf8?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.PayeeTax?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.Loan?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">{employee.TotalDeduction?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">{employee.NetSalary?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.ETF3?.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.EPF12?.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
