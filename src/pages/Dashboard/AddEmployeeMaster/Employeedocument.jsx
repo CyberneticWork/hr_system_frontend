@@ -11,7 +11,7 @@ const allowedTypes = [
   { label: 'Other Documents', value: 'other', icon: '📋' },
 ];
 
-const Employeedocument = () => {
+const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
@@ -292,7 +292,21 @@ const Employeedocument = () => {
             {/* Upload Button */}
             <div className="mt-8 text-center">
               <button
-                onClick={handleUpload}
+                onClick={() => {
+                  // Fetch all employee form data from localStorage
+                  const allData = localStorage.getItem("employeeFormData");
+                  let parsedData = {};
+                  try {
+                    if (allData) {
+                      parsedData = JSON.parse(allData);
+                    }
+                  } catch (e) {
+                    alert("Error reading saved employee data!");
+                    return;
+                  }
+                  // Call the onSubmit prop with all form data and uploaded documents
+                  onSubmit({ ...parsedData, documents });
+                }}
                 disabled={uploading || documents.some(doc => !doc.type)}
                 className={`inline-flex items-center px-8 py-3 rounded-xl font-medium text-white transition-all duration-200 transform ${
                   uploading || documents.some(doc => !doc.type)
@@ -311,6 +325,13 @@ const Employeedocument = () => {
                     Upload All Documents ({documents.length})
                   </>
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={onPrevious}
+                className="inline-flex items-center px-8 py-3 rounded-xl font-medium text-white transition-all duration-200 transform bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 hover:scale-105 shadow-lg hover:shadow-xl ml-4"
+              >
+                Previous
               </button>
             </div>
           </div>

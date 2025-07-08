@@ -9,8 +9,10 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  RefreshCw,
+  Send,
 } from "lucide-react";
+import axios from "@utils/axios";
+import Swal from "sweetalert2";
 import {
   fetchCompanies,
   fetchDepartments,
@@ -20,7 +22,7 @@ import {
 
 const STORAGE_KEY = "employeeFormData";
 
-const OrganizationDetails = () => {
+const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   const [formData, setFormData] = useState({
     company: "",
     department: "",
@@ -81,13 +83,17 @@ const OrganizationDetails = () => {
         }
 
         // Then fetch from API
-        const [companiesData, departmentsData, subDepartmentsData, DesignationsData ] =
-          await Promise.all([
-            fetchCompanies(),
-            fetchDepartments(),
-            fetchSubDepartments(),
-            fetchDesignations(),
-          ]);
+        const [
+          companiesData,
+          departmentsData,
+          subDepartmentsData,
+          DesignationsData,
+        ] = await Promise.all([
+          fetchCompanies(),
+          fetchDepartments(),
+          fetchSubDepartments(),
+          fetchDesignations(),
+        ]);
 
         setCompanies(companiesData);
         setDepartments(departmentsData);
@@ -181,6 +187,39 @@ const OrganizationDetails = () => {
       ></div>
     </label>
   );
+
+  const handleSave = async () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      console.log("FINAL", JSON.stringify(userData, null, 2));
+
+      // const response = await axios.post("/employees", userData);
+
+      Swal.fire({
+        icon: "success",
+        title: "Saved!",
+        text: "User data saved successfully.",
+      });
+      // localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      if (error.response?.status === 422) {
+        const errors = error.response.data.errors;
+        const errorMessages = Object.values(errors).flat().join("\n");
+
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: errorMessages,
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: error.message || "Something went wrong.",
+        });
+      }
+    }
+  };
 
   const Modal = ({
     show,
@@ -737,44 +776,27 @@ const OrganizationDetails = () => {
         <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
           <p className="text-gray-500 text-sm">* Required fields</p>
           <div className="flex gap-4">
+            {/* <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              onClick={handleSave}
+            >
+              <Send size={18} />
+              Submit
+            </button> */}
             <button
               type="button"
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
-              onClick={() => {
-                setFormData({
-                  company: "",
-                  department: "",
-                  subDepartment: "",
-                  currentSupervisor: "",
-                  dateOfJoined: "",
-                  designation: "",
-                  probationPeriod: false,
-                  trainingPeriod: false,
-                  contractPeriod: false,
-                  probationFrom: "",
-                  probationTo: "",
-                  trainingFrom: "",
-                  trainingTo: "",
-                  contractFrom: "",
-                  contractTo: "",
-                  confirmationDate: "",
-                  resignationDate: "",
-                  resignationLetter: null,
-                  resignationApproved: false,
-                  currentStatus: "Active",
-                  dayOff: "",
-                });
-                setToggleStates({
-                  probationEnabled: false,
-                  trainingEnabled: false,
-                  contractEnabled: false,
-                  confirmationEnabled: false,
-                });
-                setIsSaved(false);
-              }}
+              onClick={onPrevious}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
             >
-              <RefreshCw size={16} />
-              Clear
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Next
             </button>
           </div>
         </div>

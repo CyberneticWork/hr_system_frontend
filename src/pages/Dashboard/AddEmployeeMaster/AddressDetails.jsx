@@ -12,10 +12,7 @@ import {
 const STORAGE_KEY = "employeeFormData";
 
 const initialState = {
-
-
   // Address Details
-  name: "",
   permanentAddress: "",
   temporaryAddress: "",
   email: "",
@@ -38,7 +35,7 @@ const initialState = {
   },
 };
 
-const AddressDetails = () => {
+const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
   const [form, setForm] = useState(initialState);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
@@ -109,11 +106,6 @@ const AddressDetails = () => {
     }));
   };
 
-  const handleSave = () => {
-    const userData = localStorage.getItem(STORAGE_KEY);
-    console.log("FINAL ", JSON.stringify(JSON.parse(userData), null, 2));
-  };
-
   return (
     <>
       {/* Address And Contact Details */}
@@ -138,19 +130,6 @@ const AddressDetails = () => {
                 </h3>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Name
-                    </label>
-                    <input
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Enter full name"
-                    />
-                  </div>
-
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
                       Permanent Address <span className="text-red-500">*</span>
@@ -191,7 +170,7 @@ const AddressDetails = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Email
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -224,7 +203,7 @@ const AddressDetails = () => {
 
                   <div className="space-y-2 sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Mobile Line
+                      Mobile Line <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -253,7 +232,7 @@ const AddressDetails = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Province
+                      Province <span className="text-red-500">*</span>
                     </label>
                     <input
                       name="province"
@@ -305,7 +284,7 @@ const AddressDetails = () => {
 
                   <div className="space-y-2 sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      District
+                      District <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="district"
@@ -334,7 +313,7 @@ const AddressDetails = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Relationship
+                      Relationship <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="relationship"
@@ -366,7 +345,7 @@ const AddressDetails = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Contact Address
+                      Contact Address <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       name="contactAddress"
@@ -399,12 +378,28 @@ const AddressDetails = () => {
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-center mt-8">
+          {/* <div className="flex justify-center mt-8">
             <button
               onClick={handleSave}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-blue-300"
             >
               Save Address Details
+            </button>
+          </div> */}
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={onPrevious}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Next
             </button>
           </div>
         </div>
