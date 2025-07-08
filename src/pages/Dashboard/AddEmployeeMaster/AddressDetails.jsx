@@ -114,7 +114,7 @@ const AddressDetails = () => {
       const userData = JSON.parse(localStorage.getItem(STORAGE_KEY));
       console.log("FINAL", JSON.stringify(userData, null, 2));
 
-      const response = await axios.post("/employees", userData); // ✅ Replace with your backend endpoint
+      const response = await axios.post("/employees", userData);
 
       Swal.fire({
         icon: "success",
