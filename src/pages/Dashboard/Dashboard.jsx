@@ -3,25 +3,25 @@ import { Building2, Users, UserCheck, Calendar, Clock, DollarSign, PieChart } fr
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement } from 'chart.js';
 
-import Sidebar from "@pages/Dashboard/Sidebar";
-import EmployeeMaster from "@pages/Dashboard/EmployeeMaster";
-import EmployeeAdd from "@pages/Dashboard/EmployeeAdd";
-import ShowEmployee from "@pages/Dashboard/ShowEmployee";
-import CreateNewDeduction from "@pages/Dashboard/createnewdeduction";
-import ShiftSchedule from "@pages/Dashboard/ShiftSchedule";
-import CreateNewAllowance from "@pages/Dashboard/createnewallowance";
-import EmployeeLoan from "@pages/Dashboard/employeeloan";
-import TimeCard from "@pages/Dashboard/timecard";
-import Overtime from "@pages/Dashboard/overtime";
-import Department from "@pages/Dashboard/Department";
-import Grouproster from "@pages/Dashboard/Grouproster";
-import LeaveMaster from "@pages/Dashboard/LeaveMaster";
-import NoPayManagement from "@pages/Dashboard/nopaymanagement";
-import LeaveCalendar from "@pages/Dashboard/leavecalendar";
-import SalaryProcessPage from "@pages/Dashboard/salaryprocesspage";
-import LeaveApproval from "@pages/Dashboard/LeaveApproval";
-import HRLeaveApproval from "@pages/Dashboard/HRLeaveApproval";
-import Resignation from "@pages/Dashboard/Resignation";
+import Sidebar from "@dashboard/Sidebar";
+import EmployeeMaster from "@dashboard/AddEmployeeMaster/EmployeeMaster";
+import EmployeeAdd from "@dashboard/EmployeeAdd";
+import ShowEmployee from "@dashboard/ShowEmployee";
+import CreateNewDeduction from "@dashboard/createnewdeduction";
+import ShiftSchedule from "@dashboard/ShiftSchedule";
+import CreateNewAllowance from "@dashboard/createnewallowance";
+import EmployeeLoan from "@dashboard/employeeloan";
+import TimeCard from "@dashboard/timecard";
+import Overtime from "@dashboard/overtime";
+import Department from "@dashboard/Department";
+import Grouproster from "@dashboard/Grouproster";
+import LeaveMaster from "@dashboard/LeaveMaster";
+import NoPayManagement from "@dashboard/nopaymanagement";
+import LeaveCalendar from "@dashboard/leavecalendar";
+import SalaryProcessPage from "@dashboard/salaryprocesspage";
+import LeaveApproval from "@dashboard/LeaveApproval";
+import HRLeaveApproval from "@dashboard/HRLeaveApproval";
+import Resignation from "@dashboard/Resignation";
 
 ChartJS.register(
   CategoryScale,

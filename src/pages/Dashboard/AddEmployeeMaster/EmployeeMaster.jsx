@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import EmpPersonalDetails from './EmpPersonalDetails';
-import AddressDetails from './AddressDetails';
-import OrganizationDetails from './OrganizationDetails';
-import CompensationManagement from './CompensationManagement';
-import Employeedocument from './Employeedocument';
+import EmpPersonalDetails from '@dashboard/AddEmployeeMaster/EmpPersonalDetails';
+import AddressDetails from '@dashboard/AddEmployeeMaster/AddressDetails';
+import OrganizationDetails from '@dashboard/AddEmployeeMaster/OrganizationDetails';
+import CompensationManagement from '@dashboard/AddEmployeeMaster/CompensationManagement';
+import Employeedocument from '@dashboard/AddEmployeeMaster/Employeedocument';
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
 
