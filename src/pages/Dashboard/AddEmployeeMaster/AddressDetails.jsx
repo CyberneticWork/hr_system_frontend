@@ -8,14 +8,14 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+import Swal from "sweetalert2";
+
+import axios from "@utils/axios";
 
 const STORAGE_KEY = "employeeFormData";
 
 const initialState = {
-
-
   // Address Details
-  name: "",
   permanentAddress: "",
   temporaryAddress: "",
   email: "",
@@ -109,9 +109,37 @@ const AddressDetails = () => {
     }));
   };
 
-  const handleSave = () => {
-    const userData = localStorage.getItem(STORAGE_KEY);
-    console.log("FINAL ", JSON.stringify(JSON.parse(userData), null, 2));
+  const handleSave = async () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      console.log("FINAL", JSON.stringify(userData, null, 2));
+
+      const response = await axios.post("/employees", userData); // ✅ Replace with your backend endpoint
+
+      Swal.fire({
+        icon: "success",
+        title: "Saved!",
+        text: "User data saved successfully.",
+      });
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      if (error.response?.status === 422) {
+        const errors = error.response.data.errors;
+        const errorMessages = Object.values(errors).flat().join("\n");
+
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: errorMessages,
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: error.message || "Something went wrong.",
+        });
+      }
+    }
   };
 
   return (
@@ -138,19 +166,6 @@ const AddressDetails = () => {
                 </h3>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Name
-                    </label>
-                    <input
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Enter full name"
-                    />
-                  </div>
-
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
                       Permanent Address <span className="text-red-500">*</span>
@@ -191,7 +206,7 @@ const AddressDetails = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Email
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -224,7 +239,7 @@ const AddressDetails = () => {
 
                   <div className="space-y-2 sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Mobile Line
+                      Mobile Line <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -253,7 +268,7 @@ const AddressDetails = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Province
+                      Province <span className="text-red-500">*</span>
                     </label>
                     <input
                       name="province"
@@ -305,7 +320,7 @@ const AddressDetails = () => {
 
                   <div className="space-y-2 sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      District
+                      District <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="district"
@@ -334,7 +349,7 @@ const AddressDetails = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Relationship
+                      Relationship <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="relationship"
@@ -366,7 +381,7 @@ const AddressDetails = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Contact Address
+                      Contact Address <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       name="contactAddress"
