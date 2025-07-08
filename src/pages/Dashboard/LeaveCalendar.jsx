@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   ChevronLeft,
@@ -11,8 +11,8 @@ import {
   FileText,
   Trash2,
   Edit3,
-  Search
-} from 'lucide-react';
+  Search,
+} from "lucide-react";
 
 const LeaveCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -22,25 +22,67 @@ const LeaveCalendar = () => {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [pendingDates, setPendingDates] = useState([]);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [description, setDescription] = useState('');
-  const [leaveType, setLeaveType] = useState('Annual');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [description, setDescription] = useState("");
+  const [leaveType, setLeaveType] = useState("Annual");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [customLeaveType, setCustomLeaveType] = useState("");
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const leaveTypes = [
-    { value: 'Annual', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-800' },
-    { value: 'Sick', color: 'bg-red-500', lightColor: 'bg-red-100', textColor: 'text-red-800' },
-    { value: 'Personal', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-800' },
-    { value: 'Emergency', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-800' },
-    { value: 'Maternity', color: 'bg-purple-500', lightColor: 'bg-purple-100', textColor: 'text-purple-800' }
+    {
+      value: "Annual",
+      color: "bg-blue-500",
+      lightColor: "bg-blue-100",
+      textColor: "text-blue-800",
+    },
+    {
+      value: "Sick",
+      color: "bg-red-500",
+      lightColor: "bg-red-100",
+      textColor: "text-red-800",
+    },
+    {
+      value: "Personal",
+      color: "bg-green-500",
+      lightColor: "bg-green-100",
+      textColor: "text-green-800",
+    },
+    {
+      value: "Emergency",
+      color: "bg-orange-500",
+      lightColor: "bg-orange-100",
+      textColor: "text-orange-800",
+    },
+    {
+      value: "Maternity",
+      color: "bg-purple-500",
+      lightColor: "bg-purple-100",
+      textColor: "text-purple-800",
+    },
+    {
+      value: "Other",
+      color: "bg-gray-500",
+      lightColor: "bg-gray-100",
+      textColor: "text-gray-800",
+    },
   ];
 
   // Get number of days in month
@@ -75,19 +117,26 @@ const LeaveCalendar = () => {
   // Check if a date is selected
   const getSelectedLeave = (day) => {
     if (!day) return null;
-    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return leaveRequests.find(req => req.dates && req.dates.includes(dateString));
+    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(
+      2,
+      "0"
+    )}-${String(day).padStart(2, "0")}`;
+    return leaveRequests.find(
+      (req) => req.dates && req.dates.includes(dateString)
+    );
   };
 
   // Generate date range
   const generateDateRange = (start, end) => {
     const dates = [];
-    const startDate = new Date(start + 'T00:00:00');
-    const endDate = new Date(end + 'T00:00:00');
-    
+    const startDate = new Date(start + "T00:00:00");
+    const endDate = new Date(end + "T00:00:00");
+
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
-      const dateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      const dateString = `${currentDate.getFullYear()}-${String(
+        currentDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
       dates.push(dateString);
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -97,27 +146,36 @@ const LeaveCalendar = () => {
   // Handle day click
   const handleDayClick = (day) => {
     if (!day) return;
-    
-    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const existingLeave = leaveRequests.find(req => req.dates && req.dates.includes(dateString));
-    
+
+    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(
+      2,
+      "0"
+    )}-${String(day).padStart(2, "0")}`;
+    const existingLeave = leaveRequests.find(
+      (req) => req.dates && req.dates.includes(dateString)
+    );
+
     if (existingLeave) {
       // Show confirmation before removing
-      if (window.confirm('Do you want to remove this leave request?')) {
+      if (window.confirm("Do you want to remove this leave request?")) {
         // Remove all dates from this leave request
-        setSelectedDates(prev => prev.filter(date => !existingLeave.dates.includes(date)));
-        setLeaveRequests(prev => prev.filter(req => req.id !== existingLeave.id));
+        setSelectedDates((prev) =>
+          prev.filter((date) => !existingLeave.dates.includes(date))
+        );
+        setLeaveRequests((prev) =>
+          prev.filter((req) => req.id !== existingLeave.id)
+        );
       }
     } else {
       // Show modal to add new leave request
       const today = new Date();
-      const selectedDate = new Date(dateString + 'T00:00:00');
-      
+      const selectedDate = new Date(dateString + "T00:00:00");
+
       // Set default start and end dates
       setStartDate(dateString);
       setEndDate(dateString);
-      setDescription('');
-      setLeaveType('Annual');
+      setDescription("");
+      setLeaveType("Annual");
       setShowDescriptionModal(true);
     }
   };
@@ -129,7 +187,7 @@ const LeaveCalendar = () => {
 
   // Handle year change
   const handleYearChange = (direction) => {
-    setCurrentYear(prev => prev + direction);
+    setCurrentYear((prev) => prev + direction);
   };
 
   // Add leave request
@@ -137,85 +195,98 @@ const LeaveCalendar = () => {
     if (startDate && endDate && description.trim()) {
       // Validate date range
       if (new Date(startDate) > new Date(endDate)) {
-        alert('End date cannot be before start date!');
+        alert("End date cannot be before start date!");
         return;
       }
-      
+
+      // Validate custom leave type if "Other" is selected
+      if (leaveType === "Other" && !customLeaveType.trim()) {
+        alert("Please enter a custom leave type!");
+        return;
+      }
+
       const dateRange = generateDateRange(startDate, endDate);
-      
+
       // Check for overlapping dates
-      const hasOverlap = dateRange.some(date => 
-        leaveRequests.some(req => req.dates && req.dates.includes(date))
+      const hasOverlap = dateRange.some((date) =>
+        leaveRequests.some((req) => req.dates && req.dates.includes(date))
       );
-      
+
       if (hasOverlap) {
-        alert('Some dates in this range already have leave requests!');
+        alert("Some dates in this range already have leave requests!");
         return;
       }
-      
+
       const newRequest = {
         dates: dateRange,
         startDate,
         endDate,
         description: description.trim(),
-        type: leaveType,
+        type: leaveType === "Other" ? customLeaveType.trim() : leaveType,
         id: Date.now(),
-        status: 'Pending',
-        duration: dateRange.length
+        status: "Pending",
+        duration: dateRange.length,
       };
-      
-      setSelectedDates(prev => [...prev, ...dateRange]);
-      setLeaveRequests(prev => [...prev, newRequest]);
-      setDescription('');
-      setLeaveType('Annual');
-      setStartDate('');
-      setEndDate('');
+
+      setSelectedDates((prev) => [...prev, ...dateRange]);
+      setLeaveRequests((prev) => [...prev, newRequest]);
+      setDescription("");
+      setLeaveType("Annual");
+      setCustomLeaveType("");
+      setStartDate("");
+      setEndDate("");
       setShowDescriptionModal(false);
-      
-      // Show success message
-      console.log('Leave request added:', newRequest);
     }
   };
 
   // Cancel leave request
   const cancelLeaveRequest = () => {
-    setDescription('');
-    setLeaveType('Annual');
-    setStartDate('');
-    setEndDate('');
+    setDescription("");
+    setLeaveType("Annual");
+    setCustomLeaveType("");
+    setStartDate("");
+    setEndDate("");
     setShowDescriptionModal(false);
   };
 
   // Process leave requests
   const processLeaveRequests = () => {
     if (leaveRequests.length === 0) {
-      alert('No leave requests to process!');
+      alert("No leave requests to process!");
       return;
     }
-    
-    const pendingRequests = leaveRequests.filter(req => req.status === 'Pending');
+
+    const pendingRequests = leaveRequests.filter(
+      (req) => req.status === "Pending"
+    );
     if (pendingRequests.length === 0) {
-      alert('No pending leave requests to process!');
+      alert("No pending leave requests to process!");
       return;
     }
-    
-    const confirmation = window.confirm(`Process ${pendingRequests.length} pending leave request(s)?`);
+
+    const confirmation = window.confirm(
+      `Process ${pendingRequests.length} pending leave request(s)?`
+    );
     if (confirmation) {
-      setLeaveRequests(prev => prev.map(req => 
-        req.status === 'Pending' ? { ...req, status: 'Approved' } : req
-      ));
-      alert(`${pendingRequests.length} leave request(s) approved successfully!`);
+      setLeaveRequests((prev) =>
+        prev.map((req) =>
+          req.status === "Pending" ? { ...req, status: "Approved" } : req
+        )
+      );
+      alert(
+        `${pendingRequests.length} leave request(s) approved successfully!`
+      );
     }
   };
 
   // Format date for display
   const formatDate = (dateString) => {
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -229,14 +300,17 @@ const LeaveCalendar = () => {
 
   // Get leave type config
   const getLeaveTypeConfig = (type) => {
-    return leaveTypes.find(lt => lt.value === type) || leaveTypes[0];
+    return leaveTypes.find((lt) => lt.value === type) || leaveTypes[0];
   };
 
   // Filter leave requests based on search
-  const filteredLeaveRequests = leaveRequests.filter(req => 
-    req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    req.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    formatDateRange(req.startDate, req.endDate).toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLeaveRequests = leaveRequests.filter(
+    (req) =>
+      req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formatDateRange(req.startDate, req.endDate)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
   );
 
   const calendarDays = generateCalendarDays();
@@ -259,14 +333,16 @@ const LeaveCalendar = () => {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => handleYearChange(-1)}
                 className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
               >
                 <ChevronLeft size={20} />
               </button>
-              <span className="text-lg font-semibold text-gray-900 min-w-[80px] text-center">{currentYear}</span>
-              <button 
+              <span className="text-lg font-semibold text-gray-900 min-w-[80px] text-center">
+                {currentYear}
+              </span>
+              <button
                 onClick={() => handleYearChange(1)}
                 className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
               >
@@ -285,7 +361,9 @@ const LeaveCalendar = () => {
             <div>
               <h3 className="font-semibold text-blue-900 mb-1">How to use:</h3>
               <p className="text-blue-800 text-sm">
-                Click on any calendar day to add a leave request. You can specify date ranges for multi-day leave. Click on existing leave days to remove them.
+                Click on any calendar day to add a leave request. You can
+                specify date ranges for multi-day leave. Click on existing leave
+                days to remove them.
               </p>
             </div>
           </div>
@@ -296,8 +374,12 @@ const LeaveCalendar = () => {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{leaveRequests.length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Requests
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {leaveRequests.length}
+                </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-xl">
                 <FileText className="w-6 h-6 text-blue-600" />
@@ -309,7 +391,10 @@ const LeaveCalendar = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Approved</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {leaveRequests.filter(req => req.status === 'Approved').length}
+                  {
+                    leaveRequests.filter((req) => req.status === "Approved")
+                      .length
+                  }
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
@@ -322,7 +407,10 @@ const LeaveCalendar = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {leaveRequests.filter(req => req.status === 'Pending').length}
+                  {
+                    leaveRequests.filter((req) => req.status === "Pending")
+                      .length
+                  }
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-xl">
@@ -335,12 +423,20 @@ const LeaveCalendar = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">This Month</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {leaveRequests.filter(req => {
-                    return req.dates && req.dates.some(date => {
-                      const reqDate = new Date(date + 'T00:00:00');
-                      return reqDate.getMonth() === currentMonth && reqDate.getFullYear() === currentYear;
-                    });
-                  }).length}
+                  {
+                    leaveRequests.filter((req) => {
+                      return (
+                        req.dates &&
+                        req.dates.some((date) => {
+                          const reqDate = new Date(date + "T00:00:00");
+                          return (
+                            reqDate.getMonth() === currentMonth &&
+                            reqDate.getFullYear() === currentYear
+                          );
+                        })
+                      );
+                    }).length
+                  }
                 </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-xl">
@@ -359,8 +455,8 @@ const LeaveCalendar = () => {
                 <label className="block text-lg font-semibold text-gray-700 mb-2">
                   Month
                 </label>
-                <select 
-                  value={currentMonth} 
+                <select
+                  value={currentMonth}
                   onChange={handleMonthChange}
                   className="px-4 py-3 border border-gray-200 rounded-xl bg-white text-lg min-w-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
@@ -375,38 +471,58 @@ const LeaveCalendar = () => {
               {/* Calendar Grid */}
               <div className="grid grid-cols-7 gap-2">
                 {/* Day headers */}
-                {daysOfWeek.map(day => (
-                  <div key={day} className="p-3 text-center font-semibold text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                {daysOfWeek.map((day) => (
+                  <div
+                    key={day}
+                    className="p-3 text-center font-semibold text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl"
+                  >
                     {day}
                   </div>
                 ))}
-                
+
                 {/* Calendar days */}
                 {calendarDays.map((day, index) => {
                   const selectedLeave = getSelectedLeave(day);
-                  const leaveConfig = selectedLeave ? getLeaveTypeConfig(selectedLeave.type) : null;
-                  
+                  const leaveConfig = selectedLeave
+                    ? getLeaveTypeConfig(selectedLeave.type)
+                    : null;
+
                   return (
                     <div
                       key={index}
                       onClick={() => handleDayClick(day)}
                       className={`
                         h-20 p-3 border border-gray-200 rounded-xl cursor-pointer transition-all duration-200 relative
-                        ${day ? 'hover:bg-blue-50 hover:border-blue-200 active:scale-95' : 'cursor-default'}
-                        ${selectedLeave ? `${leaveConfig.color} text-white hover:opacity-90 hover:shadow-lg` : 'bg-white'}
-                        ${!day ? 'bg-gray-50 border-gray-100' : ''}
+                        ${
+                          day
+                            ? "hover:shadow-lg hover:scale-[1.02]"
+                            : "cursor-default"
+                        }
+                        ${
+                          selectedLeave
+                            ? `${leaveConfig.color} text-white hover:brightness-75`
+                            : "bg-white hover:bg-gray-10 hover:border-gray-300"
+                        }
+                        ${!day ? "bg-gray-50 border-gray-100" : ""}
                       `}
                     >
                       {day && (
                         <div className="flex flex-col h-full">
-                          <span className="text-lg font-semibold">{day}</span>
+                          <span
+                            className={`text-lg font-semibold ${
+                              selectedLeave ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {day}
+                          </span>
                           {selectedLeave && (
                             <div className="mt-1">
                               <span className="text-xs opacity-90 block truncate">
                                 {selectedLeave.type}
                               </span>
                               <span className="text-xs opacity-75 block truncate">
-                                {selectedLeave.duration}d • {selectedLeave.status}
+                                {selectedLeave.duration}d •{" "}
+                                {selectedLeave.status}
                               </span>
                             </div>
                           )}
@@ -423,7 +539,9 @@ const LeaveCalendar = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Leave Requests</h2>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Leave Requests
+                </h2>
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                   {leaveRequests.length}
                 </span>
@@ -440,7 +558,7 @@ const LeaveCalendar = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
-              
+
               {/* Leave Requests List */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {filteredLeaveRequests.length === 0 ? (
@@ -448,7 +566,9 @@ const LeaveCalendar = () => {
                     <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                       <Calendar className="w-8 h-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 font-medium">No leave requests</p>
+                    <p className="text-gray-500 font-medium">
+                      No leave requests
+                    </p>
                     <p className="text-gray-400 text-sm mt-1">
                       Click on calendar days to add requests
                     </p>
@@ -457,21 +577,29 @@ const LeaveCalendar = () => {
                   filteredLeaveRequests.map((request) => {
                     const leaveConfig = getLeaveTypeConfig(request.type);
                     return (
-                      <div key={request.id} className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                      <div
+                        key={request.id}
+                        className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                      >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${leaveConfig.lightColor} ${leaveConfig.textColor}`}>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${leaveConfig.lightColor} ${leaveConfig.textColor}`}
+                            >
                               {request.type}
                             </span>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              request.status === 'Approved' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-orange-100 text-orange-800'
-                            }`}>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                request.status === "Approved"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-orange-100 text-orange-800"
+                              }`}
+                            >
                               {request.status}
                             </span>
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {request.duration} day{request.duration > 1 ? 's' : ''}
+                              {request.duration} day
+                              {request.duration > 1 ? "s" : ""}
                             </span>
                           </div>
                         </div>
@@ -490,16 +618,23 @@ const LeaveCalendar = () => {
               {/* Process Button */}
               <button
                 onClick={processLeaveRequests}
-                disabled={leaveRequests.filter(req => req.status === 'Pending').length === 0}
+                disabled={
+                  leaveRequests.filter((req) => req.status === "Pending")
+                    .length === 0
+                }
                 className={`
                   w-full mt-6 py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 shadow-lg
-                  ${leaveRequests.filter(req => req.status === 'Pending').length > 0 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl transform hover:-translate-y-0.5' 
-                    : 'bg-gray-300 cursor-not-allowed shadow-none'
+                  ${
+                    leaveRequests.filter((req) => req.status === "Pending")
+                      .length > 0
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl transform hover:-translate-y-0.5"
+                      : "bg-gray-300 cursor-not-allowed shadow-none"
                   }
                 `}
               >
-                Process Pending ({leaveRequests.filter(req => req.status === 'Pending').length})
+                Process Pending (
+                {leaveRequests.filter((req) => req.status === "Pending").length}
+                )
               </button>
             </div>
           </div>
@@ -512,7 +647,9 @@ const LeaveCalendar = () => {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Add Leave Request</h3>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Add Leave Request
+                </h3>
                 <p className="text-gray-600 text-sm mt-1">
                   Select date range for your leave
                 </p>
@@ -555,7 +692,11 @@ const LeaveCalendar = () => {
               {startDate && endDate && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
                   <p className="text-blue-800 text-sm">
-                    <strong>Duration:</strong> {generateDateRange(startDate, endDate).length} day{generateDateRange(startDate, endDate).length > 1 ? 's' : ''}
+                    <strong>Duration:</strong>{" "}
+                    {generateDateRange(startDate, endDate).length} day
+                    {generateDateRange(startDate, endDate).length > 1
+                      ? "s"
+                      : ""}
                   </p>
                   <p className="text-blue-600 text-xs mt-1">
                     {formatDateRange(startDate, endDate)}
@@ -569,7 +710,12 @@ const LeaveCalendar = () => {
                 </label>
                 <select
                   value={leaveType}
-                  onChange={(e) => setLeaveType(e.target.value)}
+                  onChange={(e) => {
+                    setLeaveType(e.target.value);
+                    if (e.target.value !== "Other") {
+                      setCustomLeaveType("");
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {leaveTypes.map((type) => (
@@ -578,6 +724,18 @@ const LeaveCalendar = () => {
                     </option>
                   ))}
                 </select>
+
+                {leaveType === "Other" && (
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      value={customLeaveType}
+                      onChange={(e) => setCustomLeaveType(e.target.value)}
+                      placeholder="Enter leave type..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -607,9 +765,10 @@ const LeaveCalendar = () => {
                 disabled={!startDate || !endDate || !description.trim()}
                 className={`
                   px-6 py-3 rounded-xl font-medium transition-all shadow-lg
-                  ${startDate && endDate && description.trim() 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transform hover:-translate-y-0.5' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+                  ${
+                    startDate && endDate && description.trim()
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transform hover:-translate-y-0.5"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
                   }
                 `}
               >

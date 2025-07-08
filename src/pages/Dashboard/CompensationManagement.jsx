@@ -23,7 +23,7 @@ const initialCompensationData = {
   bankAccountNo: "",
   comments: "",
   secondaryEmp: false,
-  primaryEmploymentBasic: "false",
+  primaryEmploymentBasic: false,
   enableEpfEtf: false,
   otActive: false,
   earlyDeduction: false,
@@ -621,51 +621,32 @@ const CompensationManagement = () => {
                 </h2>
 
                 <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
-                  <label className="text-sm font-medium text-gray-700">
-                    Primary Employment Status
-                  </label>
-                  <div className="flex items-center">
-                    <span
-                      className={`mr-2 text-sm ${
-                        formData.primaryEmploymentBasic === "false"
-                          ? "font-medium text-gray-900"
-                          : "text-gray-500"
-                      }`}
-                    ></span>
+                    <div>
+                      <h3 className="font-medium text-gray-800">
+                        Primary Employment Basic
+                      </h3>
+                  
+                    </div>
                     <div
                       className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                       style={{
-                        backgroundColor:
-                          formData.primaryEmploymentBasic === "true"
-                            ? "#3b82f6"
-                            : "#e5e7eb",
+                        backgroundColor: formData.primaryEmploymentBasic
+                          ? "#3b82f6"
+                          : "#e5e7eb",
                       }}
                       onClick={() =>
-                        handleInputChange(
-                          "primaryEmploymentBasic",
-                          formData.primaryEmploymentBasic === "true"
-                            ? "false"
-                            : "true"
-                        )
+                        handleToggleChange("primaryEmploymentBasic")
                       }
                     >
                       <span
                         className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                          formData.primaryEmploymentBasic === "true"
+                          formData.primaryEmploymentBasic
                             ? "translate-x-6"
                             : "translate-x-1"
                         }`}
                       />
                     </div>
-                    <span
-                      className={`ml-2 text-sm ${
-                        formData.primaryEmploymentBasic === "true"
-                          ? "font-medium text-gray-900"
-                          : "text-gray-500"
-                      }`}
-                    ></span>
                   </div>
-                </div>
               </div>
 
               {/* Comments */}
