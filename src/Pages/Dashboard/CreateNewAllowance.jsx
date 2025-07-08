@@ -17,9 +17,15 @@ import {
 } from "lucide-react";
 
 const CreateNewAllowance = () => {
+  const companies = ["Company A", "Company B", "Company C"];
+
+  const [selectedCompany, setSelectedCompany] = useState(companies[0]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+
   const [allowances, setAllowances] = useState([
     {
       id: 1,
+      company: "Company A",
       code: "001",
       name: "Travelling Allowance",
       status: "Active",
@@ -29,6 +35,7 @@ const CreateNewAllowance = () => {
     },
     {
       id: 2,
+      company: "Company A",
       code: "002",
       name: "Special Allowance",
       status: "Active",
@@ -37,6 +44,7 @@ const CreateNewAllowance = () => {
     },
     {
       id: 3,
+      company: "Company B",
       code: "003",
       name: "Attendance Allowance",
       status: "Active",
@@ -46,6 +54,7 @@ const CreateNewAllowance = () => {
     },
     {
       id: 4,
+      company: "Company B",
       code: "004",
       name: "Production Incentive",
       status: "Active",
@@ -55,6 +64,7 @@ const CreateNewAllowance = () => {
     },
     {
       id: 5,
+      company: "Company C",
       code: "005",
       name: "Medical Reimbursement",
       status: "Active",
@@ -63,6 +73,7 @@ const CreateNewAllowance = () => {
     },
     {
       id: 6,
+      company: "Company C",
       code: "006",
       name: "Other Reimbursement",
       status: "Inactive",
@@ -80,6 +91,7 @@ const CreateNewAllowance = () => {
     id: null,
     code: "",
     name: "",
+    company: companies[0], 
     category: "Bonus",
     status: "Active",
     type: "Fixed",
@@ -88,6 +100,7 @@ const CreateNewAllowance = () => {
   const [newAllowance, setNewAllowance] = useState({
     code: "",
     name: "",
+    company: companies[0],
     category: "Bonus",
     status: "Active",
     type: "Fixed",
@@ -98,10 +111,13 @@ const CreateNewAllowance = () => {
   const statuses = ["Active", "Inactive"];
   const allowanceTypes = ["Fixed", "Variable"];
 
+  // Filtered allowances by company and category
   const filteredAllowances = allowances.filter(
     (allowance) =>
-      allowance.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      allowance.code.toLowerCase().includes(searchTerm.toLowerCase())
+      allowance.company === selectedCompany &&
+      (selectedCategory === "" || allowance.category === selectedCategory) &&
+      (allowance.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        allowance.code.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleAddAllowance = () => {
@@ -118,6 +134,7 @@ const CreateNewAllowance = () => {
       setNewAllowance({
         code: "",
         name: "",
+        company: companies[0], // Reset company
         category: "Bonus",
         status: "Active",
         type: "Fixed",
@@ -144,6 +161,7 @@ const CreateNewAllowance = () => {
         id: null,
         code: "",
         name: "",
+        company: companies[0], // Reset company
         category: "Bonus",
         status: "Active",
         type: "Fixed",
@@ -189,6 +207,7 @@ const CreateNewAllowance = () => {
     setNewAllowance({
       code: "",
       name: "",
+      company: companies[0], // Reset company
       category: "Bonus",
       status: "Active",
       type: "Fixed",
@@ -202,6 +221,7 @@ const CreateNewAllowance = () => {
       id: null,
       code: "",
       name: "",
+      company: companies[0], // Reset company
       category: "Bonus",
       status: "Active",
       type: "Fixed",
@@ -343,6 +363,43 @@ const CreateNewAllowance = () => {
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Company and Category Filter */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Company
+            </label>
+            <select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {companies.map((company) => (
+                <option key={company} value={company}>
+                  {company}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -614,6 +671,25 @@ const CreateNewAllowance = () => {
                   </div>
                 </div>
               )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Company
+                  </label>
+                  <select
+                    value={newAllowance.company}
+                    onChange={(e) => handleInputChange("company", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    {companies.map((company) => (
+                      <option key={company} value={company}>
+                        {company}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50">
@@ -771,6 +847,25 @@ const CreateNewAllowance = () => {
                   </div>
                 </div>
               )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Company
+                  </label>
+                  <select
+                    value={editAllowance.company}
+                    onChange={(e) => handleEditInputChange("company", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    {companies.map((company) => (
+                      <option key={company} value={company}>
+                        {company}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50">
