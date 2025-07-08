@@ -25,7 +25,7 @@ const initialState = {
   children: [{ name: "", age: "", dob: "", nic: "" }], // Exactly one empty child
 };
 
-const EmpPersonalDetails = () => {
+const EmpPersonalDetails = ({ onNext, activeCategory }) => {
   const [form, setForm] = useState(initialState);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
@@ -629,7 +629,7 @@ const EmpPersonalDetails = () => {
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-center gap-4 pb-6">
+        {/* <div className="flex justify-center gap-4 pb-6">
           <button
             type="button"
             onClick={() => {
@@ -639,6 +639,15 @@ const EmpPersonalDetails = () => {
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-blue-300"
           >
             Save Employee Details
+          </button>
+        </div> */}
+        <div className="flex justify-end mt-8">
+          <button
+            type="button"
+            onClick={onNext}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Next
           </button>
         </div>
       </div>

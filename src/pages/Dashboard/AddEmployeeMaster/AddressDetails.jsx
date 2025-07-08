@@ -38,7 +38,7 @@ const initialState = {
   },
 };
 
-const AddressDetails = () => {
+const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
   const [form, setForm] = useState(initialState);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
@@ -414,12 +414,28 @@ const AddressDetails = () => {
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-center mt-8">
+          {/* <div className="flex justify-center mt-8">
             <button
               onClick={handleSave}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-blue-300"
             >
               Save Address Details
+            </button>
+          </div> */}
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={onPrevious}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Next
             </button>
           </div>
         </div>

@@ -20,7 +20,7 @@ import {
 
 const STORAGE_KEY = "employeeFormData";
 
-const OrganizationDetails = () => {
+const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   const [formData, setFormData] = useState({
     company: "",
     department: "",
@@ -775,6 +775,20 @@ const OrganizationDetails = () => {
             >
               <RefreshCw size={16} />
               Clear
+            </button>
+            <button
+              type="button"
+              onClick={onPrevious}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Next
             </button>
           </div>
         </div>
