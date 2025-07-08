@@ -35,7 +35,7 @@ const initialCompensationData = {
   budgetaryReliefAllowance2016: false,
 };
 
-const CompensationManagement = () => {
+const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
   const [formData, setFormData] = useState(initialCompensationData);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -678,12 +678,26 @@ const CompensationManagement = () => {
               <X className="w-4 h-4" />
               <span>Clear Form</span>
             </button>
-            <button
+            {/* <button
               type="submit"
               className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center space-x-2 shadow-lg"
             >
               <Save className="w-4 h-4" />
               <span>Save Changes</span>
+            </button> */}
+            <button
+              type="button"
+              onClick={onPrevious}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Next
             </button>
           </div>
         </form>

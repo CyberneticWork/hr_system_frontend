@@ -4,8 +4,40 @@ import AddressDetails from '@dashboard/AddEmployeeMaster/AddressDetails';
 import OrganizationDetails from '@dashboard/AddEmployeeMaster/OrganizationDetails';
 import CompensationManagement from '@dashboard/AddEmployeeMaster/CompensationManagement';
 import Employeedocument from '@dashboard/AddEmployeeMaster/Employeedocument';
+
+const steps = [
+  'personal',
+  'address',
+  'compensation',
+  'organization',
+  'employeedocument',
+];
+
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
+  const currentStepIndex = steps.indexOf(activeCategory);
+
+  const goNext = () => {
+    if (currentStepIndex < steps.length - 1) {
+      setActiveCategory(steps[currentStepIndex + 1]);
+    }
+  };
+
+  const goPrevious = () => {
+    if (currentStepIndex > 0) {
+      setActiveCategory(steps[currentStepIndex - 1]);
+    }
+  };
+
+  const handleSubmit = (allEmployeeData) => {
+    // allEmployeeData contains all form data from localStorage and documents
+    console.log("Submitting all employee data:", allEmployeeData);
+    alert('Employee submitted!');
+    // Clear all form data from localStorage after submission
+    localStorage.removeItem("employeeFormData");
+    // Optionally, you can reset to the first step
+    setActiveCategory('personal');
+  };
 
   return (
     <div>
@@ -63,13 +95,43 @@ const EmployeeMaster = () => {
          Employee Document      
         </button>
       </div>
-      <div className="p-4">
-        {activeCategory === 'personal' && <EmpPersonalDetails />}
-        {activeCategory === 'address' && <AddressDetails />}
-        {activeCategory === 'compensation' && <CompensationManagement />}
-        {activeCategory === 'organization' && <OrganizationDetails/>}
-        {activeCategory === 'employeedocument' && <Employeedocument />}
-        {/* {activeCategory === 'salary' && <div>Salary Details</div>} */}
+        <div className="p-4">
+          <div className="p-4">
+          {activeCategory === 'personal' && (
+            <EmpPersonalDetails
+              onNext={goNext}
+              activeCategory={activeCategory}
+            />
+          )}
+          {activeCategory === 'address' && (
+            <AddressDetails
+              onNext={goNext}
+              onPrevious={goPrevious}
+              activeCategory={activeCategory}
+            />
+          )}
+          {activeCategory === 'compensation' && (
+            <CompensationManagement
+              onNext={goNext}
+              onPrevious={goPrevious}
+              activeCategory={activeCategory}
+            />
+          )}
+          {activeCategory === 'organization' && (
+            <OrganizationDetails
+              onNext={goNext}
+              onPrevious={goPrevious}
+              activeCategory={activeCategory}
+            />
+          )}
+          {activeCategory === 'employeedocument' && (
+            <Employeedocument
+              onPrevious={goPrevious}
+              onSubmit={handleSubmit}
+              activeCategory={activeCategory}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
