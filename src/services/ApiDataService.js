@@ -31,3 +31,13 @@ export const fetchSubDepartments = async () => {
     return [];
   }
 };
+
+export const fetchDesignations = async () => {
+  try {
+    const response = await axios.get(`${API_PREFIX}/designations`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Designations:', error);
+    return [];
+  }
+};

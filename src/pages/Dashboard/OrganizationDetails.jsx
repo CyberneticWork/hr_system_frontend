@@ -15,6 +15,7 @@ import {
   fetchCompanies,
   fetchDepartments,
   fetchSubDepartments,
+  fetchDesignations,
 } from "@services/ApiDataService";
 
 const STORAGE_KEY = "employeeFormData";
@@ -52,16 +53,7 @@ const OrganizationDetails = () => {
   const [companies, setCompanies] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [subDepartments, setSubDepartments] = useState([]);
-
-  // Modal state
-  const [showCompanyModal, setShowCompanyModal] = useState(false);
-  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
-  const [showSubDepartmentModal, setShowSubDepartmentModal] = useState(false);
-
-  // New values for modals
-  const [newCompany, setNewCompany] = useState("");
-  const [newDepartment, setNewDepartment] = useState("");
-  const [newSubDepartment, setNewSubDepartment] = useState("");
+  const [designations, setDesignations] = useState([]);
 
   // Toggle state
   const [toggleStates, setToggleStates] = useState({
@@ -89,15 +81,18 @@ const OrganizationDetails = () => {
         }
 
         // Then fetch from API
-        const [companiesData, departmentsData, subDepartmentsData] = await Promise.all([
-          fetchCompanies(),
-          fetchDepartments(),
-          fetchSubDepartments(),
-        ]);
+        const [companiesData, departmentsData, subDepartmentsData, DesignationsData ] =
+          await Promise.all([
+            fetchCompanies(),
+            fetchDepartments(),
+            fetchSubDepartments(),
+            fetchDesignations(),
+          ]);
 
         setCompanies(companiesData);
         setDepartments(departmentsData);
         setSubDepartments(subDepartmentsData);
+        setDesignations(DesignationsData);
       } catch (e) {
         console.error("Error loading data:", e);
       } finally {
@@ -112,7 +107,7 @@ const OrganizationDetails = () => {
   // Save to localStorage whenever formData changes (after initial load)
   useEffect(() => {
     if (!isDataLoaded) return;
-    
+
     const saveData = () => {
       let allData = {};
       try {
@@ -127,7 +122,7 @@ const OrganizationDetails = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
       setIsSaved(true);
     };
-    
+
     const timeoutId = setTimeout(saveData, 300);
     return () => clearTimeout(timeoutId);
   }, [formData, isDataLoaded]);
@@ -165,8 +160,6 @@ const OrganizationDetails = () => {
       };
     });
   };
-
-  
 
   const ToggleButton = ({ enabled, onToggle, label, value }) => (
     <label className="relative inline-flex items-center cursor-pointer">
@@ -404,10 +397,12 @@ const OrganizationDetails = () => {
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="">Select Designation</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Developer">Developer</option>
-                  <option value="Accountant">Accountant</option>
+                  <option value="">Select designations</option>
+                  {designations.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -784,8 +779,6 @@ const OrganizationDetails = () => {
           </div>
         </div>
       </form>
-
-      
     </div>
   );
 };
