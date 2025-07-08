@@ -7,15 +7,16 @@ import {
   Calendar,
   Briefcase,
   Clock,
-  BookOpen,
-  FileText,
   CheckCircle,
   XCircle,
-  Save,
   RefreshCw,
-  ChevronDown,
-  Plus,
 } from "lucide-react";
+import {
+  fetchCompanies,
+  fetchDepartments,
+  fetchSubDepartments,
+  fetchDesignations,
+} from "@services/ApiDataService";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -43,59 +44,70 @@ const OrganizationDetails = () => {
     currentStatus: "Active",
     dayOff: "",
   });
+
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Dropdown data state
-  const [companies, setCompanies] = useState(["Company A", "Company B"]);
-  const [departments, setDepartments] = useState(["HR", "IT", "Finance"]);
-  const [subDepartments, setSubDepartments] = useState([
-    "Recruitment",
-    "Development",
-    "Accounting",
-  ]);
+  // Dropdown data state - now storing objects with id and name
+  const [companies, setCompanies] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [subDepartments, setSubDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
 
-  // Modal state
-  const [showCompanyModal, setShowCompanyModal] = useState(false);
-  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
-  const [showSubDepartmentModal, setShowSubDepartmentModal] = useState(false);
+  // Toggle state
+  const [toggleStates, setToggleStates] = useState({
+    probationEnabled: false,
+    trainingEnabled: false,
+    contractEnabled: false,
+    confirmationEnabled: false,
+  });
 
-  // New values for modals
-  const [newCompany, setNewCompany] = useState("");
-  const [newDepartment, setNewDepartment] = useState("");
-  const [newSubDepartment, setNewSubDepartment] = useState("");
-
-  // Load organizationDetails and dropdowns from localStorage on mount
+  // Load organizationDetails from localStorage and fetch dropdown data
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && saved !== "undefined" && saved !== "null") {
-        const parsed = JSON.parse(saved);
-        if (parsed.organizationDetails) {
-          setFormData((prev) => ({
-            ...prev,
-            ...parsed.organizationDetails,
-          }));
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        // First load from localStorage
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && saved !== "undefined" && saved !== "null") {
+          const parsed = JSON.parse(saved);
+          if (parsed.organizationDetails) {
+            setFormData((prev) => ({
+              ...prev,
+              ...parsed.organizationDetails,
+            }));
+          }
         }
-        if (parsed.dropdownData) {
-          setCompanies(parsed.dropdownData.companies || companies);
-          setDepartments(parsed.dropdownData.departments || departments);
-          setSubDepartments(
-            parsed.dropdownData.subDepartments || subDepartments
-          );
-        }
+
+        // Then fetch from API
+        const [companiesData, departmentsData, subDepartmentsData, DesignationsData ] =
+          await Promise.all([
+            fetchCompanies(),
+            fetchDepartments(),
+            fetchSubDepartments(),
+            fetchDesignations(),
+          ]);
+
+        setCompanies(companiesData);
+        setDepartments(departmentsData);
+        setSubDepartments(subDepartmentsData);
+        setDesignations(DesignationsData);
+      } catch (e) {
+        console.error("Error loading data:", e);
+      } finally {
+        setIsLoading(false);
+        setIsDataLoaded(true);
       }
-    } catch (e) {
-      // ignore
-    } finally {
-      setIsDataLoaded(true);
-    }
-    // eslint-disable-next-line
+    };
+
+    loadData();
   }, []);
 
-  // Save to localStorage whenever formData or dropdowns change (after initial load)
+  // Save to localStorage whenever formData changes (after initial load)
   useEffect(() => {
     if (!isDataLoaded) return;
+
     const saveData = () => {
       let allData = {};
       try {
@@ -104,20 +116,16 @@ const OrganizationDetails = () => {
           allData = JSON.parse(saved);
         }
       } catch (e) {
-        // ignore
+        console.error("Error parsing saved data:", e);
       }
       allData.organizationDetails = formData;
-      allData.dropdownData = {
-        companies,
-        departments,
-        subDepartments,
-      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
       setIsSaved(true);
     };
+
     const timeoutId = setTimeout(saveData, 300);
     return () => clearTimeout(timeoutId);
-  }, [formData, companies, departments, subDepartments, isDataLoaded]);
+  }, [formData, isDataLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -129,33 +137,51 @@ const OrganizationDetails = () => {
     setIsSaved(false);
   };
 
-  // Add handlers for modals
-  const handleAddCompany = () => {
-    if (newCompany.trim() && !companies.includes(newCompany.trim())) {
-      setCompanies((prev) => [...prev, newCompany.trim()]);
-      setNewCompany("");
-      setShowCompanyModal(false);
-    }
-  };
-  const handleAddDepartment = () => {
-    if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
-      setDepartments((prev) => [...prev, newDepartment.trim()]);
-      setNewDepartment("");
-      setShowDepartmentModal(false);
-    }
-  };
-  const handleAddSubDepartment = () => {
-    if (
-      newSubDepartment.trim() &&
-      !subDepartments.includes(newSubDepartment.trim())
-    ) {
-      setSubDepartments((prev) => [...prev, newSubDepartment.trim()]);
-      setNewSubDepartment("");
-      setShowSubDepartmentModal(false);
-    }
+  const handleToggle = (section) => {
+    setToggleStates((prev) => {
+      const newValue = !prev[section];
+      // Map toggleStates key to formData key
+      const formKeyMap = {
+        probationEnabled: "probationPeriod",
+        trainingEnabled: "trainingPeriod",
+        contractEnabled: "contractPeriod",
+        confirmationEnabled: null, // No direct boolean in formData for confirmation
+      };
+      const formKey = formKeyMap[section];
+      if (formKey) {
+        setFormData((prevForm) => ({
+          ...prevForm,
+          [formKey]: newValue,
+        }));
+      }
+      return {
+        ...prev,
+        [section]: newValue,
+      };
+    });
   };
 
-  // Modal components (improved with delete support)
+  const ToggleButton = ({ enabled, onToggle, label, value }) => (
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        onChange={onToggle}
+        className="sr-only peer"
+        aria-label={`Toggle ${label}`}
+      />
+      <div
+        className={`w-11 h-6 rounded-full transition-colors ${
+          enabled ? "bg-blue-600" : "bg-gray-300"
+        } peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2`}
+      ></div>
+      <div
+        className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+          enabled ? "translate-x-5" : "translate-x-0"
+        }`}
+      ></div>
+    </label>
+  );
+
   const Modal = ({
     show,
     onClose,
@@ -202,15 +228,15 @@ const OrganizationDetails = () => {
             <ul className="space-y-1 max-h-32 overflow-y-auto">
               {items.map((item) => (
                 <li
-                  key={item}
+                  key={item.id}
                   className="flex items-center justify-between group px-2 py-1 rounded hover:bg-gray-50"
                 >
-                  <span className="truncate">{item}</span>
+                  <span className="truncate">{item.name}</span>
                   <button
                     type="button"
                     className="ml-2 p-1 rounded-full bg-red-100 hover:bg-red-200 text-red-600 opacity-70 group-hover:opacity-100 transition"
                     title="Delete"
-                    onClick={() => onDelete(item)}
+                    onClick={() => onDelete(item.id)}
                   >
                     <XCircle size={16} />
                   </button>
@@ -223,84 +249,16 @@ const OrganizationDetails = () => {
     );
   };
 
-  // Add delete handlers
-  const handleDeleteCompany = (company) => {
-    setCompanies((prev) => prev.filter((c) => c !== company));
-    // Remove from form if selected
-    if (formData.company === company) {
-      setFormData((prev) => ({ ...prev, company: "" }));
-    }
-  };
-  const handleDeleteDepartment = (department) => {
-    setDepartments((prev) => prev.filter((d) => d !== department));
-    if (formData.department === department) {
-      setFormData((prev) => ({ ...prev, department: "" }));
-    }
-  };
-  const handleDeleteSubDepartment = (subDepartment) => {
-    setSubDepartments((prev) => prev.filter((s) => s !== subDepartment));
-    if (formData.subDepartment === subDepartment) {
-      setFormData((prev) => ({ ...prev, subDepartment: "" }));
-    }
-  };
-
-  // Add toggle state and helpers
-  const [toggleStates, setToggleStates] = useState({
-    probationEnabled: false,
-    trainingEnabled: false,
-    contractEnabled: false,
-    confirmationEnabled: false,
-  });
-
-  const handleToggle = (section) => {
-    setToggleStates((prev) => {
-      const newValue = !prev[section];
-      // Map toggleStates key to formData key
-      const formKeyMap = {
-        probationEnabled: "probationPeriod",
-        trainingEnabled: "trainingPeriod",
-        contractEnabled: "contractPeriod",
-        confirmationEnabled: null, // No direct boolean in formData for confirmation
-      };
-      const formKey = formKeyMap[section];
-      if (formKey) {
-        setFormData((prevForm) => ({
-          ...prevForm,
-          [formKey]: newValue,
-        }));
-      }
-      return {
-        ...prev,
-        [section]: newValue,
-      };
-    });
-  };
-
-  const ToggleButton = ({ enabled, onToggle, label, value }) => (
-  <label className="relative inline-flex items-center cursor-pointer">
-    <input
-      type="checkbox"
-      onChange={onToggle}
-      // checked={value}
-      className="sr-only peer"
-      aria-label={`Toggle ${label}`}
-    />
-    <div
-      className={`w-11 h-6 rounded-full transition-colors ${
-        enabled ? "bg-blue-600" : "bg-gray-300"
-      } peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2`}
-    ></div>
-    <div
-      className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-        enabled ? "translate-x-5" : "translate-x-0"
-      }`}
-    ></div>
-  </label>
-);
-
+  if (isLoading) {
+    return (
+      <div className="p-4 md:p-6 bg-white rounded-lg shadow-md flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className=" p-4 md:p-6 bg-white rounded-lg shadow-md">
+    <div className="p-4 md:p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
         <Building2 className="text-blue-600" size={24} />
         Organization Details
@@ -334,12 +292,11 @@ const OrganizationDetails = () => {
                 >
                   <option value="">Select Company</option>
                   {companies.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                    <option key={c.id} value={c.id}>
+                      {c.name}
                     </option>
                   ))}
                 </select>
-                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
@@ -358,12 +315,11 @@ const OrganizationDetails = () => {
                 >
                   <option value="">Select Department</option>
                   {departments.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
+                    <option key={d.id} value={d.id}>
+                      {d.name}
                     </option>
                   ))}
                 </select>
-                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
@@ -383,17 +339,16 @@ const OrganizationDetails = () => {
                 >
                   <option value="">Select Sub Department</option>
                   {subDepartments.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
+                    <option key={s.id} value={s.id}>
+                      {s.name}
                     </option>
                   ))}
                 </select>
-                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <User className="text-gray-500" size={16} />
                 Current Supervisor
               </label>
@@ -414,7 +369,7 @@ const OrganizationDetails = () => {
             </div>
 
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Calendar className="text-gray-500" size={16} />
                 Date of Joined
               </label>
@@ -426,12 +381,11 @@ const OrganizationDetails = () => {
                   onChange={handleChange}
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {/* <Calendar className="absolute left-2 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Briefcase className="text-gray-500" size={16} />
                 Designation <span className="text-red-500">*</span>
               </label>
@@ -443,17 +397,18 @@ const OrganizationDetails = () => {
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="">Select Designation</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Developer">Developer</option>
-                  <option value="Accountant">Accountant</option>
+                  <option value="">Select designations</option>
+                  {designations.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
-                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
 
             <div className="mb-4">
-              <label className=" text-gray-700 font-medium mb-2 flex items-center gap-1">
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Layers className="text-gray-500" size={16} />
                 Day Off <span className="text-red-500">*</span>
               </label>
@@ -474,7 +429,6 @@ const OrganizationDetails = () => {
                   <option value="Friday">Friday</option>
                   <option value="Saturday">Saturday</option>
                 </select>
-                {/* <ChevronDown className="absolute right-3 top-2.5 text-gray-400" size={16} /> */}
               </div>
             </div>
           </div>
@@ -671,17 +625,12 @@ const OrganizationDetails = () => {
                   </span>
                   <ToggleButton
                     enabled={formData.contractPeriod}
-                    onToggle={() => {
-                      const updatedValue = !toggleStates.contractEnabled;
-                      handleToggle("contractEnabled", updatedValue);
-                      console.log("New Toggle Value:", updatedValue); // This logs or returns the value
-                    }}
+                    onToggle={() => handleToggle("contractEnabled")}
                     label="Contract Period"
                     value={formData.contractPeriod}
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-600 mb-1">From Date</label>
@@ -792,17 +741,6 @@ const OrganizationDetails = () => {
               type="button"
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
               onClick={() => {
-                // Only clear organizationDetails from localStorage
-                try {
-                  const saved = localStorage.getItem(STORAGE_KEY);
-                  if (saved && saved !== "undefined" && saved !== "null") {
-                    const parsed = JSON.parse(saved);
-                    delete parsed.organizationDetails;
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-                  }
-                } catch (e) {
-                  // ignore
-                }
                 setFormData({
                   company: "",
                   department: "",
@@ -826,6 +764,12 @@ const OrganizationDetails = () => {
                   currentStatus: "Active",
                   dayOff: "",
                 });
+                setToggleStates({
+                  probationEnabled: false,
+                  trainingEnabled: false,
+                  contractEnabled: false,
+                  confirmationEnabled: false,
+                });
                 setIsSaved(false);
               }}
             >
@@ -834,47 +778,7 @@ const OrganizationDetails = () => {
             </button>
           </div>
         </div>
-        {/* {isSaved && (
-          <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center gap-2">
-            <CheckCircle className="text-green-600" size={18} />
-            Organization details saved automatically!
-          </div>
-        )} */}
       </form>
-      {/* Modals */}
-      <Modal
-        show={showCompanyModal}
-        onClose={() => setShowCompanyModal(false)}
-        title="Add New Company"
-        value={newCompany}
-        setValue={setNewCompany}
-        onAdd={handleAddCompany}
-        placeholder="Enter company name"
-        items={companies}
-        onDelete={handleDeleteCompany}
-      />
-      <Modal
-        show={showDepartmentModal}
-        onClose={() => setShowDepartmentModal(false)}
-        title="Add New Department"
-        value={newDepartment}
-        setValue={setNewDepartment}
-        onAdd={handleAddDepartment}
-        placeholder="Enter department name"
-        items={departments}
-        onDelete={handleDeleteDepartment}
-      />
-      <Modal
-        show={showSubDepartmentModal}
-        onClose={() => setShowSubDepartmentModal(false)}
-        title="Add New Sub Department"
-        value={newSubDepartment}
-        setValue={setNewSubDepartment}
-        onAdd={handleAddSubDepartment}
-        placeholder="Enter sub department name"
-        items={subDepartments}
-        onDelete={handleDeleteSubDepartment}
-      />
     </div>
   );
 };
