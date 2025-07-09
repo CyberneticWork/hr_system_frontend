@@ -1,187 +1,93 @@
 import React, { useState, useEffect } from "react";
-import { User, Users, Baby, Briefcase, Plus, Trash2 } from "lucide-react";
+import {
+  Camera,
+  Upload,
+  User,
+  Users,
+  Baby,
+  Briefcase,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEmployeeForm } from "@contexts/EmployeeFormContext";
 
-const STORAGE_KEY = "employeeFormData";
-
-const initialState = {
-  title: "",
-  attendanceEmpNo: "",
-  epfNo: "",
-  nicNumber: "",
-  dob: "",
-  gender: "",
-  religion: "",
-  countryOfBirth: "",
-  employmentStatus: "",
-  nameWithInitial: "",
-  fullName: "",
-  displayName: "",
-  maritalStatus: "",
-  relationshipType: "",
-  spouseName: "",
-  spouseAge: "",
-  spouseDob: "",
-  spouseNic: "",
-  children: [{ name: "", age: "", dob: "", nic: "" }], // Exactly one empty child
-};
-
-const EmpPersonalDetails = ({ onNext, activeCategory }) => {
-  const [form, setForm] = useState(initialState);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
-  // Load data from localStorage on component mount
-  useEffect(() => {
-
-    const loadData = () => {
-      try {
-        // console.log("Attempting to load data from localStorage...");
-        const savedData = localStorage.getItem(STORAGE_KEY);
-
-        if (savedData && savedData !== "undefined" && savedData !== "null") {
-          const parsedData = JSON.parse(savedData);
-          // console.log("Data loaded from localStorage:", parsedData);
-          setForm(parsedData);
-        } else {
-          // console.log("No saved data found in localStorage");
-        }
-      } catch (error) {
-        // console.error("Error loading saved data:", error);
-        // If there's an error, clear the corrupted data
-        localStorage.removeItem(STORAGE_KEY);
-      } finally {
-        setIsDataLoaded(true);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Save to localStorage whenever form changes (but only after initial load)
-  useEffect(() => {
-    if (!isDataLoaded) return; // Don't save until we've loaded initial data
-
-    const saveData = () => {
-      try {
-        const dataToSave = JSON.stringify(form);
-        localStorage.setItem(STORAGE_KEY, dataToSave);
-        // console.log("Data saved to localStorage:", form);
-
-        // Verify the save worked
-        const verification = localStorage.getItem(STORAGE_KEY);
-        if (verification) {
-          // console.log("✅ Save verified successfully");
-        } else {
-          // console.error("❌ Save verification failed");
-        }
-      } catch (error) {
-        // console.error("Error saving data to localStorage:", error);
-        // Check if localStorage is available
-        if (typeof Storage === "undefined") {
-          // console.error("localStorage is not supported in this browser");
-        } else if (error.name === "QuotaExceededError") {
-          // console.error("localStorage quota exceeded");
-        }
-      }
-    };
-
-    // Debounce the save to avoid too frequent saves
-    const timeoutId = setTimeout(saveData, 300);
-    return () => clearTimeout(timeoutId);
-  }, [form, isDataLoaded]);
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleChildChange = (idx, e) => {
-    const { name, value, type } = e.target;
-    setForm((prev) => {
-      const children = [...prev.children];
-      // Always store as string for controlled input
-      children[idx][name] = type === "number" ? value.toString() : value;
-      return { ...prev, children };
-    });
-  };
-
-  const addChild = () => {
-    setForm((prev) => ({
-      ...prev,
-      children: [...prev.children, { name: "", age: "", dob: "", nic: "" }],
-    }));
-  };
-
-  const removeChild = (idx) => {
-    if (form.children.length > 1) {
-      setForm((prev) => ({
-        ...prev,
-        children: prev.children.filter((_, index) => index !== idx),
-      }));
-    }
-  };
-
-  const handleSubmit = () => {
-  console.log("Form submitted:", JSON.stringify(form, null, 2));
-  alert("Employee details saved successfully!");
-  // Removed the clearForm() call here - let user decide when to clear
-};
-
-  const clearForm = () => {
-  try {
-    // Reset to initial state with exactly one empty child
-    setForm({
-      ...initialState,
-      children: [{ name: "", age: "", dob: "", nic: "" }]
-    });
-    localStorage.removeItem(STORAGE_KEY);
-    console.log("✅ Form cleared and localStorage data removed");
-
-    // Verify the clear worked
-    const verification = localStorage.getItem(STORAGE_KEY);
-    if (!verification) {
-      console.log("✅ Clear verified successfully");
-    } else {
-      console.error("❌ Clear verification failed");
-    }
-  } catch (error) {
-    console.error("Error clearing localStorage:", error);
-  }
-};
-
-  // Test localStorage function
-  const testLocalStorage = () => {
-    try {
-      const testKey = "test_key";
-      const testValue = "test_value";
-
-      localStorage.setItem(testKey, testValue);
-      const retrieved = localStorage.getItem(testKey);
-      localStorage.removeItem(testKey);
-
-      if (retrieved === testValue) {
-        // console.log("✅ localStorage is working correctly");
-        alert("localStorage is working correctly");
-      } else {
-        // console.error("❌ localStorage test failed");
-        alert("localStorage test failed");
-      }
-    } catch (error) {
-      // console.error("❌ localStorage is not available:", error);
-      alert("localStorage is not available: " + error.message);
-    }
-  };
-
-  const relationshipOptions = [
+const relationshipOptions = [
   { value: "", label: "Select Relationship Type" },
   { value: "husband", label: "Husband" },
   { value: "wife", label: "Wife" },
   { value: "relation", label: "Relation" },
   { value: "non-relation", label: "Non-Relation" },
   { value: "friend", label: "Friend" },
-  ];
+];
+
+const EmpPersonalDetails = ({ onNext, activeCategory }) => {
+  const { formData, updateFormData } = useEmployeeForm();
+  const [preview, setPreview] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    updateFormData("personal", {
+      [name]: type === "checkbox" ? checked : value,
+    });
+
+    if (e.target.type === "file" && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target.result);
+      reader.readAsDataURL(file);
+      updateFormData("personal", { profilePicture: file });
+    }
+  };
+
+  const handleChildChange = (idx, e) => {
+    const { name, value } = e.target;
+    const updatedChildren = [...formData.personal.children];
+    updatedChildren[idx][name] = value;
+    updateFormData("personal", { children: updatedChildren });
+  };
+
+  const addChild = () => {
+    updateFormData("personal", {
+      children: [
+        ...formData.personal.children,
+        { name: "", age: "", dob: "", nic: "" },
+      ],
+    });
+  };
+
+  const removeChild = (idx) => {
+    if (formData.personal.children.length > 1) {
+      const updatedChildren = formData.personal.children.filter(
+        (_, index) => index !== idx
+      );
+      updateFormData("personal", { children: updatedChildren });
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target.result);
+      reader.readAsDataURL(file);
+      updateFormData("personal", { profilePicture: file });
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+
 
   return (
     <div className="rounded-2xl overflow-hidden">
@@ -199,20 +105,6 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 Complete employee information management system
               </p>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={testLocalStorage}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
-            >
-              Test Storage
-            </button>
-            <button
-              onClick={clearForm}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
-            >
-              Clear Form
-            </button>
           </div>
         </div>
       </div>
@@ -237,7 +129,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <select
                 name="title"
-                value={form.title}
+                value={formData.personal.title}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
@@ -258,7 +150,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="attendanceEmpNo"
-                value={form.attendanceEmpNo}
+                value={formData.personal.attendanceEmpNo}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -273,7 +165,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="epfNo"
-                value={form.epfNo}
+                value={formData.personal.epfNo}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -288,7 +180,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="nicNumber"
-                value={form.nicNumber}
+                value={formData.personal.nicNumber}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -304,7 +196,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               <input
                 type="date"
                 name="dob"
-                value={form.dob}
+                value={formData.personal.dob}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -318,7 +210,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <select
                 name="gender"
-                value={form.gender}
+                value={formData.personal.gender}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
@@ -337,7 +229,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="religion"
-                value={form.religion}
+                value={formData.personal.religion}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter religion"
@@ -351,11 +243,79 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="countryOfBirth"
-                value={form.countryOfBirth}
+                value={formData.personal.countryOfBirth}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter country of birth"
               />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Profile Picture
+              </label>
+
+              <div className="flex items-center gap-4">
+                {/* Preview Circle */}
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                    {preview ? (
+                      <img
+                        src={preview}
+                        alt="Profile preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 text-gray-400" />
+                    )}
+                  </div>
+                  {preview && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Area */}
+                <div
+                  className={`relative flex-1 border-2 border-dashed rounded-lg px-4 py-3 
+                    transition-all duration-200 cursor-pointer
+                    ${
+                      isDragging
+                        ? "border-blue-400 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                    }
+                  `}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
+                  <input
+                    name="profilePicture"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Camera className="w-4 h-4" />
+                      <span>Choose photo</span>
+                    </div>
+                    <div className="text-gray-400">or drag and drop</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* File info */}
+              {formData.personal.profilePicture && (
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <Upload className="w-3 h-3" />
+                  <span>
+                    {formData.personal.profilePicture.name || "File selected"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -387,7 +347,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                   type="radio"
                   name="employmentStatus"
                   value={item.value}
-                  checked={form.employmentStatus === item.value}
+                  checked={formData.personal.employmentStatus === item.value}
                   onChange={handleChange}
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
                 />
@@ -417,7 +377,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="nameWithInitial"
-                value={form.nameWithInitial}
+                value={formData.personal.nameWithInitial}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -430,7 +390,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="fullName"
-                value={form.fullName}
+                value={formData.personal.fullName}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -443,7 +403,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="displayName"
-                value={form.displayName}
+                value={formData.personal.displayName}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -458,7 +418,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
             </label>
             <select
               name="maritalStatus"
-              value={form.maritalStatus}
+              value={formData.personal.maritalStatus}
               onChange={handleChange}
               className="w-full lg:w-1/3 border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
             >
@@ -488,7 +448,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
             </label>
             <select
               name="relationshipType"
-              value={form.relationshipType || ""}
+              value={formData.personal.relationshipType || ""}
               onChange={handleChange}
               className="w-full lg:w-1/3 border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
             >
@@ -499,7 +459,6 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               ))}
             </select>
           </div>
-        
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
@@ -508,7 +467,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="spouseName"
-                value={form.spouseName}
+                value={formData.personal.spouseName}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter spouse name"
@@ -522,7 +481,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 name="spouseAge"
                 type="number"
                 min="0"
-                value={form.spouseAge}
+                value={formData.personal.spouseAge}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter age"
@@ -535,7 +494,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               <input
                 name="spouseDob"
                 type="date"
-                value={form.spouseDob}
+                value={formData.personal.spouseDob}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
@@ -546,7 +505,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </label>
               <input
                 name="spouseNic"
-                value={form.spouseNic}
+                value={formData.personal.spouseNic}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter NIC number"
@@ -576,13 +535,13 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
           </div>
 
           <div className="space-y-4">
-            {form.children.map((child, idx) => (
+            {formData.personal.children.map((child, idx) => (
               <div key={idx} className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-gray-600">
                     Child {idx + 1}
                   </h3>
-                  {form.children.length > 1 && (
+                  {formData.personal.children.length > 1 && (
                     <button
                       onClick={() => removeChild(idx)}
                       className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg transition-colors duration-200 flex items-center gap-1"
@@ -628,19 +587,8 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
           </div>
         </div>
 
-        {/* Submit Button */}
-        {/* <div className="flex justify-center gap-4 pb-6">
-          <button
-            type="button"
-            onClick={() => {
-              handleSubmit();
-              clearForm();
-            }}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:ring-4 focus:ring-blue-300"
-          >
-            Save Employee Details
-          </button>
-        </div> */}
+
+        {/* Next Button */}
         <div className="flex justify-end mt-8">
           <button
             type="button"
