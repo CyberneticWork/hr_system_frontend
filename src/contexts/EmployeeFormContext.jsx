@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const EmployeeFormContext = createContext();
 
@@ -12,7 +12,7 @@ const initialState = {
     gender: "",
     religion: "",
     countryOfBirth: "",
-    profilePicture: "", 
+    profilePicture: null,
     employmentStatus: "",
     nameWithInitial: "",
     fullName: "",
@@ -95,6 +95,7 @@ export const EmployeeFormProvider = ({ children }) => {
   const [formData, setFormData] = useState(initialState);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load data from localStorage on initial render
   useEffect(() => {
     const loadData = () => {
       try {
@@ -109,54 +110,53 @@ export const EmployeeFormProvider = ({ children }) => {
     loadData();
   }, []);
 
+  // Save to localStorage whenever formData changes
   useEffect(() => {
     localStorage.setItem("employeeFormData", JSON.stringify(formData));
   }, [formData]);
 
-  const updateFormData = (section, data) => {
-    setFormData((prev) => ({
+  const updateFormData = useCallback((section, data) => {
+    setFormData(prev => ({
       ...prev,
       [section]: { ...prev[section], ...data },
     }));
-  };
+  }, []);
 
-  const addDocuments = (files) => {
+  const addDocuments = useCallback((files) => {
     const newDocs = Array.from(files).map((file) => ({
       file,
       type: "",
-      preview: file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : null,
+      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
       status: "pending",
     }));
 
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       documents: [...prev.documents, ...newDocs],
     }));
-  };
+  }, []);
 
-  const removeDocument = (index) => {
+  const removeDocument = useCallback((index) => {
     const docToRemove = formData.documents[index];
     if (docToRemove.preview) {
       URL.revokeObjectURL(docToRemove.preview);
     }
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       documents: prev.documents.filter((_, i) => i !== index),
     }));
-  };
+  }, [formData.documents]);
 
-  const clearForm = () => {
+  const clearForm = useCallback(() => {
     // Clean up object URLs
     formData.documents.forEach((doc) => {
       if (doc.preview) URL.revokeObjectURL(doc.preview);
     });
     setFormData(initialState);
     localStorage.removeItem("employeeFormData");
-  };
+  }, [formData.documents]);
 
   return (
     <EmployeeFormContext.Provider
@@ -178,9 +178,7 @@ export const EmployeeFormProvider = ({ children }) => {
 export const useEmployeeForm = () => {
   const context = useContext(EmployeeFormContext);
   if (!context) {
-    throw new Error(
-      "useEmployeeForm must be used within an EmployeeFormProvider"
-    );
+    throw new Error("useEmployeeForm must be used within an EmployeeFormProvider");
   }
   return context;
 };
