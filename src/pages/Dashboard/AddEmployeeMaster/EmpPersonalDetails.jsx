@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { User, Users, Baby, Briefcase, Plus, Trash2 } from "lucide-react";
+import { Camera, Upload, User, Users, Baby, Briefcase, Plus, Trash2 } from "lucide-react";
 
 const STORAGE_KEY = "employeeFormData";
 
@@ -12,6 +12,7 @@ const initialState = {
   gender: "",
   religion: "",
   countryOfBirth: "",
+  profilePicture: '', 
   employmentStatus: "",
   nameWithInitial: "",
   fullName: "",
@@ -28,6 +29,8 @@ const initialState = {
 const EmpPersonalDetails = ({ onNext, activeCategory }) => {
   const [form, setForm] = useState(initialState);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -95,6 +98,14 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    
+    // Handle file input for preview
+    if (e.target.type === 'file' && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleChildChange = (idx, e) => {
@@ -172,6 +183,31 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
       // console.error("❌ localStorage is not available:", error);
       alert("localStorage is not available: " + error.message);
     }
+  };
+
+
+  
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setForm({ ...form, profilePicture: file });
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
   };
 
   const relationshipOptions = [
@@ -357,6 +393,72 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 placeholder="Enter country of birth"
               />
             </div>
+            <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        Profile Picture
+      </label>
+      
+      <div className="flex items-center gap-4">
+        {/* Preview Circle */}
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+            {preview ? (
+              <img 
+                src={preview} 
+                alt="Profile preview" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-6 h-6 text-gray-400" />
+            )}
+          </div>
+          {preview && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Upload Area */}
+        <div 
+          className={`
+            relative flex-1 border-2 border-dashed rounded-lg px-4 py-3 
+            transition-all duration-200 cursor-pointer
+            ${isDragging 
+              ? 'border-blue-400 bg-blue-50' 
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            }
+          `}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <input
+            name="profilePicture"
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Camera className="w-4 h-4" />
+              <span>Choose photo</span>
+            </div>
+            <div className="text-gray-400">or drag and drop</div>
+          </div>
+        </div>
+      </div>
+
+      {/* File info */}
+      {form.profilePicture && (
+        <div className="text-xs text-gray-500 flex items-center gap-1">
+          <Upload className="w-3 h-3" />
+          <span>{form.profilePicture.name || 'File selected'}</span>
+        </div>
+      )}
+    </div>
           </div>
         </div>
 

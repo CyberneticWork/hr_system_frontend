@@ -12,6 +12,7 @@ const initialState = {
     gender: "",
     religion: "",
     countryOfBirth: "",
+    profilePicture: "", 
     employmentStatus: "",
     nameWithInitial: "",
     fullName: "",
