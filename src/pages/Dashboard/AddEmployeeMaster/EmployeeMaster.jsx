@@ -38,7 +38,7 @@ const EmployeeMaster = () => {
     try {
       // Use the service to submit data
       const response = await employeeService.submitEmployee(allEmployeeData);
-      console.log('Employee created:', response);
+      console.log('Employee created:', JSON.stringify(response, null, 2));
       alert('Employee submitted successfully!');
       
       // Optionally clear form or redirect
