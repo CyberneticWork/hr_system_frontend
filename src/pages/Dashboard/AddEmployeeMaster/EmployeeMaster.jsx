@@ -14,7 +14,7 @@ const steps = [
   'address',
   'compensation',
   'organization',
-  'employeedocument',
+  'documents',
   'confirmation'
 ];
 
@@ -99,7 +99,7 @@ const EmployeeMaster = () => {
                 activeCategory={activeCategory}
               />
             )}
-            {activeCategory === 'employeedocument' && (
+            {activeCategory === 'documents' && (
               <Employeedocument
                 onPrevious={goPrevious}
                 onSubmit={handleSubmit}
