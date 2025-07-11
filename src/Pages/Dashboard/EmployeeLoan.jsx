@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {createLoan} from '@services/LoanService';
 
 const EmployeeLoan = () => {
   const [loanId, setLoanId] = useState('');
@@ -10,6 +11,37 @@ const EmployeeLoan = () => {
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [loanDetails, setLoanDetails] = useState([]);
   const [isCalculated, setIsCalculated] = useState(false);
+
+  const handleSaveLoan = async () => {
+    try {
+      const payload = {
+        loan_id: loanId,
+        employee_id: employeeNo, // Make sure this is the employee's DB ID, not just a number
+        loan_amount: parseFloat(loanAmount),
+        interest_rate_per_annum: interestType === 'withInterest' ? parseFloat(interestRate) : 0,
+        installment_amount: parseFloat(installmentAmount),
+        start_from: startDate,
+        with_interest: interestType === 'withInterest',
+      };
+      await createLoan(payload);
+      alert('Loan saved successfully!');
+    } catch (error) {
+      // alert('Failed to save loan. Please check your input.');
+      console.error('Error saving loan:', error);
+    }
+  };
+
+  // Auto-generate Loan ID
+  useEffect(() => {
+    if (employeeNo && startDate) {
+      const date = new Date(startDate);
+      const yyyymmdd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+      const random = Math.floor(1000 + Math.random() * 9000);
+      setLoanId(`LN-${employeeNo}-${yyyymmdd}-${random}`);
+    } else {
+      setLoanId('');
+    }
+  }, [employeeNo, startDate]);
 
   const calculateLoan = () => {
     // Validation
@@ -76,7 +108,8 @@ const EmployeeLoan = () => {
                   type="text" 
                   className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 hover:border-gray-400"
                   value={loanId}
-                  onChange={(e) => setLoanId(e.target.value)}
+                  readOnly
+                  // onChange={(e) => setLoanId(e.target.value)}
                   placeholder="Enter Loan ID"
                 />
               </div>
@@ -216,6 +249,13 @@ const EmployeeLoan = () => {
               </svg>
               Calculate
             </button>
+            <button
+              className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300"
+              onClick={handleSaveLoan}
+              disabled={!isCalculated}
+            >
+              Save Loan
+            </button>
           </div>
 
           {/* Loan Details Table - Always Visible */}
@@ -223,7 +263,7 @@ const EmployeeLoan = () => {
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
               <h3 className="text-xl font-bold text-white flex items-center">
                 <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm0-4h5V8H4v2zm7 8a7 7 0 100-14 7 7 0 000 14zm1-11a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662V13a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 10.766 14 9.991 14 9c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 6.092V5a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 Loan Repayment Schedule
               </h3>

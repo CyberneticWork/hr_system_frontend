@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 const EmployeeFormContext = createContext();
 
@@ -13,6 +19,7 @@ const initialState = {
     religion: "",
     countryOfBirth: "",
     profilePicture: null,
+    profilePicturePreview: null,
     employmentStatus: "",
     nameWithInitial: "",
     fullName: "",
@@ -94,6 +101,8 @@ const initialState = {
 export const EmployeeFormProvider = ({ children }) => {
   const [formData, setFormData] = useState(initialState);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load data from localStorage on initial render
   useEffect(() => {
@@ -101,7 +110,20 @@ export const EmployeeFormProvider = ({ children }) => {
       try {
         const savedData = localStorage.getItem("employeeFormData");
         if (savedData) {
-          setFormData(JSON.parse(savedData));
+          const parsedData = JSON.parse(savedData);
+          const documentsWithPreview = parsedData.documents?.map(doc => ({
+            ...doc,
+            preview: null
+          })) || [];
+          
+          setFormData({
+            ...parsedData,
+            documents: documentsWithPreview,
+            personal: {
+              ...parsedData.personal,
+              profilePicture: null
+            }
+          });
         }
       } catch (error) {
         console.error("Error loading form data:", error);
@@ -112,11 +134,35 @@ export const EmployeeFormProvider = ({ children }) => {
 
   // Save to localStorage whenever formData changes
   useEffect(() => {
-    localStorage.setItem("employeeFormData", JSON.stringify(formData));
+    const saveData = () => {
+      try {
+        const dataToSave = {
+          ...formData,
+          personal: {
+            ...formData.personal,
+            profilePicture: formData.personal.profilePicturePreview
+          },
+          documents: formData.documents.map(doc => ({
+            ...doc,
+            file: null,
+            type: doc.type,
+            name: doc.name,
+            size: doc.size,
+            status: doc.status
+          }))
+        };
+        
+        localStorage.setItem("employeeFormData", JSON.stringify(dataToSave));
+      } catch (error) {
+        console.error("Error saving form data:", error);
+      }
+    };
+    
+    saveData();
   }, [formData]);
 
   const updateFormData = useCallback((section, data) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [section]: { ...prev[section], ...data },
     }));
@@ -132,31 +178,60 @@ export const EmployeeFormProvider = ({ children }) => {
       status: "pending",
     }));
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       documents: [...prev.documents, ...newDocs],
     }));
   }, []);
 
   const removeDocument = useCallback((index) => {
-    const docToRemove = formData.documents[index];
-    if (docToRemove.preview) {
-      URL.revokeObjectURL(docToRemove.preview);
-    }
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index),
-    }));
-  }, [formData.documents]);
+    setFormData((prev) => {
+      const docToRemove = prev.documents[index];
+      if (docToRemove?.preview) {
+        URL.revokeObjectURL(docToRemove.preview);
+      }
+      return {
+        ...prev,
+        documents: prev.documents.filter((_, i) => i !== index),
+      };
+    });
+  }, []);
 
   const clearForm = useCallback(() => {
-    // Clean up object URLs
     formData.documents.forEach((doc) => {
-      if (doc.preview) URL.revokeObjectURL(doc.preview);
+      if (doc?.preview) URL.revokeObjectURL(doc.preview);
     });
     setFormData(initialState);
+    setErrors({});
     localStorage.removeItem("employeeFormData");
   }, [formData.documents]);
+
+  const setFormErrors = useCallback((newErrors) => {
+    setErrors(newErrors);
+  }, []);
+
+  const clearSectionErrors = useCallback((section) => {
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[section];
+      return newErrors;
+    });
+  }, []);
+
+  const clearFieldError = useCallback((section, field) => {
+    setErrors(prev => {
+      if (!prev[section]) return prev;
+      
+      const newErrors = { ...prev };
+      delete newErrors[section][field];
+      
+      if (Object.keys(newErrors[section]).length === 0) {
+        delete newErrors[section];
+      }
+      
+      return newErrors;
+    });
+  }, []);
 
   return (
     <EmployeeFormContext.Provider
@@ -168,6 +243,12 @@ export const EmployeeFormProvider = ({ children }) => {
         clearForm,
         isLoading,
         setIsLoading,
+        errors,
+        setFormErrors,
+        clearSectionErrors,
+        clearFieldError,
+        isSubmitting,
+        setIsSubmitting
       }}
     >
       {children}

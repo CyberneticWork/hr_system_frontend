@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, MapPin, CreditCard, Building, Phone, Heart, Check, Edit } from 'lucide-react';
+import { User, Users, MapPin, CreditCard, Building, Phone, Heart, Check, Edit } from 'lucide-react';
 import { useEmployeeForm } from '@contexts/EmployeeFormContext';
 
 const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
@@ -40,8 +40,16 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="bg-white bg-opacity-20 p-3 rounded-xl">
-                <User className="w-8 h-8" />
+              <div className="rounded-4xl">
+                {formData.personal.profilePicturePreview ? (
+                  <img 
+                    src={formData.personal.profilePicturePreview} 
+                    alt="Profile" 
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-16 h-16" />
+                )}
               </div>
               <div>
                 <h1 className="text-3xl font-bold">Employee Information</h1>
