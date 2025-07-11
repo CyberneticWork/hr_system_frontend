@@ -39,9 +39,17 @@ const employeeService = {
 
       return response.data;
     } catch (error) {
-      console.error('Error submitting employee:', error);
+    if (error.response) {
+      // The server responded with a status code outside 2xx
       throw error;
+    } else if (error.request) {
+      // The request was made but no response received
+      throw new Error('No response from server');
+    } else {
+      // Something happened in setting up the request
+      throw new Error('Error setting up request');
     }
+  }
   },
 
   

@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEmployeeForm } from "@contexts/EmployeeFormContext";
+import FieldError from '@components/ErrorMessage/FieldError';
 
 const relationshipOptions = [
   { value: "", label: "Select Relationship Type" },
@@ -165,6 +166,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 <option>Ms</option>
                 <option>Dr</option>
               </select>
+              {/* <FieldError error={errors.personal?.title} /> */}
             </div>
 
             {/* Attendance Emp No */}

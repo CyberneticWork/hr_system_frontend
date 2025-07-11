@@ -101,6 +101,8 @@ const initialState = {
 export const EmployeeFormProvider = ({ children }) => {
   const [formData, setFormData] = useState(initialState);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load data from localStorage on initial render
   useEffect(() => {
@@ -109,21 +111,16 @@ export const EmployeeFormProvider = ({ children }) => {
         const savedData = localStorage.getItem("employeeFormData");
         if (savedData) {
           const parsedData = JSON.parse(savedData);
-          // Handle documents with preview URLs
-          const documentsWithPreview = parsedData.documents?.map(doc => {
-            return {
-              ...doc,
-              // Clear preview URLs as they can't be restored from localStorage
-              preview: null
-            };
-          }) || [];
+          const documentsWithPreview = parsedData.documents?.map(doc => ({
+            ...doc,
+            preview: null
+          })) || [];
           
           setFormData({
             ...parsedData,
             documents: documentsWithPreview,
             personal: {
               ...parsedData.personal,
-              // Ensure profilePicture is null when loaded from localStorage
               profilePicture: null
             }
           });
@@ -139,19 +136,15 @@ export const EmployeeFormProvider = ({ children }) => {
   useEffect(() => {
     const saveData = () => {
       try {
-        // Prepare data for localStorage (remove File objects)
         const dataToSave = {
           ...formData,
           personal: {
             ...formData.personal,
-            // Only save the preview URL, not the File object
             profilePicture: formData.personal.profilePicturePreview
           },
           documents: formData.documents.map(doc => ({
             ...doc,
-            // Don't save the File object in localStorage
             file: null,
-            // Keep other document metadata
             type: doc.type,
             name: doc.name,
             size: doc.size,
@@ -205,13 +198,40 @@ export const EmployeeFormProvider = ({ children }) => {
   }, []);
 
   const clearForm = useCallback(() => {
-    // Clean up object URLs
     formData.documents.forEach((doc) => {
       if (doc?.preview) URL.revokeObjectURL(doc.preview);
     });
     setFormData(initialState);
+    setErrors({});
     localStorage.removeItem("employeeFormData");
   }, [formData.documents]);
+
+  const setFormErrors = useCallback((newErrors) => {
+    setErrors(newErrors);
+  }, []);
+
+  const clearSectionErrors = useCallback((section) => {
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[section];
+      return newErrors;
+    });
+  }, []);
+
+  const clearFieldError = useCallback((section, field) => {
+    setErrors(prev => {
+      if (!prev[section]) return prev;
+      
+      const newErrors = { ...prev };
+      delete newErrors[section][field];
+      
+      if (Object.keys(newErrors[section]).length === 0) {
+        delete newErrors[section];
+      }
+      
+      return newErrors;
+    });
+  }, []);
 
   return (
     <EmployeeFormContext.Provider
@@ -223,6 +243,12 @@ export const EmployeeFormProvider = ({ children }) => {
         clearForm,
         isLoading,
         setIsLoading,
+        errors,
+        setFormErrors,
+        clearSectionErrors,
+        clearFieldError,
+        isSubmitting,
+        setIsSubmitting
       }}
     >
       {children}
