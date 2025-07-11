@@ -1,6 +1,7 @@
 import axios from "@utils/axios";
 
-const API_PREFIX = '/apiData'; 
+const API_PREFIX = '/apiData';
+
 
 export const fetchCompanies = async () => {
   try {
