@@ -25,6 +25,21 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
   const [preview, setPreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Load preview from localStorage on component mount
+  useEffect(() => {
+    if (formData.personal.profilePicture) {
+      if (formData.personal.profilePicture instanceof File) {
+        // If it's a File object (new upload)
+        const reader = new FileReader();
+        reader.onload = (e) => setPreview(e.target.result);
+        reader.readAsDataURL(formData.personal.profilePicture);
+      } else if (typeof formData.personal.profilePicture === "string") {
+        // If it's a base64 string (from localStorage)
+        setPreview(formData.personal.profilePicture);
+      }
+    }
+  }, [formData.personal.profilePicture]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     updateFormData("personal", {
@@ -34,9 +49,15 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
     if (e.target.type === "file" && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target.result);
+      reader.onload = (e) => {
+        setPreview(e.target.result);
+        // Store both the File object and the preview URL
+        updateFormData("personal", {
+          profilePicture: file,
+          profilePicturePreview: e.target.result,
+        });
+      };
       reader.readAsDataURL(file);
-      updateFormData("personal", { profilePicture: file });
     }
   };
 
@@ -71,9 +92,14 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target.result);
+      reader.onload = (e) => {
+        setPreview(e.target.result);
+        updateFormData("personal", {
+          profilePicture: file,
+          profilePicturePreview: e.target.result,
+        });
+      };
       reader.readAsDataURL(file);
-      updateFormData("personal", { profilePicture: file });
     }
   };
 
@@ -86,8 +112,6 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
     e.preventDefault();
     setIsDragging(false);
   };
-
-
 
   return (
     <div className="rounded-2xl overflow-hidden">
@@ -249,6 +273,8 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 placeholder="Enter country of birth"
               />
             </div>
+
+            {/* Profile Picture Upload */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Profile Picture
@@ -278,13 +304,13 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 {/* Upload Area */}
                 <div
                   className={`relative flex-1 border-2 border-dashed rounded-lg px-4 py-3 
-                    transition-all duration-200 cursor-pointer
-                    ${
-                      isDragging
-                        ? "border-blue-400 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-                    }
-                  `}
+              transition-all duration-200 cursor-pointer
+              ${
+                isDragging
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+              }
+            `}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -586,7 +612,6 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
             ))}
           </div>
         </div>
-
 
         {/* Next Button */}
         <div className="flex justify-end mt-8">

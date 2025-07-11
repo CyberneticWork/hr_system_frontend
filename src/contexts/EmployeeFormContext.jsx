@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 const EmployeeFormContext = createContext();
 
@@ -13,6 +19,7 @@ const initialState = {
     religion: "",
     countryOfBirth: "",
     profilePicture: null,
+    profilePicturePreview: null,
     employmentStatus: "",
     nameWithInitial: "",
     fullName: "",
@@ -101,7 +108,25 @@ export const EmployeeFormProvider = ({ children }) => {
       try {
         const savedData = localStorage.getItem("employeeFormData");
         if (savedData) {
-          setFormData(JSON.parse(savedData));
+          const parsedData = JSON.parse(savedData);
+          // Handle documents with preview URLs
+          const documentsWithPreview = parsedData.documents?.map(doc => {
+            return {
+              ...doc,
+              // Clear preview URLs as they can't be restored from localStorage
+              preview: null
+            };
+          }) || [];
+          
+          setFormData({
+            ...parsedData,
+            documents: documentsWithPreview,
+            personal: {
+              ...parsedData.personal,
+              // Ensure profilePicture is null when loaded from localStorage
+              profilePicture: null
+            }
+          });
         }
       } catch (error) {
         console.error("Error loading form data:", error);
@@ -112,11 +137,39 @@ export const EmployeeFormProvider = ({ children }) => {
 
   // Save to localStorage whenever formData changes
   useEffect(() => {
-    localStorage.setItem("employeeFormData", JSON.stringify(formData));
+    const saveData = () => {
+      try {
+        // Prepare data for localStorage (remove File objects)
+        const dataToSave = {
+          ...formData,
+          personal: {
+            ...formData.personal,
+            // Only save the preview URL, not the File object
+            profilePicture: formData.personal.profilePicturePreview
+          },
+          documents: formData.documents.map(doc => ({
+            ...doc,
+            // Don't save the File object in localStorage
+            file: null,
+            // Keep other document metadata
+            type: doc.type,
+            name: doc.name,
+            size: doc.size,
+            status: doc.status
+          }))
+        };
+        
+        localStorage.setItem("employeeFormData", JSON.stringify(dataToSave));
+      } catch (error) {
+        console.error("Error saving form data:", error);
+      }
+    };
+    
+    saveData();
   }, [formData]);
 
   const updateFormData = useCallback((section, data) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [section]: { ...prev[section], ...data },
     }));
@@ -132,27 +185,29 @@ export const EmployeeFormProvider = ({ children }) => {
       status: "pending",
     }));
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       documents: [...prev.documents, ...newDocs],
     }));
   }, []);
 
   const removeDocument = useCallback((index) => {
-    const docToRemove = formData.documents[index];
-    if (docToRemove.preview) {
-      URL.revokeObjectURL(docToRemove.preview);
-    }
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index),
-    }));
-  }, [formData.documents]);
+    setFormData((prev) => {
+      const docToRemove = prev.documents[index];
+      if (docToRemove?.preview) {
+        URL.revokeObjectURL(docToRemove.preview);
+      }
+      return {
+        ...prev,
+        documents: prev.documents.filter((_, i) => i !== index),
+      };
+    });
+  }, []);
 
   const clearForm = useCallback(() => {
     // Clean up object URLs
     formData.documents.forEach((doc) => {
-      if (doc.preview) URL.revokeObjectURL(doc.preview);
+      if (doc?.preview) URL.revokeObjectURL(doc.preview);
     });
     setFormData(initialState);
     localStorage.removeItem("employeeFormData");

@@ -7,6 +7,8 @@ import Employeedocument from '@dashboard/AddEmployeeMaster/Employeedocument';
 import EmployeeConfirmationModal from './EmployeeConfirmationModal';
 import { EmployeeFormProvider } from '@contexts/EmployeeFormContext';
 
+import employeeService from '@services/EmployeeDataService';
+
 const steps = [
   'personal',
   'address',
@@ -32,9 +34,21 @@ const EmployeeMaster = () => {
     }
   };
 
-  const handleSubmit = (allEmployeeData) => {
-    console.log("Submitting all employee data:", JSON.stringify(allEmployeeData, null, 2));
-    alert('Employee submitted!');
+  const handleSubmit = async (allEmployeeData) => {
+    try {
+      // Use the service to submit data
+      const response = await employeeService.submitEmployee(allEmployeeData);
+      console.log('Employee created:', response);
+      alert('Employee submitted successfully!');
+      
+      // Optionally clear form or redirect
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Error submitting employee. Please try again.');
+    }
+    // console.log("Submitting all employee data:", JSON.stringify(allEmployeeData, null, 2));
+    // console.log(allEmployeeData);
+    // alert('Employee submitted!');
     // Here you would typically send data to backend
   };
 
