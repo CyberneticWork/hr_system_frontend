@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   X,
@@ -13,187 +13,178 @@ import {
   Heart,
   Clipboard,
   DollarSign,
-  Calendar,
+  Loader2
 } from "lucide-react";
+import AllowancesService from '../../services/AllowancesService';
+import { fetchCompanies } from "@services/ApiDataService";
 
 const CreateNewAllowance = () => {
-  const companies = ["Company A", "Company B", "Company C"];
-
-  const [selectedCompany, setSelectedCompany] = useState(companies[0]);
+  // State management
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("");
-
-  const [allowances, setAllowances] = useState([
-    {
-      id: 1,
-      company: "Company A",
-      code: "001",
-      name: "Travelling Allowance",
-      status: "Active",
-      category: "Travel",
-      type: "Variable",
-      date: "2023-10-15",
-    },
-    {
-      id: 2,
-      company: "Company A",
-      code: "002",
-      name: "Special Allowance",
-      status: "Active",
-      category: "Bonus",
-      type: "Fixed",
-    },
-    {
-      id: 3,
-      company: "Company B",
-      code: "003",
-      name: "Attendance Allowance",
-      status: "Active",
-      category: "Performance",
-      type: "Variable",
-      date: "2023-11-20",
-    },
-    {
-      id: 4,
-      company: "Company B",
-      code: "004",
-      name: "Production Incentive",
-      status: "Active",
-      category: "Performance",
-      type: "Variable",
-      date: "2023-09-05",
-    },
-    {
-      id: 5,
-      company: "Company C",
-      code: "005",
-      name: "Medical Reimbursement",
-      status: "Active",
-      category: "Health",
-      type: "Fixed",
-    },
-    {
-      id: 6,
-      company: "Company C",
-      code: "006",
-      name: "Other Reimbursement",
-      status: "Inactive",
-      category: "Other",
-      type: "Fixed",
-    },
-  ]);
-
+  const [allowances, setAllowances] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAllowance, setSelectedAllowance] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Form states
   const [editAllowance, setEditAllowance] = useState({
     id: null,
-    code: "",
-    name: "",
-    company: companies[0],
-    category: "Bonus",
-    status: "Active",
-    type: "Fixed",
-    fromDate: "",
-    toDate: "",
+    allowance_code: "",
+    allowance_name: "",
+    company_id: "",
+    category: "travel",
+    status: "active",
+    allowance_type: "fixed",
   });
+
   const [newAllowance, setNewAllowance] = useState({
-    code: "",
-    name: "",
-    company: companies[0],
-    category: "Bonus",
-    status: "Active",
-    type: "Fixed",
-    fromDate: "",
-    toDate: "",
+    allowance_code: "",
+    allowance_name: "",
+    company_id: "",
+    category: "travel",
+    status: "active",
+    allowance_type: "fixed",
   });
 
-  const categories = ["Travel", "Bonus", "Performance", "Health", "Other"];
-  const statuses = ["Active", "Inactive"];
-  const allowanceTypes = ["Fixed", "Variable"];
+  const [formErrors, setFormErrors] = useState({
+    add: {},
+    edit: {}
+  });
 
-  // Filtered allowances by company and category
-  const filteredAllowances = allowances.filter(
-    (allowance) =>
-      allowance.company === selectedCompany &&
-      (selectedCategory === "" || allowance.category === selectedCategory) &&
-      (allowance.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        allowance.code.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Constants
+  const categories = ["travel", "bonus", "perfomance", "health", "other"];
+  const statuses = ["active", "inactive"];
+  const allowanceTypes = ["fixed", "variable"];
 
-  const handleAddAllowance = () => {
-    if (
-      newAllowance.code.trim() &&
-      newAllowance.name.trim() &&
-      (newAllowance.type !== "Variable" ||
-        (newAllowance.fromDate && newAllowance.toDate))
-    ) {
-      const newId = Math.max(...allowances.map((a) => a.id), 0) + 1;
-      setAllowances([
-        ...allowances,
-        {
-          id: newId,
-          ...newAllowance,
-          fromDate: newAllowance.type === "Variable" ? newAllowance.fromDate : "",
-          toDate: newAllowance.type === "Variable" ? newAllowance.toDate : "",
-        },
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const [allowancesRes, comp] = await Promise.all([
+        AllowancesService.getAllAllowances(),
+        fetchCompanies()
       ]);
+
+      setAllowances(allowancesRes);
+      setCompanies(comp);
+
+      // Set default company_id in newAllowance if companies are loaded
+      if (comp.length > 0 && !newAllowance.company_id) {
+        setNewAllowance(prev => ({ ...prev, company_id: comp[0].id }));
+      }
+
+      // Reset selected company if it's no longer valid
+      if (selectedCompany !== "all" && !comp.some(c => c.id == selectedCompany)) {
+        setSelectedCompany("all");
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(err.message || "Failed to fetch data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filter allowances based on selections
+  const filteredAllowances = allowances.filter((allowance) => {
+    const matchesCompany = selectedCompany === "all" || allowance.company_id == selectedCompany;
+    const matchesCategory = selectedCategory === "" || allowance.category === selectedCategory;
+    const matchesSearch =
+      allowance.allowance_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      allowance.allowance_code.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesCompany && matchesCategory && matchesSearch;
+  });
+
+  // Handlers for CRUD operations
+  const handleAddAllowance = async () => {
+    setIsProcessing(true);
+    setFormErrors({ ...formErrors, add: {} });
+
+    try {
+      const response = await AllowancesService.createAllowance(newAllowance);
+      
+      // Update the state directly with the new allowance
+      setAllowances(prev => [...prev, response]);
+      
+      // Reset form and close modal
       setNewAllowance({
-        code: "",
-        name: "",
-        company: companies[0],
-        category: "Bonus",
-        status: "Active",
-        type: "Fixed",
-        fromDate: "",
-        toDate: "",
+        allowance_code: "",
+        allowance_name: "",
+        company_id: companies[0]?.id || "",
+        category: "travel",
+        status: "active",
+        allowance_type: "fixed",
       });
+
       setIsAddModalOpen(false);
+    } catch (error) {
+      console.error("Add error:", error);
+      if (error.response?.data?.errors) {
+        setFormErrors({ ...formErrors, add: error.response.data.errors });
+      } else {
+        setError(error.message || "Failed to create allowance");
+      }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleEditAllowance = () => {
-    if (
-      editAllowance.code.trim() &&
-      editAllowance.name.trim() &&
-      (editAllowance.type !== "Variable" ||
-        (editAllowance.fromDate && editAllowance.toDate))
-    ) {
-      setAllowances(
-        allowances.map((allowance) =>
-          allowance.id === editAllowance.id
-            ? {
-                ...editAllowance,
-                fromDate: editAllowance.type === "Variable" ? editAllowance.fromDate : "",
-                toDate: editAllowance.type === "Variable" ? editAllowance.toDate : "",
-              }
-            : allowance
-        )
+  const handleEditAllowance = async () => {
+    setIsProcessing(true);
+    setFormErrors({ ...formErrors, edit: {} });
+
+    try {
+      const response = await AllowancesService.updateAllowance(editAllowance.id, editAllowance);
+      
+      // Update the state directly with the updated allowance
+      setAllowances(prev => 
+        prev.map(item => item.id === editAllowance.id ? response : item)
       );
+
       setIsEditModalOpen(false);
-      setEditAllowance({
-        id: null,
-        code: "",
-        name: "",
-        company: companies[0],
-        category: "Bonus",
-        status: "Active",
-        type: "Fixed",
-        fromDate: "",
-        toDate: "",
-      });
+    } catch (error) {
+      console.error("Update error:", error);
+      if (error.response?.data?.errors) {
+        setFormErrors({ ...formErrors, edit: error.response.data.errors });
+      } else {
+        setError(error.message || "Failed to update allowance");
+      }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDeleteAllowance = () => {
-    setAllowances(
-      allowances.filter((allowance) => allowance.id !== selectedAllowance.id)
-    );
-    setIsDeleteModalOpen(false);
-    setSelectedAllowance(null);
+  const handleDeleteAllowance = async () => {
+    setIsProcessing(true);
+    try {
+      await AllowancesService.deleteAllowance(selectedAllowance.id);
+      
+      // Update the state directly by removing the deleted allowance
+      setAllowances(prev => 
+        prev.filter(item => item.id !== selectedAllowance.id)
+      );
+      
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      setError(error.message || "Failed to delete allowance");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
+  // Modal handlers
   const openEditModal = (allowance) => {
     setEditAllowance({ ...allowance });
     setIsEditModalOpen(true);
@@ -205,46 +196,38 @@ const CreateNewAllowance = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setNewAllowance((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setNewAllowance(prev => ({ ...prev, [field]: value }));
   };
 
   const handleEditInputChange = (field, value) => {
-    setEditAllowance((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setEditAllowance(prev => ({ ...prev, [field]: value }));
   };
 
   const closeAddModal = () => {
     setIsAddModalOpen(false);
     setNewAllowance({
-      code: "",
-      name: "",
-      company: companies[0], // Reset company
-      category: "Bonus",
-      status: "Active",
-      type: "Fixed",
-      fromDate: "",
-      toDate: "",
+      allowance_code: "",
+      allowance_name: "",
+      company_id: companies[0]?.id || "",
+      category: "travel",
+      status: "active",
+      allowance_type: "fixed",
     });
+    setFormErrors({ ...formErrors, add: {} });
   };
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditAllowance({
       id: null,
-      code: "",
-      name: "",
-      company: companies[0], // Reset company
-      category: "Bonus",
-      status: "Active",
-      type: "Fixed",
-      fromDate: "",
-      toDate: "",
+      allowance_code: "",
+      allowance_name: "",
+      company_id: companies[0]?.id || "",
+      category: "travel",
+      status: "active",
+      allowance_type: "fixed",
     });
+    setFormErrors({ ...formErrors, edit: {} });
   };
 
   const closeDeleteModal = () => {
@@ -252,37 +235,46 @@ const CreateNewAllowance = () => {
     setSelectedAllowance(null);
   };
 
+  // Helper functions
   const getStatusColor = (status) => {
-    return status === "Active"
+    return status === "active"
       ? "bg-green-100 text-green-800 border-green-200"
       : "bg-gray-100 text-gray-600 border-gray-200";
   };
 
   const getCategoryIcon = (category) => {
-    switch (category) {
-      case "Travel":
-        return <Plane className="w-4 h-4 text-blue-600" />;
-      case "Performance":
-        return <Target className="w-4 h-4 text-green-600" />;
-      case "Health":
-        return <Heart className="w-4 h-4 text-red-600" />;
-      case "Other":
-        return <Clipboard className="w-4 h-4 text-gray-600" />;
-      default:
-        return <DollarSign className="w-4 h-4 text-yellow-600" />;
-    }
+    const icons = {
+      travel: <Plane className="w-4 h-4 text-blue-600" />,
+      bonus: <DollarSign className="w-4 h-4 text-yellow-600" />,
+      perfomance: <Target className="w-4 h-4 text-green-600" />,
+      health: <Heart className="w-4 h-4 text-red-600" />,
+      other: <Clipboard className="w-4 h-4 text-gray-600" />
+    };
+    return icons[category] || <DollarSign className="w-4 h-4 text-yellow-600" />;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const options = { year: "numeric", month: "short", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="animate-spin h-12 w-12 text-blue-500" />
+      </div>
+    );
+  }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Error state
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <strong>Error: </strong> {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-8">
@@ -332,7 +324,7 @@ const CreateNewAllowance = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Active</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {allowances.filter((a) => a.status === "Active").length}
+                  {allowances.filter(a => a.status === "active").length}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
@@ -345,7 +337,7 @@ const CreateNewAllowance = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Inactive</p>
                 <p className="text-2xl font-bold text-gray-500">
-                  {allowances.filter((a) => a.status === "Inactive").length}
+                  {allowances.filter(a => a.status === "inactive").length}
                 </p>
               </div>
               <div className="p-3 bg-gray-100 rounded-xl">
@@ -388,7 +380,7 @@ const CreateNewAllowance = () => {
 
         {/* Company and Category Filter */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div>
+          <div className="flex-1">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Company
             </label>
@@ -397,14 +389,15 @@ const CreateNewAllowance = () => {
               onChange={(e) => setSelectedCompany(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="all">All Companies</option>
               {companies.map((company) => (
-                <option key={company} value={company}>
-                  {company}
+                <option key={company.id} value={company.id}>
+                  {company.name}
                 </option>
               ))}
             </select>
           </div>
-          <div>
+          <div className="flex-1">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Category
             </label>
@@ -413,10 +406,10 @@ const CreateNewAllowance = () => {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All</option>
+              <option value="">All Categories</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat}
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </option>
               ))}
             </select>
@@ -443,9 +436,6 @@ const CreateNewAllowance = () => {
                   </th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden lg:table-cell">
                     Status
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden xl:table-cell">
-                    Date
                   </th>
                   <th className="text-right py-4 px-6 font-semibold text-gray-700">
                     Actions
@@ -479,7 +469,7 @@ const CreateNewAllowance = () => {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                             <span className="text-blue-600 font-bold text-sm">
-                              {allowance.code}
+                              {allowance.allowance_code}
                             </span>
                           </div>
                         </div>
@@ -487,36 +477,30 @@ const CreateNewAllowance = () => {
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">
-                            {allowance.name}
+                            {allowance.allowance_name}
                           </span>
                           <span className="text-sm text-gray-500 sm:hidden">
                             {getCategoryIcon(allowance.category)}{" "}
-                            {allowance.category}
+                            {allowance.category.charAt(0).toUpperCase() + allowance.category.slice(1)}
                           </span>
-                          {allowance.type === "Variable" && (
-                            <span className="text-xs text-gray-400 xl:hidden">
-                              {formatDate(allowance.date)}
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="py-4 px-6 hidden sm:table-cell">
                         <div className="flex items-center gap-2">
                           {getCategoryIcon(allowance.category)}
                           <span className="text-gray-700">
-                            {allowance.category}
+                            {allowance.category.charAt(0).toUpperCase() + allowance.category.slice(1)}
                           </span>
                         </div>
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
-                            allowance.type === "Fixed"
-                              ? "bg-purple-100 text-purple-800 border-purple-200"
-                              : "bg-orange-100 text-orange-800 border-orange-200"
-                          }`}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${allowance.allowance_type === "fixed"
+                            ? "bg-purple-100 text-purple-800 border-purple-200"
+                            : "bg-orange-100 text-orange-800 border-orange-200"
+                            }`}
                         >
-                          {allowance.type}
+                          {allowance.allowance_type}
                         </span>
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
@@ -525,37 +509,21 @@ const CreateNewAllowance = () => {
                             allowance.status
                           )}`}
                         >
-                          {allowance.status}
+                          {allowance.status.charAt(0).toUpperCase() + allowance.status.slice(1)}
                         </span>
-                      </td>
-                      <td className="py-4 px-6 hidden xl:table-cell">
-                        {allowance.type === "Variable" && allowance.fromDate && allowance.toDate ? (
-                          <div className="flex flex-col gap-1 text-gray-700">
-                            <div>
-                              <Calendar className="w-4 h-4 text-gray-400 inline mr-1" />
-                              <span>From: {formatDate(allowance.fromDate)}</span>
-                            </div>
-                            <div>
-                              <Calendar className="w-4 h-4 text-gray-400 inline mr-1" />
-                              <span>To: {formatDate(allowance.toDate)}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEditModal(allowance)}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all tooltip"
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Edit Allowance"
                           >
                             <Edit3 size={16} />
                           </button>
                           <button
                             onClick={() => openDeleteModal(allowance)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all tooltip"
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                             title="Delete Allowance"
                           >
                             <Trash2 size={16} />
@@ -600,27 +568,29 @@ const CreateNewAllowance = () => {
                   </label>
                   <input
                     type="text"
-                    value={newAllowance.code}
-                    onChange={(e) => handleInputChange("code", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="e.g., 007"
+                    value={newAllowance.allowance_code}
+                    onChange={(e) => handleInputChange("allowance_code", e.target.value)}
+                    className={`w-full px-4 py-3 border ${formErrors.add.allowance_code ? "border-red-500" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    placeholder="e.g., TRV-001"
                   />
+                  {formErrors.add.allowance_code && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.add.allowance_code[0]}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Status
+                    Status *
                   </label>
                   <select
                     value={newAllowance.status}
-                    onChange={(e) =>
-                      handleInputChange("status", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("status", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
                     {statuses.map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
                       </option>
                     ))}
                   </select>
@@ -633,27 +603,29 @@ const CreateNewAllowance = () => {
                 </label>
                 <input
                   type="text"
-                  value={newAllowance.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  value={newAllowance.allowance_name}
+                  onChange={(e) => handleInputChange("allowance_name", e.target.value)}
+                  className={`w-full px-4 py-3 border ${formErrors.add.allowance_name ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                   placeholder="Enter allowance name"
                 />
+                {formErrors.add.allowance_name && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.add.allowance_name[0]}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Category
+                  Category *
                 </label>
                 <select
                   value={newAllowance.category}
-                  onChange={(e) =>
-                    handleInputChange("category", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("category", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
-                      {getCategoryIcon(category)} {category}
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -661,75 +633,39 @@ const CreateNewAllowance = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Allowance Type
+                  Allowance Type *
                 </label>
                 <select
-                  value={newAllowance.type}
-                  onChange={(e) => {
-                    handleInputChange("type", e.target.value);
-                    if (e.target.value === "Fixed") {
-                      handleInputChange("fromDate", "");
-                      handleInputChange("toDate", "");
-                    }
-                  }}
+                  value={newAllowance.allowance_type}
+                  onChange={(e) => handleInputChange("allowance_type", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {allowanceTypes.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {newAllowance.type === "Variable" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      From Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={newAllowance.fromDate}
-                      min={todayStr}
-                      onChange={(e) => handleInputChange("fromDate", e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      To Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={newAllowance.toDate}
-                      min={newAllowance.fromDate || todayStr}
-                      onChange={(e) => handleInputChange("toDate", e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Company
-                  </label>
-                  <select
-                    value={newAllowance.company}
-                    onChange={(e) => handleInputChange("company", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  >
-                    {companies.map((company) => (
-                      <option key={company} value={company}>
-                        {company}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Company *
+                </label>
+                <select
+                  value={newAllowance.company_id}
+                  onChange={(e) => handleInputChange("company_id", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.add.company_id && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.add.company_id[0]}</p>
+                )}
               </div>
             </div>
 
@@ -737,19 +673,28 @@ const CreateNewAllowance = () => {
               <button
                 onClick={closeAddModal}
                 className="px-6 py-3 text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                disabled={isProcessing}
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddAllowance}
                 disabled={
-                  !newAllowance.code.trim() ||
-                  !newAllowance.name.trim() ||
-                  (newAllowance.type === "Variable" && (!newAllowance.fromDate || !newAllowance.toDate))
+                  isProcessing ||
+                  !newAllowance.allowance_code.trim() ||
+                  !newAllowance.allowance_name.trim() ||
+                  !newAllowance.company_id
                 }
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none flex items-center gap-2"
               >
-                Add Allowance
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin h-4 w-4" />
+                    Processing...
+                  </>
+                ) : (
+                  "Add Allowance"
+                )}
               </button>
             </div>
           </div>
@@ -785,29 +730,29 @@ const CreateNewAllowance = () => {
                   </label>
                   <input
                     type="text"
-                    value={editAllowance.code}
-                    onChange={(e) =>
-                      handleEditInputChange("code", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="e.g., 007"
+                    value={editAllowance.allowance_code}
+                    onChange={(e) => handleEditInputChange("allowance_code", e.target.value)}
+                    className={`w-full px-4 py-3 border ${formErrors.edit.allowance_code ? "border-red-500" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    placeholder="e.g., TRV-001"
                   />
+                  {formErrors.edit.allowance_code && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.edit.allowance_code[0]}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Status
+                    Status *
                   </label>
                   <select
                     value={editAllowance.status}
-                    onChange={(e) =>
-                      handleEditInputChange("status", e.target.value)
-                    }
+                    onChange={(e) => handleEditInputChange("status", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
                     {statuses.map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
                       </option>
                     ))}
                   </select>
@@ -820,29 +765,29 @@ const CreateNewAllowance = () => {
                 </label>
                 <input
                   type="text"
-                  value={editAllowance.name}
-                  onChange={(e) =>
-                    handleEditInputChange("name", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  value={editAllowance.allowance_name}
+                  onChange={(e) => handleEditInputChange("allowance_name", e.target.value)}
+                  className={`w-full px-4 py-3 border ${formErrors.edit.allowance_name ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                   placeholder="Enter allowance name"
                 />
+                {formErrors.edit.allowance_name && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.edit.allowance_name[0]}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Category
+                  Category *
                 </label>
                 <select
                   value={editAllowance.category}
-                  onChange={(e) =>
-                    handleEditInputChange("category", e.target.value)
-                  }
+                  onChange={(e) => handleEditInputChange("category", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
-                      {getCategoryIcon(category)} {category}
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -850,75 +795,39 @@ const CreateNewAllowance = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Allowance Type
+                  Allowance Type *
                 </label>
                 <select
-                  value={editAllowance.type}
-                  onChange={(e) => {
-                    handleEditInputChange("type", e.target.value);
-                    if (e.target.value === "Fixed") {
-                      handleEditInputChange("fromDate", "");
-                      handleEditInputChange("toDate", "");
-                    }
-                  }}
+                  value={editAllowance.allowance_type}
+                  onChange={(e) => handleEditInputChange("allowance_type", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {allowanceTypes.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {editAllowance.type === "Variable" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      From Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={editAllowance.fromDate}
-                      min={todayStr}
-                      onChange={(e) => handleEditInputChange("fromDate", e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      To Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={editAllowance.toDate}
-                      min={editAllowance.fromDate || todayStr}
-                      onChange={(e) => handleEditInputChange("toDate", e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Company
-                  </label>
-                  <select
-                    value={editAllowance.company}
-                    onChange={(e) => handleEditInputChange("company", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  >
-                    {companies.map((company) => (
-                      <option key={company} value={company}>
-                        {company}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Company *
+                </label>
+                <select
+                  value={editAllowance.company_id}
+                  onChange={(e) => handleEditInputChange("company_id", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.edit.company_id && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.edit.company_id[0]}</p>
+                )}
               </div>
             </div>
 
@@ -926,19 +835,28 @@ const CreateNewAllowance = () => {
               <button
                 onClick={closeEditModal}
                 className="px-6 py-3 text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                disabled={isProcessing}
               >
                 Cancel
               </button>
               <button
                 onClick={handleEditAllowance}
                 disabled={
-                  !editAllowance.code.trim() ||
-                  !editAllowance.name.trim() ||
-                  (editAllowance.type === "Variable" && (!editAllowance.fromDate || !editAllowance.toDate))
+                  isProcessing ||
+                  !editAllowance.allowance_code.trim() ||
+                  !editAllowance.allowance_name.trim() ||
+                  !editAllowance.company_id
                 }
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none"
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none flex items-center gap-2"
               >
-                Update Allowance
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin h-4 w-4" />
+                    Processing...
+                  </>
+                ) : (
+                  "Update Allowance"
+                )}
               </button>
             </div>
           </div>
@@ -960,7 +878,7 @@ const CreateNewAllowance = () => {
                 Are you sure you want to delete the allowance
                 <span className="font-semibold text-gray-900">
                   {" "}
-                  "{selectedAllowance.name}"
+                  "{selectedAllowance.allowance_name}"
                 </span>
                 ? This action cannot be undone.
               </p>
@@ -968,14 +886,23 @@ const CreateNewAllowance = () => {
                 <button
                   onClick={closeDeleteModal}
                   className="px-6 py-3 text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                  disabled={isProcessing}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteAllowance}
-                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all font-medium shadow-lg"
+                  disabled={isProcessing}
+                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:from-gray-300 disabled:to-gray-300 transition-all font-medium shadow-lg disabled:shadow-none flex items-center gap-2"
                 >
-                  Delete
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="animate-spin h-4 w-4" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
                 </button>
               </div>
             </div>
