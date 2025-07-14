@@ -45,7 +45,6 @@ const CreateNewAllowance = () => {
   });
 
   const [newAllowance, setNewAllowance] = useState({
-    allowance_code: "",
     allowance_name: "",
     company_id: "",
     category: "travel",
@@ -59,9 +58,23 @@ const CreateNewAllowance = () => {
   });
 
   // Constants
-  const categories = ["travel", "bonus", "perfomance", "health", "other"];
+  const categories = ["travel", "bonus", "performance", "health", "other"];
   const statuses = ["active", "inactive"];
   const allowanceTypes = ["fixed", "variable"];
+
+  // Generate allowance code
+  const generateAllowanceCode = () => {
+    const highestCode = allowances.reduce((max, allowance) => {
+      const match = allowance.allowance_code?.match(/ALW-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+
+    return `ALW-${String(highestCode + 1).padStart(3, '0')}`;
+  };
 
   // Fetch data on component mount
   useEffect(() => {
@@ -113,14 +126,19 @@ const CreateNewAllowance = () => {
     setFormErrors({ ...formErrors, add: {} });
 
     try {
-      const response = await AllowancesService.createAllowance(newAllowance);
+      // Auto-generate the allowance code
+      const payload = {
+        ...newAllowance,
+        allowance_code: generateAllowanceCode()
+      };
+
+      const response = await AllowancesService.createAllowance(payload);
       
       // Update the state directly with the new allowance
       setAllowances(prev => [...prev, response]);
       
       // Reset form and close modal
       setNewAllowance({
-        allowance_code: "",
         allowance_name: "",
         company_id: companies[0]?.id || "",
         category: "travel",
@@ -206,7 +224,6 @@ const CreateNewAllowance = () => {
   const closeAddModal = () => {
     setIsAddModalOpen(false);
     setNewAllowance({
-      allowance_code: "",
       allowance_name: "",
       company_id: companies[0]?.id || "",
       category: "travel",
@@ -246,7 +263,7 @@ const CreateNewAllowance = () => {
     const icons = {
       travel: <Plane className="w-4 h-4 text-blue-600" />,
       bonus: <DollarSign className="w-4 h-4 text-yellow-600" />,
-      perfomance: <Target className="w-4 h-4 text-green-600" />,
+      performance: <Target className="w-4 h-4 text-green-600" />,
       health: <Heart className="w-4 h-4 text-red-600" />,
       other: <Clipboard className="w-4 h-4 text-gray-600" />
     };
@@ -564,19 +581,11 @@ const CreateNewAllowance = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Allowance Code *
+                    Allowance Code
                   </label>
-                  <input
-                    type="text"
-                    value={newAllowance.allowance_code}
-                    onChange={(e) => handleInputChange("allowance_code", e.target.value)}
-                    className={`w-full px-4 py-3 border ${formErrors.add.allowance_code ? "border-red-500" : "border-gray-200"
-                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                    placeholder="e.g., TRV-001"
-                  />
-                  {formErrors.add.allowance_code && (
-                    <p className="mt-1 text-sm text-red-600">{formErrors.add.allowance_code[0]}</p>
-                  )}
+                  <div className="w-full px-4 py-3 bg-gray-100 rounded-xl">
+                    {generateAllowanceCode()}
+                  </div>
                 </div>
 
                 <div>
@@ -681,7 +690,6 @@ const CreateNewAllowance = () => {
                 onClick={handleAddAllowance}
                 disabled={
                   isProcessing ||
-                  !newAllowance.allowance_code.trim() ||
                   !newAllowance.allowance_name.trim() ||
                   !newAllowance.company_id
                 }
@@ -726,19 +734,11 @@ const CreateNewAllowance = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Allowance Code *
+                    Allowance Code
                   </label>
-                  <input
-                    type="text"
-                    value={editAllowance.allowance_code}
-                    onChange={(e) => handleEditInputChange("allowance_code", e.target.value)}
-                    className={`w-full px-4 py-3 border ${formErrors.edit.allowance_code ? "border-red-500" : "border-gray-200"
-                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                    placeholder="e.g., TRV-001"
-                  />
-                  {formErrors.edit.allowance_code && (
-                    <p className="mt-1 text-sm text-red-600">{formErrors.edit.allowance_code[0]}</p>
-                  )}
+                  <div className="w-full px-4 py-3 bg-gray-100 rounded-xl">
+                    {editAllowance.allowance_code}
+                  </div>
                 </div>
 
                 <div>
@@ -843,7 +843,6 @@ const CreateNewAllowance = () => {
                 onClick={handleEditAllowance}
                 disabled={
                   isProcessing ||
-                  !editAllowance.allowance_code.trim() ||
                   !editAllowance.allowance_name.trim() ||
                   !editAllowance.company_id
                 }
