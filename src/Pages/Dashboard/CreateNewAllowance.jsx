@@ -16,11 +16,13 @@ import {
   Loader2
 } from "lucide-react";
 import AllowancesService from '../../services/AllowancesService';
-import { fetchCompanies } from "@services/ApiDataService";
+import { fetchCompanies, fetchDepartments } from "@services/ApiDataService";
 
 const CreateNewAllowance = () => {
   // State management
   const [companies, setCompanies] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [filteredDepartments, setFilteredDepartments] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [allowances, setAllowances] = useState([]);
@@ -39,18 +41,27 @@ const CreateNewAllowance = () => {
     allowance_code: "",
     allowance_name: "",
     company_id: "",
+    amount: "",
+    department_id: "",
     category: "travel",
     status: "active",
     allowance_type: "fixed",
+    fixed_date: "",
+    variable_from: "",
+    variable_to: ""
   });
 
   const [newAllowance, setNewAllowance] = useState({
-    allowance_code: "",
     allowance_name: "",
     company_id: "",
+    department_id: "",
+    amount: "",
     category: "travel",
     status: "active",
     allowance_type: "fixed",
+    fixed_date: "",
+    variable_from: "",
+    variable_to: ""
   });
 
   const [formErrors, setFormErrors] = useState({
@@ -59,9 +70,33 @@ const CreateNewAllowance = () => {
   });
 
   // Constants
-  const categories = ["travel", "bonus", "perfomance", "health", "other"];
+  const categories = ["travel", "bonus", "performance", "health", "other"];
   const statuses = ["active", "inactive"];
   const allowanceTypes = ["fixed", "variable"];
+
+  // Helper function to format dates for input fields
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Generate allowance code
+  const generateAllowanceCode = () => {
+    const highestCode = allowances.reduce((max, allowance) => {
+      const match = allowance.allowance_code?.match(/ALW-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+
+    return `ALW-${String(highestCode + 1).padStart(3, '0')}`;
+  };
 
   // Fetch data on component mount
   useEffect(() => {
@@ -71,17 +106,27 @@ const CreateNewAllowance = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [allowancesRes, comp] = await Promise.all([
+      const [allowancesRes, comp, depts] = await Promise.all([
         AllowancesService.getAllAllowances(),
-        fetchCompanies()
+        fetchCompanies(),
+        fetchDepartments()
       ]);
 
       setAllowances(allowancesRes);
       setCompanies(comp);
+      setDepartments(depts);
 
       // Set default company_id in newAllowance if companies are loaded
       if (comp.length > 0 && !newAllowance.company_id) {
-        setNewAllowance(prev => ({ ...prev, company_id: comp[0].id }));
+        setNewAllowance(prev => ({
+          ...prev,
+          company_id: comp[0].id,
+          department_id: ""
+        }));
+
+        // Filter departments for the default company
+        const defaultCompanyDepts = depts.filter(dept => dept.company_id === comp[0].id);
+        setFilteredDepartments(defaultCompanyDepts);
       }
 
       // Reset selected company if it's no longer valid
@@ -95,6 +140,31 @@ const CreateNewAllowance = () => {
       setIsLoading(false);
     }
   };
+
+  // Update filtered departments when company changes in the form
+  useEffect(() => {
+    if (newAllowance.company_id) {
+      const filtered = departments.filter(dept => dept.company_id == newAllowance.company_id);
+      setFilteredDepartments(filtered);
+
+      // Reset department selection if the current one doesn't belong to the new company
+      if (newAllowance.department_id && !filtered.some(dept => dept.id == newAllowance.department_id)) {
+        setNewAllowance(prev => ({ ...prev, department_id: "" }));
+      }
+    }
+  }, [newAllowance.company_id, departments]);
+
+  // Similar for edit form
+  useEffect(() => {
+    if (editAllowance.company_id) {
+      const filtered = departments.filter(dept => dept.company_id == editAllowance.company_id);
+
+      // Reset department selection if the current one doesn't belong to the new company
+      if (editAllowance.department_id && !filtered.some(dept => dept.id == editAllowance.department_id)) {
+        setEditAllowance(prev => ({ ...prev, department_id: "" }));
+      }
+    }
+  }, [editAllowance.company_id, departments]);
 
   // Filter allowances based on selections
   const filteredAllowances = allowances.filter((allowance) => {
@@ -113,19 +183,67 @@ const CreateNewAllowance = () => {
     setFormErrors({ ...formErrors, add: {} });
 
     try {
-      const response = await AllowancesService.createAllowance(newAllowance);
-      
+      // Validate form
+      const errors = {};
+      if (!newAllowance.allowance_name.trim()) {
+        errors.allowance_name = ["Allowance name is required"];
+      }
+      if (!newAllowance.company_id) {
+        errors.company_id = ["Company is required"];
+      }
+      if (!newAllowance.department_id) {
+        errors.department_id = ["Department is required"];
+      }
+      if (!newAllowance.amount) {
+        errors.amount = ["Amount is required"];
+      }
+
+      // Date validation
+      if (newAllowance.allowance_type === "fixed") {
+        if (!newAllowance.fixed_date) {
+          errors.fixed_date = ["Fixed date is required"];
+        }
+      } else {
+        if (!newAllowance.variable_from) {
+          errors.variable_from = ["Start date is required"];
+        }
+        if (!newAllowance.variable_to) {
+          errors.variable_to = ["End date is required"];
+        }
+        if (newAllowance.variable_from && newAllowance.variable_to && 
+            new Date(newAllowance.variable_from) > new Date(newAllowance.variable_to)) {
+          errors.variable_to = ["End date must be after start date"];
+        }
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFormErrors({ ...formErrors, add: errors });
+        return;
+      }
+
+      // Auto-generate the allowance code
+      const payload = {
+        ...newAllowance,
+        allowance_code: generateAllowanceCode()
+      };
+
+      const response = await AllowancesService.createAllowance(payload);
+
       // Update the state directly with the new allowance
       setAllowances(prev => [...prev, response]);
-      
+
       // Reset form and close modal
       setNewAllowance({
-        allowance_code: "",
         allowance_name: "",
         company_id: companies[0]?.id || "",
+        department_id: "",
         category: "travel",
         status: "active",
         allowance_type: "fixed",
+        amount: "",
+        fixed_date: "",
+        variable_from: "",
+        variable_to: ""
       });
 
       setIsAddModalOpen(false);
@@ -146,10 +264,48 @@ const CreateNewAllowance = () => {
     setFormErrors({ ...formErrors, edit: {} });
 
     try {
+      // Validate form
+      const errors = {};
+      if (!editAllowance.allowance_name.trim()) {
+        errors.allowance_name = ["Allowance name is required"];
+      }
+      if (!editAllowance.company_id) {
+        errors.company_id = ["Company is required"];
+      }
+      if (!editAllowance.department_id) {
+        errors.department_id = ["Department is required"];
+      }
+      if (!editAllowance.amount) {
+        errors.amount = ["Amount is required"];
+      }
+
+      // Date validation
+      if (editAllowance.allowance_type === "fixed") {
+        if (!editAllowance.fixed_date) {
+          errors.fixed_date = ["Fixed date is required"];
+        }
+      } else {
+        if (!editAllowance.variable_from) {
+          errors.variable_from = ["Start date is required"];
+        }
+        if (!editAllowance.variable_to) {
+          errors.variable_to = ["End date is required"];
+        }
+        if (editAllowance.variable_from && editAllowance.variable_to && 
+            new Date(editAllowance.variable_from) > new Date(editAllowance.variable_to)) {
+          errors.variable_to = ["End date must be after start date"];
+        }
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFormErrors({ ...formErrors, edit: errors });
+        return;
+      }
+
       const response = await AllowancesService.updateAllowance(editAllowance.id, editAllowance);
-      
+
       // Update the state directly with the updated allowance
-      setAllowances(prev => 
+      setAllowances(prev =>
         prev.map(item => item.id === editAllowance.id ? response : item)
       );
 
@@ -170,12 +326,12 @@ const CreateNewAllowance = () => {
     setIsProcessing(true);
     try {
       await AllowancesService.deleteAllowance(selectedAllowance.id);
-      
+
       // Update the state directly by removing the deleted allowance
-      setAllowances(prev => 
+      setAllowances(prev =>
         prev.filter(item => item.id !== selectedAllowance.id)
       );
-      
+
       setIsDeleteModalOpen(false);
     } catch (error) {
       setError(error.message || "Failed to delete allowance");
@@ -186,7 +342,16 @@ const CreateNewAllowance = () => {
 
   // Modal handlers
   const openEditModal = (allowance) => {
-    setEditAllowance({ ...allowance });
+    // Format dates for input fields
+    const formattedAllowance = {
+      ...allowance,
+      department_id: allowance.department_id || "",
+      fixed_date: formatDateForInput(allowance.fixed_date),
+      variable_from: formatDateForInput(allowance.variable_from),
+      variable_to: formatDateForInput(allowance.variable_to)
+    };
+    
+    setEditAllowance(formattedAllowance);
     setIsEditModalOpen(true);
   };
 
@@ -206,12 +371,17 @@ const CreateNewAllowance = () => {
   const closeAddModal = () => {
     setIsAddModalOpen(false);
     setNewAllowance({
-      allowance_code: "",
       allowance_name: "",
       company_id: companies[0]?.id || "",
+      department_id: "",
+      amount: "",
       category: "travel",
       status: "active",
       allowance_type: "fixed",
+      fixed_date: "",
+      variable_from: "",
+      variable_to: ""
+
     });
     setFormErrors({ ...formErrors, add: {} });
   };
@@ -222,10 +392,16 @@ const CreateNewAllowance = () => {
       id: null,
       allowance_code: "",
       allowance_name: "",
+      amount: "",
       company_id: companies[0]?.id || "",
+      department_id: "",
       category: "travel",
       status: "active",
       allowance_type: "fixed",
+      fixed_date: "",
+      variable_from: "",
+      variable_to: ""
+
     });
     setFormErrors({ ...formErrors, edit: {} });
   };
@@ -246,7 +422,7 @@ const CreateNewAllowance = () => {
     const icons = {
       travel: <Plane className="w-4 h-4 text-blue-600" />,
       bonus: <DollarSign className="w-4 h-4 text-yellow-600" />,
-      perfomance: <Target className="w-4 h-4 text-green-600" />,
+      performance: <Target className="w-4 h-4 text-green-600" />,
       health: <Heart className="w-4 h-4 text-red-600" />,
       other: <Clipboard className="w-4 h-4 text-gray-600" />
     };
@@ -428,6 +604,7 @@ const CreateNewAllowance = () => {
                   <th className="text-left py-4 px-6 font-semibold text-gray-700">
                     Allowance Name
                   </th>
+
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden sm:table-cell">
                     Category
                   </th>
@@ -467,13 +644,14 @@ const CreateNewAllowance = () => {
                     >
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <div className="w-20 h-20  rounded-xl flex items-center justify-center">
                             <span className="text-blue-600 font-bold text-sm">
                               {allowance.allowance_code}
                             </span>
                           </div>
                         </div>
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">
@@ -564,19 +742,11 @@ const CreateNewAllowance = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Allowance Code *
+                    Allowance Code
                   </label>
-                  <input
-                    type="text"
-                    value={newAllowance.allowance_code}
-                    onChange={(e) => handleInputChange("allowance_code", e.target.value)}
-                    className={`w-full px-4 py-3 border ${formErrors.add.allowance_code ? "border-red-500" : "border-gray-200"
-                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                    placeholder="e.g., TRV-001"
-                  />
-                  {formErrors.add.allowance_code && (
-                    <p className="mt-1 text-sm text-red-600">{formErrors.add.allowance_code[0]}</p>
-                  )}
+                  <div className="w-full px-4 py-3 bg-gray-100 rounded-xl">
+                    {generateAllowanceCode()}
+                  </div>
                 </div>
 
                 <div>
@@ -647,7 +817,76 @@ const CreateNewAllowance = () => {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Date Configuration *
+                </label>
+                {newAllowance.allowance_type === "fixed" ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fixed Date</label>
+                    <input
+                      type="date"
+                      value={newAllowance.fixed_date}
+                      onChange={(e) => handleInputChange("fixed_date", e.target.value)}
+                      className={`w-full px-4 py-3 border ${formErrors.add.fixed_date ? "border-red-500" : "border-gray-200"
+                        } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                      required
+                    />
+                    {formErrors.add.fixed_date && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.add.fixed_date[0]}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                      <input
+                        type="date"
+                        value={newAllowance.variable_from}
+                        onChange={(e) => handleInputChange("variable_from", e.target.value)}
+                        className={`w-full px-4 py-3 border ${formErrors.add.variable_from ? "border-red-500" : "border-gray-200"
+                          } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        required
+                      />
+                      {formErrors.add.variable_from && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.add.variable_from[0]}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                      <input
+                        type="date"
+                        value={newAllowance.variable_to}
+                        onChange={(e) => handleInputChange("variable_to", e.target.value)}
+                        className={`w-full px-4 py-3 border ${formErrors.add.variable_to ? "border-red-500" : "border-gray-200"
+                          } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        required
+                        min={newAllowance.variable_from}
+                      />
+                      {formErrors.add.variable_to && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.add.variable_to[0]}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div>
 
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Amount *
+                </label>
+                <input
+                  type="number"
+                  value={newAllowance.amount}
+                  onChange={(e) => handleInputChange("amount", e.target.value)}
+                  className={`w-full px-4 py-3 border ${formErrors.add.amount ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                  placeholder="Enter allowance amount"
+                />
+                {formErrors.add.amount && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.add.amount[0]}</p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Company *
@@ -655,7 +894,8 @@ const CreateNewAllowance = () => {
                 <select
                   value={newAllowance.company_id}
                   onChange={(e) => handleInputChange("company_id", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border ${formErrors.add.company_id ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                 >
                   {companies.map((company) => (
                     <option key={company.id} value={company.id}>
@@ -665,6 +905,32 @@ const CreateNewAllowance = () => {
                 </select>
                 {formErrors.add.company_id && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.add.company_id[0]}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Department *
+                </label>
+                <select
+                  value={newAllowance.department_id}
+                  onChange={(e) => handleInputChange("department_id", e.target.value)}
+                  className={`w-full px-4 py-3 border ${formErrors.add.department_id ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                  disabled={!newAllowance.company_id || filteredDepartments.length === 0}
+                >
+                  <option value="">Select Department</option>
+                  {filteredDepartments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.add.department_id && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.add.department_id[0]}</p>
+                )}
+                {newAllowance.company_id && filteredDepartments.length === 0 && (
+                  <p className="mt-1 text-sm text-gray-500">No departments available for selected company</p>
                 )}
               </div>
             </div>
@@ -679,12 +945,7 @@ const CreateNewAllowance = () => {
               </button>
               <button
                 onClick={handleAddAllowance}
-                disabled={
-                  isProcessing ||
-                  !newAllowance.allowance_code.trim() ||
-                  !newAllowance.allowance_name.trim() ||
-                  !newAllowance.company_id
-                }
+                disabled={isProcessing}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none flex items-center gap-2"
               >
                 {isProcessing ? (
@@ -700,6 +961,7 @@ const CreateNewAllowance = () => {
           </div>
         </div>
       )}
+
 
       {/* Edit Modal */}
       {isEditModalOpen && (
@@ -726,19 +988,11 @@ const CreateNewAllowance = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Allowance Code *
+                    Allowance Code
                   </label>
-                  <input
-                    type="text"
-                    value={editAllowance.allowance_code}
-                    onChange={(e) => handleEditInputChange("allowance_code", e.target.value)}
-                    className={`w-full px-4 py-3 border ${formErrors.edit.allowance_code ? "border-red-500" : "border-gray-200"
-                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                    placeholder="e.g., TRV-001"
-                  />
-                  {formErrors.edit.allowance_code && (
-                    <p className="mt-1 text-sm text-red-600">{formErrors.edit.allowance_code[0]}</p>
-                  )}
+                  <div className="w-full px-4 py-3 bg-gray-100 rounded-xl">
+                    {editAllowance.allowance_code}
+                  </div>
                 </div>
 
                 <div>
@@ -808,6 +1062,77 @@ const CreateNewAllowance = () => {
                     </option>
                   ))}
                 </select>
+                
+                <div className="mt-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Date Configuration *
+                  </label>
+                  {editAllowance.allowance_type === "fixed" ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Fixed Date</label>
+                      <input
+                        type="date"
+                        value={editAllowance.fixed_date || ''}
+                        onChange={(e) => handleEditInputChange("fixed_date", e.target.value)}
+                        className={`w-full px-4 py-3 border ${formErrors.edit.fixed_date ? "border-red-500" : "border-gray-200"
+                          } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        required
+                      />
+                      {formErrors.edit.fixed_date && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.edit.fixed_date[0]}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <input
+                          type="date"
+                          value={editAllowance.variable_from || ''}
+                          onChange={(e) => handleEditInputChange("variable_from", e.target.value)}
+                          className={`w-full px-4 py-3 border ${formErrors.edit.variable_from ? "border-red-500" : "border-gray-200"
+                            } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          required
+                        />
+                        {formErrors.edit.variable_from && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.edit.variable_from[0]}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <input
+                          type="date"
+                          value={editAllowance.variable_to || ''}
+                          onChange={(e) => handleEditInputChange("variable_to", e.target.value)}
+                          className={`w-full px-4 py-3 border ${formErrors.edit.variable_to ? "border-red-500" : "border-gray-200"
+                            } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          required
+                          min={editAllowance.variable_from}
+                        />
+                        {formErrors.edit.variable_to && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.edit.variable_to[0]}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Amount *
+                </label>
+                <input
+                  type="number"
+                  value={editAllowance.amount}
+                  onChange={(e) => handleEditInputChange("amount", e.target.value)}
+                  className={`w-full px-4 py-3 border ${formErrors.edit.amount ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                  placeholder="Enter allowance amount"
+                />
+                {formErrors.edit.amount && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.edit.amount[0]}</p>
+                )}
               </div>
 
               <div>
@@ -817,7 +1142,8 @@ const CreateNewAllowance = () => {
                 <select
                   value={editAllowance.company_id}
                   onChange={(e) => handleEditInputChange("company_id", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border ${formErrors.edit.company_id ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                 >
                   {companies.map((company) => (
                     <option key={company.id} value={company.id}>
@@ -827,6 +1153,26 @@ const CreateNewAllowance = () => {
                 </select>
                 {formErrors.edit.company_id && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.edit.company_id[0]}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Department *
+                </label>
+                <select
+                  value={editAllowance.department_id}
+                  onChange={(e) => handleEditInputChange("department_id", e.target.value)}
+                  className={`w-full px-4 py-3 border ${formErrors.edit.department_id ? "border-red-500" : "border-gray-200"
+                    } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                >
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.edit.department_id && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.edit.department_id[0]}</p>
                 )}
               </div>
             </div>
@@ -841,12 +1187,7 @@ const CreateNewAllowance = () => {
               </button>
               <button
                 onClick={handleEditAllowance}
-                disabled={
-                  isProcessing ||
-                  !editAllowance.allowance_code.trim() ||
-                  !editAllowance.allowance_name.trim() ||
-                  !editAllowance.company_id
-                }
+                disabled={isProcessing}
                 className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none flex items-center gap-2"
               >
                 {isProcessing ? (

@@ -1,69 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Users, UserCheck, Calendar, Plus, Edit2, Trash2, Search, Filter, ChevronDown, ChevronRight } from 'lucide-react';
+import { fetchCompanies } from '../../services/ApiDataService'; // Use correct relative path
 
 const Department = () => {
   const [activeTab, setActiveTab] = useState('companies');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [companies, setCompanies] = useState([]);
 
+  useEffect(() => {
+    fetchCompanies().then(setCompanies);
+  }, []);
   // Sample data
-  const [companies] = useState([
-    {
-      id: 1,
-      name: 'TechCorp Solutions',
-      code: 'TC001',
-      location: 'New York',
-      employees: 250,
-      established: '2018',
-      departments: [
-        {
-          id: 1,
-          name: 'Information Technology',
-          code: 'IT001',
-          manager: 'John Smith',
-          employees: 45,
-          subdepartments: [
-            { id: 1, name: 'Software Development', manager: 'Alice Johnson', employees: 25 },
-            { id: 2, name: 'Network Administration', manager: 'Bob Wilson', employees: 12 },
-            { id: 3, name: 'Cybersecurity', manager: 'Carol Davis', employees: 8 }
-          ]
-        },
-        {
-          id: 2,
-          name: 'Human Resources',
-          code: 'HR001',
-          manager: 'Sarah Connor',
-          employees: 15,
-          subdepartments: [
-            { id: 4, name: 'Recruitment', manager: 'Mike Brown', employees: 8 },
-            { id: 5, name: 'Employee Relations', manager: 'Lisa White', employees: 7 }
-          ]
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Global Industries',
-      code: 'GI002',
-      location: 'California',
-      employees: 180,
-      established: '2020',
-      departments: [
-        {
-          id: 3,
-          name: 'Marketing',
-          code: 'MK001',
-          manager: 'David Lee',
-          employees: 30,
-          subdepartments: [
-            { id: 6, name: 'Digital Marketing', manager: 'Emma Stone', employees: 18 },
-            { id: 7, name: 'Brand Management', manager: 'Ryan Garcia', employees: 12 }
-          ]
-        }
-      ]
-    }
-  ]);
+  // const [companies] = useState([
+  //   {
+  //     id: 1,
+  //     name: 'TechCorp Solutions',
+  //     code: 'TC001',
+  //     location: 'New York',
+  //     employees: 250,
+  //     established: '2018',
+  //     departments: [
+  //       {
+  //         id: 1,
+  //         name: 'Information Technology',
+  //         code: 'IT001',
+  //         manager: 'John Smith',
+  //         employees: 45,
+  //         subdepartments: [
+  //           { id: 1, name: 'Software Development', manager: 'Alice Johnson', employees: 25 },
+  //           { id: 2, name: 'Network Administration', manager: 'Bob Wilson', employees: 12 },
+  //           { id: 3, name: 'Cybersecurity', manager: 'Carol Davis', employees: 8 }
+  //         ]
+  //       },
+  //       {
+  //         id: 2,
+  //         name: 'Human Resources',
+  //         code: 'HR001',
+  //         manager: 'Sarah Connor',
+  //         employees: 15,
+  //         subdepartments: [
+  //           { id: 4, name: 'Recruitment', manager: 'Mike Brown', employees: 8 },
+  //           { id: 5, name: 'Employee Relations', manager: 'Lisa White', employees: 7 }
+  //         ]
+  //       }
+  //     ]
+  //   },
+  //   {
+  //     id: 2,
+  //     name: 'Global Industries',
+  //     code: 'GI002',
+  //     location: 'California',
+  //     employees: 180,
+  //     established: '2020',
+  //     departments: [
+  //       {
+  //         id: 3,
+  //         name: 'Marketing',
+  //         code: 'MK001',
+  //         manager: 'David Lee',
+  //         employees: 30,
+  //         subdepartments: [
+  //           { id: 6, name: 'Digital Marketing', manager: 'Emma Stone', employees: 18 },
+  //           { id: 7, name: 'Brand Management', manager: 'Ryan Garcia', employees: 12 }
+  //         ]
+  //       }
+  //     ]
+  //   }
+  // ]);
 
   const toggleRowExpansion = (id) => {
     const newExpanded = new Set(expandedRows);

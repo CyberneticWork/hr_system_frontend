@@ -14,14 +14,15 @@ import axios from "@utils/axios";
 import Swal from "sweetalert2";
 import {
   fetchCompanies,
-  fetchDepartments,
-  fetchSubDepartments,
+  fetchDepartmentsById,
+  fetchSubDepartmentsById,
   fetchDesignations,
 } from "@services/ApiDataService";
 import { useEmployeeForm } from '@contexts/EmployeeFormContext';
+import FieldError from '@components/ErrorMessage/FieldError';
 
 const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
-  const { formData, updateFormData } = useEmployeeForm();
+  const { formData, updateFormData, errors, clearFieldError } = useEmployeeForm();
   const [isLoading, setIsLoading] = useState(false);
 
   // Dropdown data state - now storing objects with id and name
@@ -38,26 +39,17 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
     confirmationEnabled: false,
   });
 
-  // Load organization data from API
+  // Load companies and designations from API
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [
-          companiesData,
-          departmentsData,
-          subDepartmentsData,
-          DesignationsData,
-        ] = await Promise.all([
+        const [companiesData, DesignationsData] = await Promise.all([
           fetchCompanies(),
-          fetchDepartments(),
-          fetchSubDepartments(),
           fetchDesignations(),
         ]);
 
         setCompanies(companiesData);
-        setDepartments(departmentsData);
-        setSubDepartments(subDepartmentsData);
         setDesignations(DesignationsData);
       } catch (e) {
         console.error("Error loading data:", e);
@@ -69,8 +61,65 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
     loadData();
   }, []);
 
+  // Load departments when company is selected
+  useEffect(() => {
+    if (formData.organization.company) {
+      const loadDepartments = async () => {
+        setIsLoading(true);
+        try {
+          const departmentsData = await fetchDepartmentsById(formData.organization.company);
+          setDepartments(departmentsData);
+          // Reset department and sub-department when company changes
+          updateFormData('organization', {
+            department: '',
+            subDepartment: ''
+          });
+          setSubDepartments([]);
+        } catch (e) {
+          console.error("Error loading departments:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadDepartments();
+    } else {
+      setDepartments([]);
+      setSubDepartments([]);
+    }
+  }, [formData.organization.company]);
+
+  // Load sub-departments when department is selected
+  useEffect(() => {
+    if (formData.organization.department) {
+      const loadSubDepartments = async () => {
+        setIsLoading(true);
+        try {
+          const subDepartmentsData = await fetchSubDepartmentsById(formData.organization.department);
+          setSubDepartments(subDepartmentsData);
+          // Reset sub-department when department changes
+          updateFormData('organization', {
+            subDepartment: ''
+          });
+        } catch (e) {
+          console.error("Error loading sub-departments:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadSubDepartments();
+    } else {
+      setSubDepartments([]);
+    }
+  }, [formData.organization.department]);
+
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
+    
+    // Clear error when user makes changes
+    if (errors.organization?.[name]) {
+      clearFieldError('organization', name);
+    }
+    
     updateFormData('organization', {
       [name]: type === "checkbox" ? checked : type === "file" ? files[0] : value,
     });
@@ -156,7 +205,11 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="company"
                   value={formData.organization.company}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.company 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                 >
                   <option value="">Select Company</option>
@@ -166,6 +219,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                     </option>
                   ))}
                 </select>
+                <FieldError error={errors.organization?.company} />
               </div>
             </div>
 
@@ -173,14 +227,21 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
             <div className="mb-4">
               <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Layers className="text-gray-500" size={16} />
-                Department
+                Department <span className="text-red-500">*</span>
               </label>
               <div className="relative flex-1">
                 <select
                   name="department"
                   value={formData.organization.department}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.organization.company}
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.department 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !formData.organization.company ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
                 >
                   <option value="">Select Department</option>
                   {departments.map((d) => (
@@ -189,6 +250,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                     </option>
                   ))}
                 </select>
+                <FieldError error={errors.organization?.department} />
               </div>
             </div>
 
@@ -203,7 +265,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="subDepartment"
                   value={formData.organization.subDepartment}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.organization.department}
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.subDepartment 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !formData.organization.department ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
                   required
                 >
                   <option value="">Select Sub Department</option>
@@ -213,6 +282,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                     </option>
                   ))}
                 </select>
+                <FieldError error={errors.organization?.subDepartment} />
               </div>
             </div>
 
@@ -228,19 +298,24 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   value={formData.organization.currentSupervisor}
                   onChange={handleChange}
                   placeholder="e.g., John Doe"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.currentSupervisor 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <User
                   className="absolute left-2 top-2.5 text-gray-400"
                   size={16}
                 />
               </div>
+              <FieldError error={errors.organization?.currentSupervisor} />
             </div>
 
             <div className="mb-4">
               <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Calendar className="text-gray-500" size={16} />
-                Date of Joined
+                Date of Joined <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -248,9 +323,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="dateOfJoined"
                   value={formData.organization.dateOfJoined}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.dateOfJoined 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
               </div>
+              <FieldError error={errors.organization?.dateOfJoined} />
             </div>
 
             <div className="mb-4">
@@ -263,7 +343,11 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="designation"
                   value={formData.organization.designation}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.designation 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                 >
                   <option value="">Select designations</option>
@@ -274,6 +358,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   ))}
                 </select>
               </div>
+              <FieldError error={errors.organization?.designation} />
             </div>
 
             <div className="mb-4">
@@ -286,7 +371,11 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="dayOff"
                   value={formData.organization.dayOff || ""}
                   onChange={handleChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full pl-8 pr-3 py-2 border ${
+                    errors.organization?.dayOff 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                 >
                   <option value="">Select Day Off</option>
@@ -299,6 +388,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   <option value="Saturday">Saturday</option>
                 </select>
               </div>
+              <FieldError error={errors.organization?.dayOff} />
             </div>
           </div>
         </div>
@@ -330,7 +420,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.probationEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.probationEnabled ? "Enabled" : "Disabled"} */}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.probationPeriod}
@@ -350,11 +440,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       value={formData.organization.probationFrom}
                       onChange={handleChange}
                       disabled={!toggleStates.probationEnabled}
-                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full pl-8 pr-3 py-2 border ${
                         !toggleStates.probationEnabled
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }`}
+                          : errors.organization?.probationFrom
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
@@ -365,6 +457,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       size={16}
                     />
                   </div>
+                  <FieldError error={errors.organization?.probationFrom} />
                 </div>
                 <div>
                   <label className="block text-gray-600 mb-1">To Date</label>
@@ -375,11 +468,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       value={formData.organization.probationTo}
                       onChange={handleChange}
                       disabled={!toggleStates.probationEnabled}
-                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full pl-8 pr-3 py-2 border ${
                         !toggleStates.probationEnabled
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }`}
+                          : errors.organization?.probationTo
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
@@ -390,6 +485,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       size={16}
                     />
                   </div>
+                  <FieldError error={errors.organization?.probationTo} />
                 </div>
               </div>
             </div>
@@ -410,7 +506,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.trainingEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.trainingEnabled ? "Enabled" : "Disabled"} */}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.trainingPeriod}
@@ -430,11 +526,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       value={formData.organization.trainingFrom}
                       onChange={handleChange}
                       disabled={!toggleStates.trainingEnabled}
-                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full pl-8 pr-3 py-2 border ${
                         !toggleStates.trainingEnabled
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }`}
+                          : errors.organization?.trainingFrom
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
@@ -445,6 +543,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       size={16}
                     />
                   </div>
+                  <FieldError error={errors.organization?.trainingFrom} />
                 </div>
                 <div>
                   <label className="block text-gray-600 mb-1">To Date</label>
@@ -455,11 +554,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       value={formData.organization.trainingTo}
                       onChange={handleChange}
                       disabled={!toggleStates.trainingEnabled}
-                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full pl-8 pr-3 py-2 border ${
                         !toggleStates.trainingEnabled
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }`}
+                          : errors.organization?.trainingTo
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
@@ -470,6 +571,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       size={16}
                     />
                   </div>
+                  <FieldError error={errors.organization?.trainingTo} />
                 </div>
               </div>
             </div>
@@ -490,7 +592,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.contractEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.contractEnabled ? "Enabled" : "Disabled"} */}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.contractPeriod}
@@ -510,11 +612,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       value={formData.organization.contractFrom}
                       onChange={handleChange}
                       disabled={!toggleStates.contractEnabled}
-                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full pl-8 pr-3 py-2 border ${
                         !toggleStates.contractEnabled
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }`}
+                          : errors.organization?.contractFrom
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
@@ -525,6 +629,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       size={16}
                     />
                   </div>
+                  <FieldError error={errors.organization?.contractFrom} />
                 </div>
                 <div>
                   <label className="block text-gray-600 mb-1">To Date</label>
@@ -535,11 +640,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       value={formData.organization.contractTo}
                       onChange={handleChange}
                       disabled={!toggleStates.contractEnabled}
-                      className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full pl-8 pr-3 py-2 border ${
                         !toggleStates.contractEnabled
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }`}
+                          : errors.organization?.contractTo
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
@@ -550,6 +657,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       size={16}
                     />
                   </div>
+                  <FieldError error={errors.organization?.contractTo} />
                 </div>
               </div>
             </div>
@@ -568,13 +676,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.confirmationEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.confirmationEnabled ? "Enabled" : "Disabled"} */}
                   </span>
-                  <ToggleButton
+                  {/* <ToggleButton
                     enabled={toggleStates.confirmationEnabled}
                     onToggle={() => handleToggle("confirmationEnabled")}
                     label="Confirmation Date"
-                  />
+                  /> */}
                 </div>
               </div>
               <div className="relative">
@@ -583,12 +691,8 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="confirmationDate"
                   value={formData.organization.confirmationDate}
                   onChange={handleChange}
-                  disabled={!toggleStates.confirmationEnabled}
-                  className={`w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    !toggleStates.confirmationEnabled
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : ""
-                  }`}
+                  // disabled={!toggleStates.confirmationEnabled}
+                  className={`w-full pl-8 pr-3 py-2 border  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <Calendar
                   className={`absolute left-2 top-2.5 ${
@@ -599,6 +703,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   size={16}
                 />
               </div>
+              <FieldError error={errors.organization?.confirmationDate} />
             </div>
           </div>
         </div>

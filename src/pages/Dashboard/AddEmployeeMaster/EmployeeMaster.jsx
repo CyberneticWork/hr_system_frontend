@@ -1,20 +1,24 @@
-import React, { useState } from 'react';
-import EmpPersonalDetails from '@dashboard/AddEmployeeMaster/EmpPersonalDetails';
-import AddressDetails from '@dashboard/AddEmployeeMaster/AddressDetails';
-import OrganizationDetails from '@dashboard/AddEmployeeMaster/OrganizationDetails';
-import CompensationManagement from '@dashboard/AddEmployeeMaster/CompensationManagement';
-import Employeedocument from '@dashboard/AddEmployeeMaster/Employeedocument';
-import EmployeeConfirmationModal from './EmployeeConfirmationModal';
-import { EmployeeFormProvider, useEmployeeForm } from '@contexts/EmployeeFormContext';
-import employeeService from '@services/EmployeeDataService';
+import React, { useState } from "react";
+import EmpPersonalDetails from "@dashboard/AddEmployeeMaster/EmpPersonalDetails";
+import AddressDetails from "@dashboard/AddEmployeeMaster/AddressDetails";
+import OrganizationDetails from "@dashboard/AddEmployeeMaster/OrganizationDetails";
+import CompensationManagement from "@dashboard/AddEmployeeMaster/CompensationManagement";
+import Employeedocument from "@dashboard/AddEmployeeMaster/Employeedocument";
+import EmployeeConfirmationModal from "./EmployeeConfirmationModal";
+import {
+  EmployeeFormProvider,
+  useEmployeeForm,
+} from "@contexts/EmployeeFormContext";
+import employeeService from "@services/EmployeeDataService";
+import Swal from "sweetalert2";
 
 const steps = [
-  'personal',
-  'address',
-  'compensation',
-  'organization',
-  'documents',
-  'confirmation'
+  "personal",
+  "address",
+  "compensation",
+  "organization",
+  "documents",
+  "confirmation",
 ];
 
 const EmployeeMasterWrapper = () => {
@@ -26,9 +30,9 @@ const EmployeeMasterWrapper = () => {
 };
 
 const EmployeeMaster = () => {
-  const [activeCategory, setActiveCategory] = useState('personal');
+  const [activeCategory, setActiveCategory] = useState("personal");
   const currentStepIndex = steps.indexOf(activeCategory);
-  const { setFormErrors, setIsSubmitting } = useEmployeeForm();
+  const { setFormErrors, setIsSubmitting, errors, clearForm } = useEmployeeForm();
 
   const goNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -43,38 +47,57 @@ const EmployeeMaster = () => {
   };
 
   const handleSubmit = async (allEmployeeData) => {
-  setIsSubmitting(true);
-  try {
-    const response = await employeeService.submitEmployee(allEmployeeData);
-    console.log('Employee created:', response);
-    alert('Employee submitted successfully!');
-  } catch (error) {
-    console.error('Submission error:', error);
-    if (error.response?.data?.errors) {
-      const formattedErrors = {};
-      
-      Object.entries(error.response.data.errors).forEach(([fieldPath, messages]) => {
-        const pathParts = fieldPath.split('.');
-        let currentLevel = formattedErrors;
-        
-        pathParts.forEach((part, index) => {
-          if (index === pathParts.length - 1) {
-            currentLevel[part] = messages[0];
-          } else {
-            currentLevel[part] = currentLevel[part] || {};
-            currentLevel = currentLevel[part];
-          }
-        });
+    setIsSubmitting(true);
+    try {
+      const response = await employeeService.submitEmployee(allEmployeeData);
+      console.log("Employee created:", response);
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Employee submitted successfully!",
       });
-      
-      setFormErrors(formattedErrors);
-    } else {
-      alert('Error submitting employee. Please try again.');
+      clearForm();
+      setActiveCategory("personal");
+
+
+    } catch (error) {
+      console.error("Submission error:", error);
+      if (error.response?.data?.errors) {
+        const formattedErrors = {};
+
+        Object.entries(error.response.data.errors).forEach(
+          ([fieldPath, messages]) => {
+            const pathParts = fieldPath.split(".");
+            let currentLevel = formattedErrors;
+
+            pathParts.forEach((part, index) => {
+              if (index === pathParts.length - 1) {
+                currentLevel[part] = messages[0];
+              } else {
+                currentLevel[part] = currentLevel[part] || {};
+                currentLevel = currentLevel[part];
+              }
+            });
+          }
+        );
+
+        setFormErrors(formattedErrors);
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Please fix the errors in the form!",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Error submitting employee. Please try again.!",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <div>
@@ -84,8 +107,8 @@ const EmployeeMaster = () => {
             key={step}
             className={`px-4 py-2 rounded-md text-sm font-medium transition ${
               activeCategory === step
-                ? 'bg-indigo-600 text-white'
-                : 'text-indigo-700 hover:bg-indigo-100'
+                ? "bg-indigo-600 text-white"
+                : "text-indigo-700 hover:bg-indigo-100"
             }`}
             onClick={() => setActiveCategory(step)}
           >
@@ -95,41 +118,41 @@ const EmployeeMaster = () => {
       </div>
       <div className="p-4">
         <div className="p-4">
-          {activeCategory === 'personal' && (
+          {activeCategory === "personal" && (
             <EmpPersonalDetails
               onNext={goNext}
               activeCategory={activeCategory}
             />
           )}
-          {activeCategory === 'address' && (
+          {activeCategory === "address" && (
             <AddressDetails
               onNext={goNext}
               onPrevious={goPrevious}
               activeCategory={activeCategory}
             />
           )}
-          {activeCategory === 'compensation' && (
+          {activeCategory === "compensation" && (
             <CompensationManagement
               onNext={goNext}
               onPrevious={goPrevious}
               activeCategory={activeCategory}
             />
           )}
-          {activeCategory === 'organization' && (
+          {activeCategory === "organization" && (
             <OrganizationDetails
               onNext={goNext}
               onPrevious={goPrevious}
               activeCategory={activeCategory}
             />
           )}
-          {activeCategory === 'documents' && (
+          {activeCategory === "documents" && (
             <Employeedocument
               onPrevious={goPrevious}
               onSubmit={handleSubmit}
               activeCategory={activeCategory}
             />
           )}
-          {activeCategory === 'confirmation' && (
+          {activeCategory === "confirmation" && (
             <EmployeeConfirmationModal
               onPrevious={goPrevious}
               onSubmit={handleSubmit}
