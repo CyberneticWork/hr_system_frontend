@@ -1,11 +1,16 @@
 import React from "react";
 import { DollarSign, Calendar, Building2, CreditCard, AlertCircle, User } from "lucide-react";
 import { useEmployeeForm } from '@contexts/EmployeeFormContext';
+import FieldError from '@components/ErrorMessage/FieldError';
 
 const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
-  const { formData, updateFormData } = useEmployeeForm();
+  const { formData, updateFormData, errors, clearFieldError } = useEmployeeForm();
 
   const handleInputChange = (field, value) => {
+    // Clear error when user makes changes
+    if (errors.compensation?.[field]) {
+      clearFieldError('compensation', field);
+    }
     updateFormData('compensation', { [field]: value });
   };
 
@@ -46,11 +51,16 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("basicSalary", e.target.value)
                         }
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full pl-10 pr-4 py-3 border ${
+                          errors.compensation?.basicSalary 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter basic salary"
                         required
                       />
                     </div>
+                    <FieldError error={errors.compensation?.basicSalary} />
                   </div>
 
                   <div>
@@ -65,10 +75,15 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("incrementValue", e.target.value)
                         }
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full pl-10 pr-4 py-3 border ${
+                          errors.compensation?.incrementValue 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter increment"
                       />
                     </div>
+                    <FieldError error={errors.compensation?.incrementValue} />
                   </div>
 
                   <div className="md:col-span-2">
@@ -86,9 +101,14 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                             e.target.value
                           )
                         }
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full pl-10 pr-4 py-3 border ${
+                          errors.compensation?.incrementEffectiveFrom 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                       />
                     </div>
+                    <FieldError error={errors.compensation?.incrementEffectiveFrom} />
                   </div>
                 </div>
               </div>
@@ -335,13 +355,18 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("bankName", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 border ${
+                          errors.compensation?.bankName 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                       >
                         <option value="1/1/1900">Select Bank</option>
                         <option value="bank1">Bank of Ceylon</option>
                         <option value="bank2">Commercial Bank</option>
                         <option value="bank3">Peoples Bank</option>
                       </select>
+                      <FieldError error={errors.compensation?.bankName} />
                     </div>
 
                     <div>
@@ -353,13 +378,18 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("branchName", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 border ${
+                          errors.compensation?.branchName 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                       >
                         <option value="1/1/1900">Select Branch</option>
                         <option value="branch1">Main Branch</option>
                         <option value="branch2">City Branch</option>
                         <option value="branch3">Regional Branch</option>
                       </select>
+                      <FieldError error={errors.compensation?.branchName} />
                     </div>
 
                     <div>
@@ -372,9 +402,14 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("bankCode", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 border ${
+                          errors.compensation?.bankCode 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter bank code"
                       />
+                      <FieldError error={errors.compensation?.bankCode} />
                     </div>
 
                     <div>
@@ -387,9 +422,14 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("branchCode", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full px-4 py-3 border ${
+                          errors.compensation?.branchCode 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter branch code"
                       />
+                      <FieldError error={errors.compensation?.branchCode} />
                     </div>
                   </div>
 
@@ -405,10 +445,15 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                         onChange={(e) =>
                           handleInputChange("bankAccountNo", e.target.value)
                         }
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className={`w-full pl-10 pr-4 py-3 border ${
+                          errors.compensation?.bankAccountNo 
+                            ? 'border-red-500' 
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter account number"
                       />
                     </div>
+                    <FieldError error={errors.compensation?.bankAccountNo} />
                   </div>
                 </div>
               </div>
@@ -529,9 +574,14 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                     handleInputChange("comments", e.target.value)
                   }
                   rows="4"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  className={`w-full px-4 py-3 border ${
+                    errors.compensation?.comments 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none`}
                   placeholder="Add any additional comments or notes..."
                 />
+                <FieldError error={errors.compensation?.comments} />
               </div>
             </div>
           </div>

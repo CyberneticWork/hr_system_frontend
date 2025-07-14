@@ -7,6 +7,7 @@ import Employeedocument from '@dashboard/AddEmployeeMaster/Employeedocument';
 import EmployeeConfirmationModal from './EmployeeConfirmationModal';
 import { EmployeeFormProvider, useEmployeeForm } from '@contexts/EmployeeFormContext';
 import employeeService from '@services/EmployeeDataService';
+import { toast } from 'react-toastify';
 
 const steps = [
   'personal',
@@ -28,7 +29,7 @@ const EmployeeMasterWrapper = () => {
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState('personal');
   const currentStepIndex = steps.indexOf(activeCategory);
-  const { setFormErrors, setIsSubmitting } = useEmployeeForm();
+  const { setFormErrors, setIsSubmitting, errors } = useEmployeeForm();
 
   const goNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -43,38 +44,63 @@ const EmployeeMaster = () => {
   };
 
   const handleSubmit = async (allEmployeeData) => {
-  setIsSubmitting(true);
-  try {
-    const response = await employeeService.submitEmployee(allEmployeeData);
-    console.log('Employee created:', response);
-    alert('Employee submitted successfully!');
-  } catch (error) {
-    console.error('Submission error:', error);
-    if (error.response?.data?.errors) {
-      const formattedErrors = {};
-      
-      Object.entries(error.response.data.errors).forEach(([fieldPath, messages]) => {
-        const pathParts = fieldPath.split('.');
-        let currentLevel = formattedErrors;
-        
-        pathParts.forEach((part, index) => {
-          if (index === pathParts.length - 1) {
-            currentLevel[part] = messages[0];
-          } else {
-            currentLevel[part] = currentLevel[part] || {};
-            currentLevel = currentLevel[part];
-          }
-        });
+    setIsSubmitting(true);
+    try {
+      const response = await employeeService.submitEmployee(allEmployeeData);
+      console.log('Employee created:', response);
+      toast.success('Employee submitted successfully!', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
       });
-      
-      setFormErrors(formattedErrors);
-    } else {
-      alert('Error submitting employee. Please try again.');
+    } catch (error) {
+      console.error('Submission error:', error);
+      if (error.response?.data?.errors) {
+        const formattedErrors = {};
+        
+        Object.entries(error.response.data.errors).forEach(([fieldPath, messages]) => {
+          const pathParts = fieldPath.split('.');
+          let currentLevel = formattedErrors;
+          
+          pathParts.forEach((part, index) => {
+            if (index === pathParts.length - 1) {
+              currentLevel[part] = messages[0];
+            } else {
+              currentLevel[part] = currentLevel[part] || {};
+              currentLevel = currentLevel[part];
+            }
+          });
+        });
+        
+        setFormErrors(formattedErrors);
+        toast.error('Please fix the errors in the form', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      } else {
+        toast.error('Error submitting employee. Please try again.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <div>

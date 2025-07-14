@@ -1,9 +1,10 @@
-import React from 'react';
-import { User, Users, MapPin, CreditCard, Building, Phone, Heart, Check, Edit } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Users, MapPin, CreditCard, Building, Phone, Heart, Check, Edit, AlertCircle } from 'lucide-react';
 import { useEmployeeForm } from '@contexts/EmployeeFormContext';
 
 const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
-  const { formData } = useEmployeeForm();
+  const { formData, errors } = useEmployeeForm();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString || dateString === "1/1/1900") return 'Not specified';
@@ -29,8 +30,54 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
     return statusMap[status] || status;
   };
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Function to display errors in a user-friendly way
+  const renderErrors = () => {
+    if (!errors) return null;
+
+    const errorMessages = [];
+    
+    // Flatten all error messages
+    const flattenErrors = (obj, prefix = '') => {
+      return Object.entries(obj).reduce((acc, [key, value]) => {
+        const prefixedKey = prefix ? `${prefix}.${key}` : key;
+        if (typeof value === 'object' && value !== null) {
+          return [...acc, ...flattenErrors(value, prefixedKey)];
+        } else {
+          return [...acc, { field: prefixedKey, message: value }];
+        }
+      }, []);
+    };
+
+    const allErrors = flattenErrors(errors);
+
+    if (allErrors.length === 0) return null;
+
+    return (
+      <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div className="flex items-center">
+          <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+          <h3 className="text-lg font-medium text-red-800">There were errors with your submission</h3>
+        </div>
+        <div className="mt-2 text-sm text-red-700">
+          <ul className="list-disc pl-5 space-y-1">
+            {allErrors.map((error, index) => (
+              <li key={index}>
+                <span className="font-medium">{error.field.split('.').pop()}:</span> {error.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -62,8 +109,10 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Display errors at the top if any */}
+        {renderErrors()}
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
           {/* Personal Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center space-x-3 mb-6">
@@ -474,10 +523,22 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 flex items-center space-x-2"
+            disabled={isSubmitting}
+            className={`px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 flex items-center space-x-2 ${
+              isSubmitting ? 'opacity-75 cursor-not-allowed' : ''
+            }`}
           >
-            <Check className="w-5 h-5" />
-            <span>Confirm & Submit</span>
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <span>Submitting...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-5 h-5" />
+                <span>Confirm & Submit</span>
+              </>
+            )}
           </button>
         </div>
       </div>
