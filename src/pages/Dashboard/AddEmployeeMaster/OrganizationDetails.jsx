@@ -14,8 +14,8 @@ import axios from "@utils/axios";
 import Swal from "sweetalert2";
 import {
   fetchCompanies,
-  fetchDepartments,
-  fetchSubDepartments,
+  fetchDepartmentsById,
+  fetchSubDepartmentsById,
   fetchDesignations,
 } from "@services/ApiDataService";
 import { useEmployeeForm } from '@contexts/EmployeeFormContext';
@@ -39,26 +39,17 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
     confirmationEnabled: false,
   });
 
-  // Load organization data from API
+  // Load companies and designations from API
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [
-          companiesData,
-          departmentsData,
-          subDepartmentsData,
-          DesignationsData,
-        ] = await Promise.all([
+        const [companiesData, DesignationsData] = await Promise.all([
           fetchCompanies(),
-          fetchDepartments(),
-          fetchSubDepartments(),
           fetchDesignations(),
         ]);
 
         setCompanies(companiesData);
-        setDepartments(departmentsData);
-        setSubDepartments(subDepartmentsData);
         setDesignations(DesignationsData);
       } catch (e) {
         console.error("Error loading data:", e);
@@ -69,6 +60,57 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
 
     loadData();
   }, []);
+
+  // Load departments when company is selected
+  useEffect(() => {
+    if (formData.organization.company) {
+      const loadDepartments = async () => {
+        setIsLoading(true);
+        try {
+          const departmentsData = await fetchDepartmentsById(formData.organization.company);
+          setDepartments(departmentsData);
+          // Reset department and sub-department when company changes
+          updateFormData('organization', {
+            department: '',
+            subDepartment: ''
+          });
+          setSubDepartments([]);
+        } catch (e) {
+          console.error("Error loading departments:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadDepartments();
+    } else {
+      setDepartments([]);
+      setSubDepartments([]);
+    }
+  }, [formData.organization.company]);
+
+  // Load sub-departments when department is selected
+  useEffect(() => {
+    if (formData.organization.department) {
+      const loadSubDepartments = async () => {
+        setIsLoading(true);
+        try {
+          const subDepartmentsData = await fetchSubDepartmentsById(formData.organization.department);
+          setSubDepartments(subDepartmentsData);
+          // Reset sub-department when department changes
+          updateFormData('organization', {
+            subDepartment: ''
+          });
+        } catch (e) {
+          console.error("Error loading sub-departments:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadSubDepartments();
+    } else {
+      setSubDepartments([]);
+    }
+  }, [formData.organization.department]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -192,11 +234,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="department"
                   value={formData.organization.department}
                   onChange={handleChange}
+                  disabled={!formData.organization.company}
                   className={`w-full pl-8 pr-3 py-2 border ${
                     errors.organization?.department 
                       ? 'border-red-500' 
                       : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !formData.organization.company ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
                 >
                   <option value="">Select Department</option>
                   {departments.map((d) => (
@@ -220,11 +265,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="subDepartment"
                   value={formData.organization.subDepartment}
                   onChange={handleChange}
+                  disabled={!formData.organization.department}
                   className={`w-full pl-8 pr-3 py-2 border ${
                     errors.organization?.subDepartment 
                       ? 'border-red-500' 
                       : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !formData.organization.department ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
                   required
                 >
                   <option value="">Select Sub Department</option>
