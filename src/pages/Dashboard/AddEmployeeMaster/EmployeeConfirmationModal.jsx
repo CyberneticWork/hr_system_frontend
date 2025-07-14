@@ -191,7 +191,7 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
               <div className="bg-red-100 p-2 rounded-lg">
                 <Heart className="w-5 h-5 text-red-500" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">Family Information</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Family Information ({formData.personal.relationshipType || 'Not specified'})</h2>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

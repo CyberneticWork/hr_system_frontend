@@ -4,6 +4,47 @@ import { useEmployeeForm } from '@contexts/EmployeeFormContext';
 import ErrorDisplay from '@components/ErrorMessage/ErrorDisplay';
 import FieldError from '@components/ErrorMessage/FieldError';
 
+const provinceData = {
+  "Provinces": [
+    {
+      "name": "Central Province",
+      "districts": ["Kandy", "Matale", "Nuwara Eliya"]
+    },
+    {
+      "name": "Eastern Province",
+      "districts": ["Ampara", "Batticaloa", "Trincomalee"]
+    },
+    {
+      "name": "Northern Province",
+      "districts": ["Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya"]
+    },
+    {
+      "name": "North Central Province",
+      "districts": ["Anuradhapura", "Polonnaruwa"]
+    },
+    {
+      "name": "North Western Province",
+      "districts": ["Kurunegala", "Puttalam"]
+    },
+    {
+      "name": "Sabaragamuwa Province",
+      "districts": ["Kegalle", "Ratnapura"]
+    },
+    {
+      "name": "Southern Province",
+      "districts": ["Galle", "Matara", "Hambantota"]
+    },
+    {
+      "name": "Uva Province",
+      "districts": ["Badulla", "Monaragala"]
+    },
+    {
+      "name": "Western Province",
+      "districts": ["Colombo", "Gampaha", "Kalutara"]
+    }
+  ]
+};
+
 const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
   const { formData, updateFormData, errors, clearFieldError } = useEmployeeForm();
 
@@ -13,24 +54,44 @@ const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
     if (errors.address?.[name]) {
       clearFieldError('address', name);
     }
-    updateFormData('address', { [name]: value });
+    
+    // If province is changed, reset the district
+    if (name === 'province') {
+      updateFormData('address', { 
+        [name]: value,
+        district: '' // Reset district when province changes
+      });
+    } else {
+      updateFormData('address', { [name]: value });
+    }
   };
 
- const handleEmergencyContactChange = (e) => {
-  const { name, value } = e.target;
-  
-  // Clear error for this nested field
-  if (errors.address?.emergencyContact?.[name]) {
-    clearFieldError('address', `emergencyContact.${name}`);
-  }
-  
-  updateFormData('address', {
-    emergencyContact: {
-      ...formData.address.emergencyContact,
-      [name]: value,
-    },
-  });
-};
+  const handleEmergencyContactChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Clear error for this nested field
+    if (errors.address?.emergencyContact?.[name]) {
+      clearFieldError('address', `emergencyContact.${name}`);
+    }
+    
+    updateFormData('address', {
+      emergencyContact: {
+        ...formData.address.emergencyContact,
+        [name]: value,
+      },
+    });
+  };
+
+  // Get districts based on selected province
+  const getDistrictsForProvince = () => {
+    if (!formData.address.province) return [];
+    
+    const selectedProvince = provinceData.Provinces.find(
+      province => province.name === formData.address.province
+    );
+    
+    return selectedProvince ? selectedProvince.districts : [];
+  };
 
   return (
     <div id="address" className="bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -185,7 +246,7 @@ const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
                   <label className="block text-sm font-medium text-gray-700">
                     Province <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <select
                     name="province"
                     value={formData.address.province}
                     onChange={handleChange}
@@ -193,9 +254,15 @@ const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
                       errors.address?.province 
                         ? 'border-red-500' 
                         : 'border-gray-300'
-                    } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                    placeholder="Enter province"
-                  />
+                    } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white`}
+                  >
+                    <option value="">Select Province</option>
+                    {provinceData.Provinces.map((province, index) => (
+                      <option key={index} value={province.name}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
                   <FieldError error={errors.address?.province} />
                 </div>
 
@@ -261,18 +328,21 @@ const AddressDetails = ({ onNext, onPrevious, activeCategory }) => {
                     name="district"
                     value={formData.address.district}
                     onChange={handleChange}
+                    disabled={!formData.address.province}
                     className={`w-full border ${
                       errors.address?.district 
                         ? 'border-red-500' 
                         : 'border-gray-300'
-                    } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white`}
+                    } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white ${
+                      !formData.address.province ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
                   >
                     <option value="">Select District</option>
-                    <option value="GAMPAHA">GAMPAHA</option>
-                    <option value="COLOMBO">COLOMBO</option>
-                    <option value="KALUTARA">KALUTARA</option>
-                    <option value="KANDY">KANDY</option>
-                    <option value="MATALE">MATALE</option>
+                    {getDistrictsForProvince().map((district, index) => (
+                      <option key={index} value={district}>
+                        {district}
+                      </option>
+                    ))}
                   </select>
                   <FieldError error={errors.address?.district} />
                 </div>

@@ -227,7 +227,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
             <div className="mb-4">
               <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Layers className="text-gray-500" size={16} />
-                Department
+                Department <span className="text-red-500">*</span>
               </label>
               <div className="relative flex-1">
                 <select
@@ -315,7 +315,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
             <div className="mb-4">
               <label className="text-gray-700 font-medium mb-2 flex items-center gap-1">
                 <Calendar className="text-gray-500" size={16} />
-                Date of Joined
+                Date of Joined <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -420,7 +420,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.probationEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.probationEnabled ? "Enabled" : "Disabled"} */}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.probationPeriod}
@@ -506,7 +506,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.trainingEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.trainingEnabled ? "Enabled" : "Disabled"} */}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.trainingPeriod}
@@ -592,7 +592,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.contractEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.contractEnabled ? "Enabled" : "Disabled"} */}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.contractPeriod}
@@ -676,13 +676,13 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {toggleStates.confirmationEnabled ? "Enabled" : "Disabled"}
+                    {/* {toggleStates.confirmationEnabled ? "Enabled" : "Disabled"} */}
                   </span>
-                  <ToggleButton
+                  {/* <ToggleButton
                     enabled={toggleStates.confirmationEnabled}
                     onToggle={() => handleToggle("confirmationEnabled")}
                     label="Confirmation Date"
-                  />
+                  /> */}
                 </div>
               </div>
               <div className="relative">
@@ -691,14 +691,8 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   name="confirmationDate"
                   value={formData.organization.confirmationDate}
                   onChange={handleChange}
-                  disabled={!toggleStates.confirmationEnabled}
-                  className={`w-full pl-8 pr-3 py-2 border ${
-                    !toggleStates.confirmationEnabled
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : errors.organization?.confirmationDate
-                        ? 'border-red-500'
-                        : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  // disabled={!toggleStates.confirmationEnabled}
+                  className={`w-full pl-8 pr-3 py-2 border  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <Calendar
                   className={`absolute left-2 top-2.5 ${
