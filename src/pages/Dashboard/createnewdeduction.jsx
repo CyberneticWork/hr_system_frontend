@@ -40,7 +40,6 @@ const CreateNewDeduction = () => {
     amount: "",
     status: "active",
     category: "EPF",
-    customCategory: "",
     deduction_type: "fixed",
     startDate: "",
     endDate: "",
@@ -194,15 +193,6 @@ const CreateNewDeduction = () => {
       }
     }
 
-    if (formData.category === "other" && !formData.customCategory.trim()) {
-      Swal.fire({
-        icon: "error",
-        title: "Validation Error",
-        text: "Please enter a custom category name",
-      });
-      return;
-    }
-
     setDateError("");
     setIsSubmitting(true);
 
@@ -215,10 +205,7 @@ const CreateNewDeduction = () => {
         description: formData.description,
         amount: parseFloat(formData.amount),
         status: formData.status,
-        category:
-          formData.category === "other"
-            ? formData.customCategory
-            : formData.category,
+        category: formData.category, // Remove the conditional handling
         deduction_type: formData.deduction_type,
         startDate: formData.startDate,
         endDate:
@@ -383,7 +370,6 @@ const CreateNewDeduction = () => {
       amount: "",
       status: "active",
       category: "EPF",
-      customCategory: "",
       deduction_type: "fixed",
       startDate: "",
       endDate: "",
@@ -873,22 +859,8 @@ const CreateNewDeduction = () => {
                   >
                     <option value="EPF">EPF</option>
                     <option value="ETF">ETF</option>
-                    <option value="other">Other</option>
+                    <option value="Other">Other</option>
                   </select>
-
-                  {/* Custom category input */}
-                  {formData.category === "other" && (
-                    <div className="mt-2">
-                      <input
-                        name="customCategory"
-                        value={formData.customCategory}
-                        onChange={handleInputChange}
-                        placeholder="Enter custom category"
-                        required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-2">
