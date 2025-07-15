@@ -64,9 +64,9 @@ const employeeService = {
     }
   },
 
-  async fetchEmployees() {
+  async fetchEmployeesForTable() {
     try {
-      const response = await axios.get("/employees");
+      const response = await axios.get("/emp/table");
       return response.data;
     } catch (error) {
       console.error("Error fetching employees:", error);
