@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {createLoan} from '@services/LoanService';
+import { createLoan } from '@services/LoanService';
+import Swal from 'sweetalert2';
 
 const EmployeeLoan = () => {
   const [loanId, setLoanId] = useState('');
@@ -12,23 +13,87 @@ const EmployeeLoan = () => {
   const [loanDetails, setLoanDetails] = useState([]);
   const [isCalculated, setIsCalculated] = useState(false);
 
+  // Format currency as LKR
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const showSuccessMessage = (title, text) => {
+    Swal.fire({
+      position: 'center',
+      icon: 'success',
+      title: title,
+      text: text,
+      showConfirmButton: true,
+      confirmButtonColor: '#3085d6',
+      timer: 3000,
+      customClass: {
+        popup: 'rounded-xl shadow-2xl',
+        title: 'text-2xl font-bold text-gray-800',
+        confirmButton: 'px-6 py-2 rounded-lg font-medium'
+      }
+    });
+  };
+
+  const showErrorMessage = (title, text) => {
+    Swal.fire({
+      position: 'center',
+      icon: 'error',
+      title: title,
+      text: text,
+      showConfirmButton: true,
+      confirmButtonColor: '#d33',
+      customClass: {
+        popup: 'rounded-xl shadow-2xl',
+        title: 'text-2xl font-bold text-gray-800',
+        confirmButton: 'px-6 py-2 rounded-lg font-medium'
+      }
+    });
+  };
+
   const handleSaveLoan = async () => {
     try {
+      if (!isCalculated || loanDetails.length === 0) {
+        showErrorMessage('Calculation Required', 'Please calculate the loan before saving');
+        return;
+      }
+
       const payload = {
         loan_id: loanId,
-        employee_id: employeeNo, // Make sure this is the employee's DB ID, not just a number
+        employee_id: employeeNo,
         loan_amount: parseFloat(loanAmount),
         interest_rate_per_annum: interestType === 'withInterest' ? parseFloat(interestRate) : 0,
         installment_amount: parseFloat(installmentAmount),
         start_from: startDate,
         with_interest: interestType === 'withInterest',
       };
+
       await createLoan(payload);
-      alert('Loan saved successfully!');
+      
+      showSuccessMessage('Loan Saved!', 'Employee loan has been successfully saved');
+      
+      // Reset form after successful save
+      resetForm();
+      
     } catch (error) {
-      // alert('Failed to save loan. Please check your input.');
       console.error('Error saving loan:', error);
+      showErrorMessage('Save Failed', error.response?.data?.message || 'Failed to save loan. Please try again.');
     }
+  };
+
+  const resetForm = () => {
+    setEmployeeNo('');
+    setStartDate('');
+    setLoanAmount('');
+    setInterestRate('');
+    setInstallmentAmount('');
+    setLoanDetails([]);
+    setIsCalculated(false);
   };
 
   // Auto-generate Loan ID
@@ -45,15 +110,20 @@ const EmployeeLoan = () => {
 
   const calculateLoan = () => {
     // Validation
-    if (!loanAmount || !installmentAmount || (interestType === 'withInterest' && !interestRate)) {
-      alert('Please fill all required fields');
+    if (!employeeNo || !startDate || !loanAmount || !installmentAmount || (interestType === 'withInterest' && !interestRate)) {
+      showErrorMessage('Missing Information', 'Please fill all required fields');
       return;
     }
 
-    // Mock calculation - in a real app, this would be more complex
+    if (parseFloat(installmentAmount) <= 0) {
+      showErrorMessage('Invalid Installment', 'Installment amount must be greater than 0');
+      return;
+    }
+
+    // Calculate loan details
     const details = [];
     const principal = parseFloat(loanAmount);
-    const rate = parseFloat(interestRate) / 100;
+    const rate = parseFloat(interestRate) / 100 / 12; // Monthly rate
     const installments = Math.ceil(principal / parseFloat(installmentAmount));
     let remaining = principal;
 
@@ -66,23 +136,92 @@ const EmployeeLoan = () => {
         no: i,
         dueDate: calculateDueDate(startDate, i),
         days: 30, // assuming monthly payments
-        capitalOutstanding: remaining.toFixed(2),
-        capitalRepayment: principalPayment.toFixed(2),
-        interestPayment: interest.toFixed(2),
-        installmentAmount: (principalPayment + interest).toFixed(2),
-        dueBalance: remaining.toFixed(2)
+        capitalOutstanding: remaining,
+        capitalRepayment: principalPayment,
+        interestPayment: interest,
+        installmentAmount: (principalPayment + interest),
+        dueBalance: remaining
       });
+
+      // Round to 2 decimal places to avoid floating point issues
+      if (i === installments && Math.abs(remaining) > 0.01) {
+        details[details.length - 1].capitalRepayment += remaining;
+        details[details.length - 1].installmentAmount += remaining;
+        remaining = 0;
+        details[details.length - 1].capitalOutstanding = 0;
+        details[details.length - 1].dueBalance = 0;
+      }
     }
 
     setLoanDetails(details);
     setIsCalculated(true);
+    
+    Swal.fire({
+      position: 'center',
+      icon: 'success',
+      title: 'Loan Calculated',
+      showConfirmButton: false,
+      timer: 1500,
+      customClass: {
+        popup: 'rounded-xl shadow-2xl',
+        title: 'text-xl font-bold text-gray-800'
+      }
+    });
   };
 
   const calculateDueDate = (startDate, installmentNo) => {
     if (!startDate) return 'N/A';
     const date = new Date(startDate);
     date.setMonth(date.getMonth() + installmentNo);
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-LK', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const showInstallmentDetails = (detail) => {
+    Swal.fire({
+      title: `<span class="text-xl font-bold text-blue-600">Installment #${detail.no}</span>`,
+      html: `
+        <div class="text-left space-y-3">
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-semibold text-gray-700">Due Date:</span>
+            <span class="font-medium">${detail.dueDate}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-semibold text-gray-700">Capital Outstanding:</span>
+            <span class="font-mono font-bold">${formatCurrency(detail.capitalOutstanding)}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-semibold text-gray-700">Capital Repayment:</span>
+            <span class="font-mono text-green-600">${formatCurrency(detail.capitalRepayment)}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-semibold text-gray-700">Interest Payment:</span>
+            <span class="font-mono text-purple-600">${formatCurrency(detail.interestPayment)}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-semibold text-gray-700">Total Installment:</span>
+            <span class="font-mono font-bold text-blue-600">${formatCurrency(detail.installmentAmount)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-semibold text-gray-700">Remaining Balance:</span>
+            <span class="font-mono">${formatCurrency(detail.dueBalance)}</span>
+          </div>
+        </div>
+      `,
+      showConfirmButton: true,
+      confirmButtonText: 'Close',
+      confirmButtonColor: '#3085d6',
+      customClass: {
+        popup: 'rounded-xl shadow-2xl',
+        title: 'mb-4',
+        confirmButton: 'px-6 py-2 rounded-lg font-medium mt-4'
+      },
+      background: '#f9fafb',
+      width: '500px'
+    });
   };
 
   return (
@@ -93,7 +232,7 @@ const EmployeeLoan = () => {
             Employee Wise Loan Calculator
           </h1>
           
-          {/* Loan ID Section - Simplified */}
+          {/* Loan ID Section */}
           <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
             <h2 className="text-xl font-semibold mb-4 text-blue-800 flex items-center">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -109,8 +248,7 @@ const EmployeeLoan = () => {
                   className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 hover:border-gray-400"
                   value={loanId}
                   readOnly
-                  // onChange={(e) => setLoanId(e.target.value)}
-                  placeholder="Enter Loan ID"
+                  placeholder="Auto-generated Loan ID"
                 />
               </div>
             </div>
@@ -190,7 +328,7 @@ const EmployeeLoan = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Loan Amount
+                  Loan Amount (LKR)
                   <span className="text-red-500 ml-1">*</span>
                 </label>
                 <input 
@@ -200,6 +338,8 @@ const EmployeeLoan = () => {
                   onChange={(e) => setLoanAmount(e.target.value)}
                   placeholder="Enter Amount"
                   required
+                  min="0"
+                  step="0.01"
                 />
               </div>
               <div>
@@ -219,11 +359,14 @@ const EmployeeLoan = () => {
                   placeholder="Enter Rate"
                   disabled={interestType === 'withoutInterest'}
                   required={interestType === 'withInterest'}
+                  min="0"
+                  max="100"
+                  step="0.01"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Installment Amount
+                  Installment Amount (LKR)
                   <span className="text-red-500 ml-1">*</span>
                 </label>
                 <input 
@@ -233,6 +376,8 @@ const EmployeeLoan = () => {
                   onChange={(e) => setInstallmentAmount(e.target.value)}
                   placeholder="Enter Amount"
                   required
+                  min="0"
+                  step="0.01"
                 />
               </div>
             </div>
@@ -250,7 +395,9 @@ const EmployeeLoan = () => {
               Calculate
             </button>
             <button
-              className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300"
+              className={`px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg transform transition-all duration-200 shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 ${
+                !isCalculated ? 'opacity-50 cursor-not-allowed' : 'hover:from-green-700 hover:to-green-800 hover:scale-105'
+              }`}
               onClick={handleSaveLoan}
               disabled={!isCalculated}
             >
@@ -258,7 +405,7 @@ const EmployeeLoan = () => {
             </button>
           </div>
 
-          {/* Loan Details Table - Always Visible */}
+          {/* Loan Details Table */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
               <h3 className="text-xl font-bold text-white flex items-center">
@@ -294,15 +441,25 @@ const EmployeeLoan = () => {
                         </td>
                         <td className="py-4 px-6 border-b border-gray-200 font-medium text-gray-700">{detail.dueDate}</td>
                         <td className="py-4 px-6 border-b border-gray-200 text-center text-gray-600">{detail.days}</td>
-                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">${detail.capitalOutstanding}</td>
-                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">${detail.capitalRepayment}</td>
-                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">${detail.interestPayment}</td>
-                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono font-bold text-blue-600">${detail.installmentAmount}</td>
-                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">${detail.dueBalance}</td>
+                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">
+                          {formatCurrency(detail.capitalOutstanding)}
+                        </td>
+                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">
+                          {formatCurrency(detail.capitalRepayment)}
+                        </td>
+                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">
+                          {formatCurrency(detail.interestPayment)}
+                        </td>
+                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono font-bold text-blue-600">
+                          {formatCurrency(detail.installmentAmount)}
+                        </td>
+                        <td className="py-4 px-6 border-b border-gray-200 text-right font-mono text-gray-700">
+                          {formatCurrency(detail.dueBalance)}
+                        </td>
                         <td className="py-4 px-6 border-b border-gray-200 text-center">
                           <button
                             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm font-medium shadow-md"
-                            onClick={() => alert(`Details for installment #${detail.no}`)}
+                            onClick={() => showInstallmentDetails(detail)}
                           >
                             <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />

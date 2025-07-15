@@ -1,76 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Users, UserCheck, Calendar, Plus, Edit2, Trash2, Search, Filter, ChevronDown, ChevronRight } from 'lucide-react';
-import { fetchCompanies } from '../../services/ApiDataService'; // Use correct relative path
+import { fetchCompanies, fetchDepartments, fetchSubDepartments } from '../../services/ApiDataService';
 
 const Department = () => {
   const [activeTab, setActiveTab] = useState('companies');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [modalMode, setModalMode] = useState('add');
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [companyForm, setCompanyForm] = useState({
+    name: '',
+    location: '',
+    employees: '',
+    established: ''
+  });
+
   const [companies, setCompanies] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [subDepartments, setSubDepartments] = useState([]);
 
   useEffect(() => {
     fetchCompanies().then(setCompanies);
+    fetchDepartments().then(setDepartments);
+    fetchSubDepartments().then(setSubDepartments);
   }, []);
-  // Sample data
-  // const [companies] = useState([
-  //   {
-  //     id: 1,
-  //     name: 'TechCorp Solutions',
-  //     code: 'TC001',
-  //     location: 'New York',
-  //     employees: 250,
-  //     established: '2018',
-  //     departments: [
-  //       {
-  //         id: 1,
-  //         name: 'Information Technology',
-  //         code: 'IT001',
-  //         manager: 'John Smith',
-  //         employees: 45,
-  //         subdepartments: [
-  //           { id: 1, name: 'Software Development', manager: 'Alice Johnson', employees: 25 },
-  //           { id: 2, name: 'Network Administration', manager: 'Bob Wilson', employees: 12 },
-  //           { id: 3, name: 'Cybersecurity', manager: 'Carol Davis', employees: 8 }
-  //         ]
-  //       },
-  //       {
-  //         id: 2,
-  //         name: 'Human Resources',
-  //         code: 'HR001',
-  //         manager: 'Sarah Connor',
-  //         employees: 15,
-  //         subdepartments: [
-  //           { id: 4, name: 'Recruitment', manager: 'Mike Brown', employees: 8 },
-  //           { id: 5, name: 'Employee Relations', manager: 'Lisa White', employees: 7 }
-  //         ]
-  //       }
-  //     ]
-  //   },
-  //   {
-  //     id: 2,
-  //     name: 'Global Industries',
-  //     code: 'GI002',
-  //     location: 'California',
-  //     employees: 180,
-  //     established: '2020',
-  //     departments: [
-  //       {
-  //         id: 3,
-  //         name: 'Marketing',
-  //         code: 'MK001',
-  //         manager: 'David Lee',
-  //         employees: 30,
-  //         subdepartments: [
-  //           { id: 6, name: 'Digital Marketing', manager: 'Emma Stone', employees: 18 },
-  //           { id: 7, name: 'Brand Management', manager: 'Ryan Garcia', employees: 12 }
-  //         ]
-  //       }
-  //     ]
-  //   }
-  // ]);
 
-  const toggleRowExpansion = (id) => {
+  // Merge subdepartments into departments
+  const departmentsWithSubs = departments.map(dept => ({
+    ...dept,
+    subdepartments: subDepartments.filter(sub => sub.department_id === dept.id)
+  }));
+
+  // Merge departments into companies
+  const companiesWithDeps = companies.map(company => ({
+    ...company,
+    departments: departmentsWithSubs.filter(dept => dept.company_id === company.id)
+  }));
+
+  function toggleRowExpansion(id) {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(id)) {
       newExpanded.delete(id);
@@ -78,7 +46,7 @@ const Department = () => {
       newExpanded.add(id);
     }
     setExpandedRows(newExpanded);
-  };
+  }
 
   const StatCard = ({ icon: Icon, title, value, color }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
@@ -109,7 +77,6 @@ const Department = () => {
       primary: 'text-blue-600 hover:bg-blue-50',
       danger: 'text-red-600 hover:bg-red-50'
     };
-    
     return (
       <button
         onClick={onClick}
@@ -127,7 +94,6 @@ const Department = () => {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Established</th>
@@ -145,13 +111,25 @@ const Department = () => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.code}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.location}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.employees}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.established}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center space-x-2">
-                    <ActionButton icon={Edit2} onClick={() => {}} />
+                    <ActionButton
+                      icon={Edit2}
+                      onClick={() => {
+                        setModalMode('edit');
+                        setEditingCompany(company);
+                        setCompanyForm({
+                          name: company.name || '',
+                          location: company.location || '',
+                          employees: company.employees || '',
+                          established: company.established || ''
+                        });
+                        setShowAddModal(true);
+                      }}
+                    />
                     <ActionButton icon={Trash2} onClick={() => {}} variant="danger" />
                   </div>
                 </td>
@@ -171,14 +149,14 @@ const Department = () => {
             <tr>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
+              {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th> */}
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartments</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {companies.flatMap(company => 
+            {companiesWithDeps.flatMap(company =>
               company.departments.map(dept => (
                 <React.Fragment key={`${company.id}-${dept.id}`}>
                   <tr className="hover:bg-gray-50 transition-colors">
@@ -188,8 +166,8 @@ const Department = () => {
                           onClick={() => toggleRowExpansion(`${company.id}-${dept.id}`)}
                           className="mr-2 p-1 hover:bg-gray-200 rounded"
                         >
-                          {expandedRows.has(`${company.id}-${dept.id}`) ? 
-                            <ChevronDown className="w-4 h-4" /> : 
+                          {expandedRows.has(`${company.id}-${dept.id}`) ?
+                            <ChevronDown className="w-4 h-4" /> :
                             <ChevronRight className="w-4 h-4" />
                           }
                         </button>
@@ -201,7 +179,7 @@ const Department = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.manager}</td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.manager}</td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.employees}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.subdepartments.length}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -220,7 +198,7 @@ const Department = () => {
                         </div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">-</td>
-                      <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">{subdept.manager}</td>
+                      {/* <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">{subdept.manager}</td> */}
                       <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">{subdept.employees}</td>
                       <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">-</td>
                       <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
@@ -249,15 +227,15 @@ const Department = () => {
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartment</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
+              {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th> */}
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO Of Employees</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {companies.flatMap(company => 
-              company.departments.flatMap(dept => 
+            {companiesWithDeps.flatMap(company =>
+              company.departments.flatMap(dept =>
                 dept.subdepartments.map(subdept => (
                   <tr key={`${company.id}-${dept.id}-${subdept.id}`} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -274,22 +252,22 @@ const Department = () => {
                       <div className="text-sm text-gray-500">{dept.code}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
                           <span className="text-xs font-medium text-gray-600">
-                            {subdept.manager.split(' ').map(n => n[0]).join('')}
+                            {(subdept.manager || '').split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
                         <div className="text-sm text-gray-900">{subdept.manager}</div>
                       </div>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="text-sm text-gray-900">{subdept.employees}</div>
-                        <div className="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                        <div className=" px-8 py-1 text-sm text-gray-900">{subdept.employees}</div>
+                        {/* <div className="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                           {subdept.employees > 15 ? 'Large' : subdept.employees > 8 ? 'Medium' : 'Small'}
-                        </div>
+                        </div> */}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -319,49 +297,46 @@ const Department = () => {
     showAddModal && (
       <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-          <h3 className="text-lg font-semibold mb-4">Add New {activeTab.slice(0, -1)}</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            {modalMode === 'add' ? 'Add New Company' : 'Edit Company'}
+          </h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              <input
+                type="text"
+                value={companyForm.name}
+                onChange={e => setCompanyForm({ ...companyForm, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+              <input
+                type="text"
+                value={companyForm.location}
+                onChange={e => setCompanyForm({ ...companyForm, location: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
-            {activeTab === 'companies' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-            )}
-            {activeTab === 'departments' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Manager</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-            )}
-            {activeTab === 'subdepartments' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Parent Department</label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select Department</option>
-                    {companies.flatMap(company => 
-                      company.departments.map(dept => (
-                        <option key={`${company.id}-${dept.id}`} value={`${company.id}-${dept.id}`}>
-                          {dept.name} ({company.name})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Manager</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                </div>
-              </>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Employees</label>
+              <input
+                type="number"
+                value={companyForm.employees}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Established</label>
+              <input
+                type="text"
+                value={companyForm.established}
+                onChange={e => setCompanyForm({ ...companyForm, established: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
           <div className="flex justify-end space-x-3 mt-6">
             <button
@@ -371,10 +346,25 @@ const Department = () => {
               Cancel
             </button>
             <button
-              onClick={() => setShowAddModal(false)}
+              onClick={() => {
+                if (modalMode === 'add') {
+                  setCompanies([
+                    ...companies,
+                    {
+                      id: Date.now(),
+                      ...companyForm
+                    }
+                  ]);
+                } else if (modalMode === 'edit' && editingCompany) {
+                  setCompanies(companies.map(c =>
+                    c.id === editingCompany.id ? { ...editingCompany, ...companyForm } : c
+                  ));
+                }
+                setShowAddModal(false);
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Add {activeTab.slice(0, -1)}
+              {modalMode === 'add' ? 'Add Company' : 'Save Changes'}
             </button>
           </div>
         </div>
@@ -397,25 +387,25 @@ const Department = () => {
         <StatCard 
           icon={Building2} 
           title="Total Companies" 
-          value="2" 
+          value={companies.length} 
           color="bg-blue-500" 
         />
         <StatCard 
           icon={Users} 
           title="Total Departments" 
-          value="3" 
+          value={departments.length} 
           color="bg-green-500" 
         />
         <StatCard 
           icon={UserCheck} 
           title="Subdepartments" 
-          value="7" 
+          value={subDepartments.length} 
           color="bg-purple-500" 
         />
         <StatCard 
           icon={Calendar} 
           title="Total Employees" 
-          value="430" 
+          value={companies.reduce((sum, c) => sum + (parseInt(c.employees) || 0), 0)} 
           color="bg-orange-500" 
         />
       </div>
@@ -460,9 +450,13 @@ const Department = () => {
             Filter
           </button>
         </div>
-        <AddButton 
-          onClick={() => setShowAddModal(true)}
-          text={`Add ${activeTab}`}
+        <AddButton
+          onClick={() => {
+            setModalMode('add');
+            setCompanyForm({ name: '', location: '', employees: '', established: '' });
+            setShowAddModal(true);
+          }}
+          text="Add Company"
         />
       </div>
 

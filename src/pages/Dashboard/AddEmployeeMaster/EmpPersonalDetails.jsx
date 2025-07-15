@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEmployeeForm } from "@contexts/EmployeeFormContext";
-import FieldError from '@components/ErrorMessage/FieldError';
+import FieldError from "@components/ErrorMessage/FieldError";
 
 const relationshipOptions = [
   { value: "", label: "Select Relationship Type" },
@@ -22,7 +22,8 @@ const relationshipOptions = [
 ];
 
 const EmpPersonalDetails = ({ onNext, activeCategory }) => {
-  const { formData, updateFormData, errors, clearFieldError } = useEmployeeForm();
+  const { formData, updateFormData, errors, clearFieldError } =
+    useEmployeeForm();
   const [preview, setPreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -40,12 +41,12 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Clear error when user makes changes
     if (errors.personal?.[name]) {
-      clearFieldError('personal', name);
+      clearFieldError("personal", name);
     }
-    
+
     updateFormData("personal", {
       [name]: type === "checkbox" ? checked : value,
     });
@@ -159,9 +160,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.title}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.title 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.title ? "border-red-500" : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white`}
                 required
               >
@@ -185,9 +184,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.attendanceEmpNo}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.attendanceEmpNo 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.attendanceEmpNo
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter employee number"
                 required
@@ -205,9 +204,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.epfNo}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.epfNo 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.epfNo ? "border-red-500" : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter EPF number"
                 required
@@ -225,9 +222,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.nicNumber}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.nicNumber 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.nicNumber
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter NIC number"
                 required
@@ -246,9 +243,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.dob}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.dob 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.dob ? "border-red-500" : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 required
               />
@@ -265,9 +260,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.gender}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.gender 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.gender ? "border-red-500" : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white`}
                 required
               >
@@ -289,9 +282,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.religion}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.religion 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.religion
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter religion"
               />
@@ -308,9 +301,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.countryOfBirth}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.countryOfBirth 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.countryOfBirth
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter country of birth"
               />
@@ -326,11 +319,13 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               <div className="flex items-center gap-4">
                 {/* Preview Circle */}
                 <div className="relative">
-                  <div className={`w-16 h-16 rounded-full border-2  ${
-                  errors?.profile_picture 
-                    ? 'border-red-500' 
-                    : 'border-gray-200'
-                }  overflow-hidden bg-gray-50 flex items-center justify-center`}>
+                  <div
+                    className={`w-16 h-16 rounded-full border-2  ${
+                      errors?.profile_picture
+                        ? "border-red-500"
+                        : "border-gray-200"
+                    }  overflow-hidden bg-gray-50 flex items-center justify-center`}
+                  >
                     {preview ? (
                       <img
                         src={preview}
@@ -352,11 +347,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 <div
                   className={`relative flex-1 border-2 border-dashed rounded-lg px-4 py-3 
               transition-all duration-200 cursor-pointer
-              ${
-                  errors?.profile_picture 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
-                }
+              ${errors?.profile_picture ? "border-red-500" : "border-gray-300"}
               ${
                 isDragging
                   ? "border-blue-400 bg-blue-50"
@@ -412,18 +403,17 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { value: "employeeActive", label: "Employee Active" },
-              { value: "permanentBasis", label: "Permanent Basis" },
-              { value: "training", label: "Training" },
-              { value: "contractBasis", label: "Contract Basis" },
-              { value: "dailyWagesSalary", label: "Daily Wages Salary" },
+              { value: "1", label: "Permanent Basis" },
+              { value: "2", label: "Training" },
+              { value: "3", label: "Contract Basis" },
+              { value: "4", label: "Daily Wages Salary" },
             ].map((item) => (
               <label
                 key={item.value}
                 className={`flex items-center gap-3 p-3 rounded-lg border ${
-                  errors.personal?.employmentStatus 
-                    ? 'border-red-500' 
-                    : 'border-gray-200'
+                  errors.personal?.employmentStatus
+                    ? "border-red-500"
+                    : "border-gray-200"
                 } hover:bg-gray-50 transition-colors cursor-pointer`}
               >
                 <input
@@ -464,9 +454,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.nameWithInitial}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.nameWithInitial 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.nameWithInitial
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="e.g., J.A. Smith"
                 required
@@ -482,9 +472,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.fullName}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.fullName 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.fullName
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter full name"
                 required
@@ -500,9 +490,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.displayName}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.displayName 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.displayName
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter display name"
                 required
@@ -520,9 +510,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               value={formData.personal.maritalStatus}
               onChange={handleChange}
               className={`w-full lg:w-1/3 border ${
-                errors.personal?.maritalStatus 
-                  ? 'border-red-500' 
-                  : 'border-gray-300'
+                errors.personal?.maritalStatus
+                  ? "border-red-500"
+                  : "border-gray-300"
               } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white`}
             >
               <option value="">Select Status</option>
@@ -546,30 +536,55 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
             </h2>
           </div>
 
-          <div className="mt-4 mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Relationship Type
-            </label>
-            <select
-              name="relationshipType"
-              value={formData.personal.relationshipType || ""}
-              onChange={handleChange}
-              className={`w-full lg:w-1/3 border ${
-                errors.personal?.relationshipType 
-                  ? 'border-red-500' 
-                  : 'border-gray-300'
-              } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white`}
-            >
-              {relationshipOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <FieldError error={errors.personal?.relationshipType} />
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Relationship Type
+              </label>
+              <select
+                name="relationshipType"
+                value={formData.personal.relationshipType || ""}
+                onChange={handleChange}
+                className={`w-full border ${
+                  errors.personal?.relationshipType
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white`}
+              >
+                {relationshipOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <FieldError error={errors.personal?.relationshipType} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title
+              </label>
+              <select
+                name="spouseTitle"
+                value={formData.personal.spouseTitle || ""}
+                onChange={handleChange}
+                className={`w-full border ${
+                  errors.personal?.spouseTitle
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white`}
+                required
+              >
+                <option value="">Select Title</option>
+                <option>Mr</option>
+                <option>Mrs</option>
+                <option>Miss</option>
+                <option>Ms</option>
+                <option>Dr</option>
+              </select>
+              <FieldError error={errors.personal?.spouseTitle} />
+            </div>
+
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Name
@@ -579,9 +594,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.spouseName}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.spouseName 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.spouseName
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter spouse name"
               />
@@ -598,9 +613,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.spouseAge}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.spouseAge 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.spouseAge
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter age"
               />
@@ -616,9 +631,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.spouseDob}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.spouseDob 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.spouseDob
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
               />
               <FieldError error={errors.personal?.spouseDob} />
@@ -632,9 +647,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                 value={formData.personal.spouseNic}
                 onChange={handleChange}
                 className={`w-full border ${
-                  errors.personal?.spouseNic 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
+                  errors.personal?.spouseNic
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Enter NIC number"
               />
@@ -686,9 +701,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                     value={child.name}
                     onChange={(e) => handleChildChange(idx, e)}
                     className={`w-full border ${
-                      errors.personal?.children?.[idx]?.name 
-                        ? 'border-red-500' 
-                        : 'border-gray-300'
+                      errors.personal?.children?.[idx]?.name
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                   />
                   <input
@@ -699,9 +714,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                     value={child.age}
                     onChange={(e) => handleChildChange(idx, e)}
                     className={`w-full border ${
-                      errors.personal?.children?.[idx]?.age 
-                        ? 'border-red-500' 
-                        : 'border-gray-300'
+                      errors.personal?.children?.[idx]?.age
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                   />
                   <input
@@ -710,9 +725,9 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                     value={child.dob}
                     onChange={(e) => handleChildChange(idx, e)}
                     className={`w-full border ${
-                      errors.personal?.children?.[idx]?.dob 
-                        ? 'border-red-500' 
-                        : 'border-gray-300'
+                      errors.personal?.children?.[idx]?.dob
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                   />
                   <input
@@ -721,20 +736,22 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
                     value={child.nic}
                     onChange={(e) => handleChildChange(idx, e)}
                     className={`w-full border ${
-                      errors.personal?.children?.[idx]?.nic 
-                        ? 'border-red-500' 
-                        : 'border-gray-300'
+                      errors.personal?.children?.[idx]?.nic
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                   />
                 </div>
                 {errors.personal?.children?.[idx] && (
                   <div className="mt-2 text-sm text-red-600">
-                    {Object.values(errors.personal.children[idx]).map((error, i) => (
-                      <div key={i} className="flex items-start">
-                        <span className="mr-1">•</span>
-                        <span>{error}</span>
-                      </div>
-                    ))}
+                    {Object.values(errors.personal.children[idx]).map(
+                      (error, i) => (
+                        <div key={i} className="flex items-start">
+                          <span className="mr-1">•</span>
+                          <span>{error}</span>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
               </div>

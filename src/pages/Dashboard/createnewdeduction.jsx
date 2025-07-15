@@ -40,7 +40,6 @@ const CreateNewDeduction = () => {
     amount: "",
     status: "active",
     category: "EPF",
-    customCategory: "",
     deduction_type: "fixed",
     startDate: "",
     endDate: "",
@@ -194,15 +193,6 @@ const CreateNewDeduction = () => {
       }
     }
 
-    if (formData.category === "other" && !formData.customCategory.trim()) {
-      Swal.fire({
-        icon: "error",
-        title: "Validation Error",
-        text: "Please enter a custom category name",
-      });
-      return;
-    }
-
     setDateError("");
     setIsSubmitting(true);
 
@@ -215,45 +205,54 @@ const CreateNewDeduction = () => {
         description: formData.description,
         amount: parseFloat(formData.amount),
         status: formData.status,
-        category:
-          formData.category === "other"
-            ? formData.customCategory
-            : formData.category,
+        category: formData.category, // Remove the conditional handling
         deduction_type: formData.deduction_type,
         startDate: formData.startDate,
         endDate:
           formData.deduction_type === "variable" ? formData.endDate : null,
       };
 
-      let result;
+      // Find company and department objects regardless if creating or updating
+      const selectedCompany = companies.find(
+        (c) => c.id === parseInt(formData.company_id)
+      );
+      const selectedDepartment = departments.find(
+        (d) => d.id === parseInt(formData.department_id)
+      );
 
       if (formData.id) {
         // Update existing deduction
-        result = await updateDeduction(formData.id, deductionData);
+        const result = await updateDeduction(formData.id, deductionData);
 
-        // Update the local state
+        // Update the local state with properly structured data
+        // This ensures that company and department objects are present
         setDeductions(
           deductions.map((item) =>
             item.id === formData.id
-              ? { ...result } // Use the returned result directly
+              ? {
+                  ...result, // API response data
+                  id: formData.id, // Ensure ID is preserved
+                  company: {
+                    id: selectedCompany.id,
+                    name: selectedCompany.name,
+                  },
+                  department: {
+                    id: selectedDepartment.id,
+                    name: selectedDepartment.name,
+                  },
+                  updated_at: new Date().toISOString(),
+                }
               : item
           )
         );
       } else {
         // Create new deduction
-        result = await createDeduction(deductionData);
-
-        // Find company and department objects
-        const selectedCompany = companies.find(
-          (c) => c.id === parseInt(formData.company_id)
-        );
-        const selectedDepartment = departments.find(
-          (d) => d.id === parseInt(formData.department_id)
-        );
+        const result = await createDeduction(deductionData);
 
         // Add to local state with properly formatted data
         const newDeduction = {
-          ...result, // Spread API response data
+          ...result, // API response data
+          id: result.id || Date.now(), // Use API ID or generate one
           company: {
             id: selectedCompany.id,
             name: selectedCompany.name,
@@ -371,7 +370,6 @@ const CreateNewDeduction = () => {
       amount: "",
       status: "active",
       category: "EPF",
-      customCategory: "",
       deduction_type: "fixed",
       startDate: "",
       endDate: "",
@@ -861,22 +859,8 @@ const CreateNewDeduction = () => {
                   >
                     <option value="EPF">EPF</option>
                     <option value="ETF">ETF</option>
-                    <option value="other">Other</option>
+                    <option value="Other">Other</option>
                   </select>
-
-                  {/* Custom category input */}
-                  {formData.category === "other" && (
-                    <div className="mt-2">
-                      <input
-                        name="customCategory"
-                        value={formData.customCategory}
-                        onChange={handleInputChange}
-                        placeholder="Enter custom category"
-                        required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-2">

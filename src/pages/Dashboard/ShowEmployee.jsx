@@ -1,130 +1,49 @@
-import React, { useState } from 'react';
-import { Eye, User, Phone, Mail, MapPin, Calendar, Briefcase, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Eye,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Briefcase,
+  X,
+  Loader2,
+  Users,
+  Building,
+  Heart,
+  Baby,
+  Shield,
+  Clock,
+  UserCheck,
+} from "lucide-react";
+import employeeService from "@services/EmployeeDataService";
 
 const ShowEmployee = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [employees, setEmployees] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sample employee data
-  const employees = [
-    {
-      id: 1,
-      empNo: "10",
-      name: "PERERA",
-      fullName: "VINOD SANJEEWA PERERA",
-      displayName: "V.S. PERERA",
-      status: "ACTIVE",
-      type: "PERMANENT",
-      title: "Software Engineer",
-      gender: "Male",
-      dateOfBirth: "1985-05-15",
-      religion: "Buddhist",
-      country: "Sri Lanka",
-      attendanceEmpNo: "EMP001",
-      epfNo: "EPF001",
-      nicNumber: "858521234V",
-      address: {
-        permanent: "NO 40/A, DUNGALPITIYA",
-        temporary: "NEGAMBO",
-        province: "SRI LANKA",
-        district: "GAMPAHA"
-      },
-      contact: {
-        email: "perera@company.com",
-        landLine: "0315651310",
-        mobile: "0717597856",
-        emergencyContact: "0315651310",
-        emergencyContactName: "ContactName",
-        relationship: "Spouse"
-      },
-      employment: {
-        employeeActive: true,
-        permanentBasis: true,
-        training: false,
-        contractBasis: false,
-        dailyWagesSalary: false
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const employeesData = await employeeService.fetchEmployeesForTable();
+        setEmployees(employeesData);
+      } catch (e) {
+        console.error("Error loading data:", e);
+      } finally {
+        setIsLoading(false);
       }
-    },
-    {
-      id: 2,
-      empNo: "12",
-      name: "SILVA",
-      fullName: "KAMAL JOHN SILVA",
-      displayName: "K.J. SILVA",
-      status: "ACTIVE",
-      type: "CONTRACT",
-      title: "HR Manager",
-      gender: "Male",
-      dateOfBirth: "1980-08-20",
-      religion: "Christian",
-      country: "Sri Lanka",
-      attendanceEmpNo: "EMP002",
-      epfNo: "EPF002",
-      nicNumber: "802341234V",
-      address: {
-        permanent: "NO 25/B, COLOMBO ROAD",
-        temporary: "COLOMBO",
-        province: "WESTERN",
-        district: "COLOMBO"
-      },
-      contact: {
-        email: "silva@company.com",
-        landLine: "0112345678",
-        mobile: "0771234567",
-        emergencyContact: "0112345678",
-        emergencyContactName: "Emergency Contact",
-        relationship: "Brother"
-      },
-      employment: {
-        employeeActive: true,
-        permanentBasis: false,
-        training: false,
-        contractBasis: true,
-        dailyWagesSalary: false
-      }
-    },
-    {
-      id: 3,
-      empNo: "22",
-      name: "FERNANDO",
-      fullName: "MARIA JANE FERNANDO",
-      displayName: "M.J. FERNANDO",
-      status: "ACTIVE",
-      type: "PERMANENT",
-      title: "Accountant",
-      gender: "Female",
-      dateOfBirth: "1990-03-10",
-      religion: "Catholic",
-      country: "Sri Lanka",
-      attendanceEmpNo: "EMP003",
-      epfNo: "EPF003",
-      nicNumber: "903451234V",
-      address: {
-        permanent: "NO 15/C, KANDY ROAD",
-        temporary: "KANDY",
-        province: "CENTRAL",
-        district: "KANDY"
-      },
-      contact: {
-        email: "fernando@company.com",
-        landLine: "0812345678",
-        mobile: "0751234567",
-        emergencyContact: "0812345678",
-        emergencyContactName: "Parent",
-        relationship: "Mother"
-      },
-      employment: {
-        employeeActive: true,
-        permanentBasis: true,
-        training: false,
-        contractBasis: false,
-        dailyWagesSalary: false
-      }
-    }
-  ];
+    };
 
-  const handleViewEmployee = (employee) => {
-    setSelectedEmployee(employee);
+    loadData();
+  }, []);
+
+  const handleViewEmployee = async (employee) => {
+    const employeeData = await employeeService.fetchEmployeeById(employee);
+    setSelectedEmployee(employeeData);
     setShowModal(true);
   };
 
@@ -134,33 +53,94 @@ const ShowEmployee = () => {
   };
 
   const getStatusBadge = (status) => {
-    const statusClass = status === 'ACTIVE' 
-      ? 'bg-green-100 text-green-800 border-green-200' 
-      : 'bg-red-100 text-red-800 border-red-200';
+    const statusClass =
+      status === 1
+        ? "bg-green-100 text-green-800 border-green-200"
+        : "bg-red-100 text-red-800 border-red-200";
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusClass}`}>
-        {status}
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium border ${statusClass}`}
+      >
+        {status === 1 ? "Active" : "Inactive"}
       </span>
     );
   };
 
   const getTypeBadge = (type) => {
-    const typeClass = type === 'PERMANENT' 
-      ? 'bg-blue-100 text-blue-800 border-blue-200' 
-      : 'bg-orange-100 text-orange-800 border-orange-200';
+    const typeClass =
+      type === "PERMANENT"
+        ? "bg-blue-100 text-blue-800 border-blue-200"
+        : type === "Training"
+        ? "bg-orange-100 text-orange-800 border-orange-200"
+        : "bg-purple-100 text-purple-800 border-purple-200";
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${typeClass}`}>
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium border ${typeClass}`}
+      >
         {type}
       </span>
     );
   };
+
+  const getMaritalStatusBadge = (status) => {
+    const statusClass =
+      status === "married"
+        ? "bg-pink-100 text-pink-800 border-pink-200"
+        : "bg-gray-100 text-gray-800 border-gray-200";
+    return (
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium border ${statusClass}`}
+      >
+        {status?.charAt(0).toUpperCase() + status?.slice(1) || "Not specified"}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not specified";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const calculateAge = (dob) => {
+    if (!dob) return "Not specified";
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return `${age} years old`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-800">
+            Loading Employee Data
+          </h2>
+          <p className="text-gray-600 mt-2">
+            Please wait while we fetch the records...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Employee Management
+          </h1>
           <p className="text-gray-600">Manage and view employee information</p>
         </div>
 
@@ -172,7 +152,7 @@ const ShowEmployee = () => {
               Employee List
             </h2>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -199,43 +179,62 @@ const ShowEmployee = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {employees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50 transition-colors duration-200">
+                  <tr
+                    key={employee.id}
+                    className="hover:bg-gray-50 transition-colors duration-200"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">
-                              {employee.name.charAt(0)}
-                            </span>
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden">
+                            {employee.profile_photo_path ? (
+                              <img
+                                src={`http://127.0.0.1:8000/storage/${employee.profile_photo_path}`}
+                                alt="Profile photo"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-white font-semibold text-sm">
+                                {employee.name_with_initials?.charAt(0) || "?"}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {employee.fullName}
+                            {employee.full_name}
                           </div>
                           <div className="text-sm text-gray-500">
-                            Emp No: {employee.empNo}
+                            Emp No: {employee.epf}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-medium">{employee.title}</div>
-                      <div className="text-sm text-gray-500">ID: {employee.attendanceEmpNo}</div>
+                      <div className="text-sm text-gray-900 font-medium">
+                        {employee.title}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        ID: {employee.attendance_employee_no}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(employee.status)}
+                      {getStatusBadge(employee.is_active)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getTypeBadge(employee.type)}
+                      {getTypeBadge(employee.employment_type?.name)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{employee.contact.mobile}</div>
-                      <div className="text-sm text-gray-500">{employee.contact.email}</div>
+                      <div className="text-sm text-gray-900">
+                        {employee.contact_detail?.email}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {employee.contact_detail?.mobile_line}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => handleViewEmployee(employee)}
+                        onClick={() => handleViewEmployee(employee.id)}
                         className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
                       >
                         <Eye className="h-4 w-4 mr-2" />
@@ -251,20 +250,33 @@ const ShowEmployee = () => {
 
         {/* Employee Details Modal */}
         {showModal && selectedEmployee && (
-          <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               {/* Modal Header */}
               <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <div className="h-16 w-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center mr-4">
-                      <span className="text-white font-bold text-xl">
-                        {selectedEmployee.name.charAt(0)}
-                      </span>
+                  <div className="flex items-center space-x-4">
+                    <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                      {selectedEmployee.profile_photo_path ? (
+                        <img
+                          src={`http://127.0.0.1:8000/storage/${selectedEmployee.profile_photo_path}`}
+                          alt="Profile photo"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white font-semibold text-lg">
+                          {selectedEmployee.name_with_initials?.charAt(0) || "?"}
+                        </span>
+                      )}
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold">{selectedEmployee.fullName}</h2>
+                      <h2 className="text-2xl font-bold">
+                        {selectedEmployee.full_name}
+                      </h2>
                       <p className="text-blue-100">{selectedEmployee.title}</p>
+                      <p className="text-blue-200 text-sm">
+                        {selectedEmployee.display_name} • {calculateAge(selectedEmployee.dob)}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -286,68 +298,241 @@ const ShowEmployee = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Employee No</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.empNo}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Display Name</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.displayName}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Gender</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.gender}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Date of Birth</label>
-                      <p className="text-gray-900 font-semibold flex items-center">
-                        <Calendar className="h-4 w-4 mr-1 text-gray-500" />
-                        {selectedEmployee.dateOfBirth}
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Employee No
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.attendance_employee_no}
                       </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Religion</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.religion}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Display Name
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.display_name}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Country</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.country}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Gender
+                      </label>
+                      <p className="text-gray-900 font-semibold capitalize">
+                        {selectedEmployee.gender}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">NIC Number</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.nicNumber}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Date of Birth
+                      </label>
+                      <p className="text-gray-900 font-semibold flex items-center">
+                        <Calendar className="h-4 w-4 mr-1 text-gray-500" />
+                        {formatDate(selectedEmployee.dob)}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">EPF No</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.epfNo}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Religion
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.religion || "Not specified"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Attendance Emp No</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.attendanceEmpNo}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Country of Birth
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.country_of_birth || "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        NIC Number
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.nic}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        EPF No
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.epf}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Marital Status
+                      </label>
+                      <div className="mt-2">
+                        {getMaritalStatusBadge(selectedEmployee.marital_status)}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Employment Status */}
+                {/* Employment Information */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <Briefcase className="h-5 w-5 mr-2 text-purple-600" />
-                    Employment Status
+                    Employment Information
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {Object.entries(selectedEmployee.employment).map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 p-4 rounded-lg text-center">
-                        <p className="text-sm font-medium text-gray-600 mb-2 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
-                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {value ? 'Yes' : 'No'}
-                        </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Employment Type
+                      </label>
+                      <div className="mt-2">
+                        {getTypeBadge(selectedEmployee.employment_type?.name)}
                       </div>
-                    ))}
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Date of Joining
+                      </label>
+                      <p className="text-gray-900 font-semibold flex items-center">
+                        <Calendar className="h-4 w-4 mr-1 text-gray-500" />
+                        {formatDate(selectedEmployee.organization_assignment?.date_of_joining)}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Current Supervisor
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.organization_assignment?.current_supervisor || "Not assigned"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Day Off
+                      </label>
+                      <p className="text-gray-900 font-semibold capitalize">
+                        {selectedEmployee.organization_assignment?.day_off || "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Confirmation Date
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {formatDate(selectedEmployee.organization_assignment?.confirmation_date)}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Status
+                      </label>
+                      <div className="mt-2">
+                        {getStatusBadge(selectedEmployee.is_active)}
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Period Information */}
+                {selectedEmployee.organization_assignment && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <Clock className="h-5 w-5 mr-2 text-orange-600" />
+                      Employment Periods
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {selectedEmployee.organization_assignment.probationary_period === 1 && (
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                          <label className="block text-sm font-medium text-yellow-800 mb-2">
+                            Probationary Period
+                          </label>
+                          <p className="text-sm text-yellow-700">
+                            From: {formatDate(selectedEmployee.organization_assignment.probationary_period_from)}
+                          </p>
+                          <p className="text-sm text-yellow-700">
+                            To: {formatDate(selectedEmployee.organization_assignment.probationary_period_to)}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEmployee.organization_assignment.training_period === 1 && (
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <label className="block text-sm font-medium text-blue-800 mb-2">
+                            Training Period
+                          </label>
+                          <p className="text-sm text-blue-700">
+                            From: {formatDate(selectedEmployee.organization_assignment.training_period_from)}
+                          </p>
+                          <p className="text-sm text-blue-700">
+                            To: {formatDate(selectedEmployee.organization_assignment.training_period_to)}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEmployee.organization_assignment.contract_period === 1 && (
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <label className="block text-sm font-medium text-green-800 mb-2">
+                            Contract Period
+                          </label>
+                          <p className="text-sm text-green-700">
+                            From: {formatDate(selectedEmployee.organization_assignment.contract_period_from)}
+                          </p>
+                          <p className="text-sm text-green-700">
+                            To: {formatDate(selectedEmployee.organization_assignment.contract_period_to)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Family Information */}
+                {(selectedEmployee.spouse || selectedEmployee.children?.length > 0) && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <Heart className="h-5 w-5 mr-2 text-pink-600" />
+                      Family Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {selectedEmployee.spouse && (
+                        <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
+                          <label className="block text-sm font-medium text-pink-800 mb-2">
+                            Spouse Information
+                          </label>
+                          <p className="text-pink-700 font-semibold">
+                            {selectedEmployee.spouse.title} {selectedEmployee.spouse.name}
+                          </p>
+                          <p className="text-sm text-pink-600">
+                            Age: {selectedEmployee.spouse.age} years
+                          </p>
+                          <p className="text-sm text-pink-600">
+                            DOB: {formatDate(selectedEmployee.spouse.dob)}
+                          </p>
+                          <p className="text-sm text-pink-600">
+                            NIC: {selectedEmployee.spouse.nic || "Not provided"}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEmployee.children?.length > 0 && (
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <label className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                            <Baby className="h-4 w-4 mr-1" />
+                            Children ({selectedEmployee.children.length})
+                          </label>
+                          <div className="space-y-2">
+                            {selectedEmployee.children.map((child, index) => (
+                              <div key={child.id} className="text-sm">
+                                <p className="text-blue-700 font-semibold">
+                                  {index + 1}. {child.name}
+                                </p>
+                                <p className="text-blue-600">
+                                  Age: {child.age} years • DOB: {formatDate(child.dob)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Address Information */}
                 <div className="mb-8">
@@ -357,63 +542,161 @@ const ShowEmployee = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Permanent Address</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.address.permanent}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Permanent Address
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.permanent_address || "Not provided"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Temporary Address</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.address.temporary}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Temporary Address
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.temporary_address || "Not provided"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Province</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.address.province}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Province
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.province || "Not specified"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">District</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.address.district}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        District
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.district || "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        GN Division
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.gn_division || "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Police Station
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.police_station || "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Electoral Division
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.electoral_division || "Not specified"}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Contact Information */}
-                <div className="mb-6">
+                <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <Phone className="h-5 w-5 mr-2 text-blue-600" />
                     Contact Information
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Email
+                      </label>
                       <p className="text-gray-900 font-semibold flex items-center">
                         <Mail className="h-4 w-4 mr-1 text-gray-500" />
-                        {selectedEmployee.contact.email}
+                        {selectedEmployee.contact_detail?.email || "Not provided"}
                       </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Mobile</label>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Mobile
+                      </label>
                       <p className="text-gray-900 font-semibold flex items-center">
                         <Phone className="h-4 w-4 mr-1 text-gray-500" />
-                        {selectedEmployee.contact.mobile}
+                        {selectedEmployee.contact_detail?.mobile_line || "Not provided"}
                       </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Land Line</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.contact.landLine}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Emergency Contact</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.contact.emergencyContact}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Emergency Contact Name</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.contact.emergencyContactName}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Relationship</label>
-                      <p className="text-gray-900 font-semibold">{selectedEmployee.contact.relationship}</p>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Land Line
+                      </label>
+                      <p className="text-gray-900 font-semibold">
+                        {selectedEmployee.contact_detail?.land_line || "Not provided"}
+                      </p>
                     </div>
                   </div>
                 </div>
+
+                {/* Emergency Contact Information */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <Shield className="h-5 w-5 mr-2 text-red-600" />
+                    Emergency Contact
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <label className="block text-sm font-medium text-red-800 mb-1">
+                        Relationship
+                      </label>
+                      <p className="text-red-900 font-semibold">
+                        {selectedEmployee.contact_detail?.emg_relationship || "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <label className="block text-sm font-medium text-red-800 mb-1">
+                        Emergency Contact Number
+                      </label>
+                      <p className="text-red-900 font-semibold">
+                        {selectedEmployee.contact_detail?.emg_tel || "Not provided"}
+                      </p>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200 md:col-span-2 lg:col-span-3">
+                      <label className="block text-sm font-medium text-red-800 mb-1">
+                        Emergency Contact Address
+                      </label>
+                      <p className="text-red-900 font-semibold">
+                        {selectedEmployee.contact_detail?.emg_address || "Not provided"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                {selectedEmployee.organization_assignment?.date_of_resigning && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <UserCheck className="h-5 w-5 mr-2 text-gray-600" />
+                      Additional Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                          Date of Resignation
+                        </label>
+                        <p className="text-gray-900 font-semibold">
+                          {formatDate(selectedEmployee.organization_assignment.date_of_resigning)}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                          Resignation Reason
+                        </label>
+                        <p className="text-gray-900 font-semibold">
+                          {selectedEmployee.organization_assignment.resigned_reason || "Not specified"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
