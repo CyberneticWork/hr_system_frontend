@@ -225,35 +225,47 @@ const CreateNewDeduction = () => {
           formData.deduction_type === "variable" ? formData.endDate : null,
       };
 
-      let result;
+      // Find company and department objects regardless if creating or updating
+      const selectedCompany = companies.find(
+        (c) => c.id === parseInt(formData.company_id)
+      );
+      const selectedDepartment = departments.find(
+        (d) => d.id === parseInt(formData.department_id)
+      );
 
       if (formData.id) {
         // Update existing deduction
-        result = await updateDeduction(formData.id, deductionData);
+        const result = await updateDeduction(formData.id, deductionData);
 
-        // Update the local state
+        // Update the local state with properly structured data
+        // This ensures that company and department objects are present
         setDeductions(
           deductions.map((item) =>
             item.id === formData.id
-              ? { ...result } // Use the returned result directly
+              ? {
+                  ...result, // API response data
+                  id: formData.id, // Ensure ID is preserved
+                  company: {
+                    id: selectedCompany.id,
+                    name: selectedCompany.name,
+                  },
+                  department: {
+                    id: selectedDepartment.id,
+                    name: selectedDepartment.name,
+                  },
+                  updated_at: new Date().toISOString(),
+                }
               : item
           )
         );
       } else {
         // Create new deduction
-        result = await createDeduction(deductionData);
-
-        // Find company and department objects
-        const selectedCompany = companies.find(
-          (c) => c.id === parseInt(formData.company_id)
-        );
-        const selectedDepartment = departments.find(
-          (d) => d.id === parseInt(formData.department_id)
-        );
+        const result = await createDeduction(deductionData);
 
         // Add to local state with properly formatted data
         const newDeduction = {
-          ...result, // Spread API response data
+          ...result, // API response data
+          id: result.id || Date.now(), // Use API ID or generate one
           company: {
             id: selectedCompany.id,
             name: selectedCompany.name,
