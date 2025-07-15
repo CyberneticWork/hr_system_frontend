@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import AllowancesService from '../../services/AllowancesService';
 import { fetchCompanies, fetchDepartments } from "@services/ApiDataService";
+import Swal from 'sweetalert2';
 
 const CreateNewAllowance = () => {
   // State management
@@ -52,6 +53,7 @@ const CreateNewAllowance = () => {
   });
 
   const [newAllowance, setNewAllowance] = useState({
+    allowance_code: "",
     allowance_name: "",
     company_id: "",
     department_id: "",
@@ -84,18 +86,44 @@ const CreateNewAllowance = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Generate allowance code
-  const generateAllowanceCode = () => {
-    const highestCode = allowances.reduce((max, allowance) => {
-      const match = allowance.allowance_code?.match(/ALW-(\d+)/);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        return num > max ? num : max;
+  // Show success alert
+  const showSuccessAlert = (message) => {
+    Swal.fire({
+      title: 'Success!',
+      text: message,
+      icon: 'success',
+      confirmButtonText: 'OK',
+      customClass: {
+        confirmButton: 'bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg'
       }
-      return max;
-    }, 0);
+    });
+  };
 
-    return `ALW-${String(highestCode + 1).padStart(3, '0')}`;
+  // Show error alert
+  const showErrorAlert = (message) => {
+    Swal.fire({
+      title: 'Error!',
+      text: message,
+      icon: 'error',
+      confirmButtonText: 'OK',
+      customClass: {
+        confirmButton: 'bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg'
+      }
+    });
+  };
+
+  // Show confirmation dialog
+  const showConfirmDialog = (title, text, confirmButtonText) => {
+    return Swal.fire({
+      title: title,
+      text: text,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: confirmButtonText,
+      cancelButtonText: 'Cancel'
+    });
   };
 
   // Fetch data on component mount
@@ -136,6 +164,7 @@ const CreateNewAllowance = () => {
     } catch (err) {
       console.error("Fetch error:", err);
       setError(err.message || "Failed to fetch data");
+      showErrorAlert(err.message || "Failed to fetch data");
     } finally {
       setIsLoading(false);
     }
@@ -185,6 +214,9 @@ const CreateNewAllowance = () => {
     try {
       // Validate form
       const errors = {};
+      if (!newAllowance.allowance_code.trim()) {
+        errors.allowance_code = ["Allowance code is required"];
+      }
       if (!newAllowance.allowance_name.trim()) {
         errors.allowance_name = ["Allowance name is required"];
       }
@@ -210,8 +242,8 @@ const CreateNewAllowance = () => {
         if (!newAllowance.variable_to) {
           errors.variable_to = ["End date is required"];
         }
-        if (newAllowance.variable_from && newAllowance.variable_to && 
-            new Date(newAllowance.variable_from) > new Date(newAllowance.variable_to)) {
+        if (newAllowance.variable_from && newAllowance.variable_to &&
+          new Date(newAllowance.variable_from) > new Date(newAllowance.variable_to)) {
           errors.variable_to = ["End date must be after start date"];
         }
       }
@@ -221,19 +253,14 @@ const CreateNewAllowance = () => {
         return;
       }
 
-      // Auto-generate the allowance code
-      const payload = {
-        ...newAllowance,
-        allowance_code: generateAllowanceCode()
-      };
-
-      const response = await AllowancesService.createAllowance(payload);
+      const response = await AllowancesService.createAllowance(newAllowance);
 
       // Update the state directly with the new allowance
       setAllowances(prev => [...prev, response]);
 
       // Reset form and close modal
       setNewAllowance({
+        allowance_code: "",
         allowance_name: "",
         company_id: companies[0]?.id || "",
         department_id: "",
@@ -247,12 +274,13 @@ const CreateNewAllowance = () => {
       });
 
       setIsAddModalOpen(false);
+      showSuccessAlert('Allowance created successfully!');
     } catch (error) {
       console.error("Add error:", error);
       if (error.response?.data?.errors) {
         setFormErrors({ ...formErrors, add: error.response.data.errors });
       } else {
-        setError(error.message || "Failed to create allowance");
+        showErrorAlert(error.message || "Failed to create allowance");
       }
     } finally {
       setIsProcessing(false);
@@ -266,6 +294,9 @@ const CreateNewAllowance = () => {
     try {
       // Validate form
       const errors = {};
+      if (!editAllowance.allowance_code.trim()) {
+        errors.allowance_code = ["Allowance code is required"];
+      }
       if (!editAllowance.allowance_name.trim()) {
         errors.allowance_name = ["Allowance name is required"];
       }
@@ -291,8 +322,8 @@ const CreateNewAllowance = () => {
         if (!editAllowance.variable_to) {
           errors.variable_to = ["End date is required"];
         }
-        if (editAllowance.variable_from && editAllowance.variable_to && 
-            new Date(editAllowance.variable_from) > new Date(editAllowance.variable_to)) {
+        if (editAllowance.variable_from && editAllowance.variable_to &&
+          new Date(editAllowance.variable_from) > new Date(editAllowance.variable_to)) {
           errors.variable_to = ["End date must be after start date"];
         }
       }
@@ -310,12 +341,13 @@ const CreateNewAllowance = () => {
       );
 
       setIsEditModalOpen(false);
+      showSuccessAlert('Allowance updated successfully!');
     } catch (error) {
       console.error("Update error:", error);
       if (error.response?.data?.errors) {
         setFormErrors({ ...formErrors, edit: error.response.data.errors });
       } else {
-        setError(error.message || "Failed to update allowance");
+        showErrorAlert(error.message || "Failed to update allowance");
       }
     } finally {
       setIsProcessing(false);
@@ -333,8 +365,9 @@ const CreateNewAllowance = () => {
       );
 
       setIsDeleteModalOpen(false);
+      showSuccessAlert('Allowance deleted successfully!');
     } catch (error) {
-      setError(error.message || "Failed to delete allowance");
+      showErrorAlert(error.message || "Failed to delete allowance");
     } finally {
       setIsProcessing(false);
     }
@@ -350,7 +383,7 @@ const CreateNewAllowance = () => {
       variable_from: formatDateForInput(allowance.variable_from),
       variable_to: formatDateForInput(allowance.variable_to)
     };
-    
+
     setEditAllowance(formattedAllowance);
     setIsEditModalOpen(true);
   };
@@ -371,6 +404,7 @@ const CreateNewAllowance = () => {
   const closeAddModal = () => {
     setIsAddModalOpen(false);
     setNewAllowance({
+      allowance_code: "",
       allowance_name: "",
       company_id: companies[0]?.id || "",
       department_id: "",
@@ -381,7 +415,6 @@ const CreateNewAllowance = () => {
       fixed_date: "",
       variable_from: "",
       variable_to: ""
-
     });
     setFormErrors({ ...formErrors, add: {} });
   };
@@ -401,7 +434,6 @@ const CreateNewAllowance = () => {
       fixed_date: "",
       variable_from: "",
       variable_to: ""
-
     });
     setFormErrors({ ...formErrors, edit: {} });
   };
@@ -744,9 +776,18 @@ const CreateNewAllowance = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Allowance Code
                   </label>
-                  <div className="w-full px-4 py-3 bg-gray-100 rounded-xl">
-                    {generateAllowanceCode()}
-                  </div>
+                  <input
+                    type="text"
+                    value={newAllowance.allowance_code}
+                    onChange={(e) => handleInputChange("allowance_code", e.target.value)}
+                    className={`w-full px-4 py-3 border ${formErrors.add.allowance_code ? "border-red-500" : "border-gray-200"
+                      } rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    placeholder="Enter allowance code"
+                  />
+                  {formErrors.add.allowance_code && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.add
+                      .allowance_code[0]}</p>
+                  )}
                 </div>
 
                 <div>
@@ -1062,7 +1103,7 @@ const CreateNewAllowance = () => {
                     </option>
                   ))}
                 </select>
-                
+
                 <div className="mt-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Date Configuration *
