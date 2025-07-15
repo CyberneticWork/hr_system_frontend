@@ -281,22 +281,29 @@ const CreateNewAllowance = () => {
       const response = await AllowancesService.createAllowance(newAllowance);
 
       // Find company and department objects
-      const selectedCompany = companies.find(c => c.id == newAllowance.company_id);
-      const selectedDepartment = departments.find(d => d.id == newAllowance.department_id);
+      const selectedCompany = companies.find(
+        (c) => c.id == newAllowance.company_id
+      );
+      const selectedDepartment = departments.find(
+        (d) => d.id == newAllowance.department_id
+      );
 
       // Update the state with properly formatted data
-      setAllowances((prev) => [...prev, {
-        ...response,
-        // Add these nested objects explicitly
-        company: {
-          id: selectedCompany.id,
-          name: selectedCompany.name
+      setAllowances((prev) => [
+        ...prev,
+        {
+          ...response,
+          // Add these nested objects explicitly
+          company: {
+            id: selectedCompany.id,
+            name: selectedCompany.name,
+          },
+          department: {
+            id: selectedDepartment.id,
+            name: selectedDepartment.name,
+          },
         },
-        department: {
-          id: selectedDepartment.id,
-          name: selectedDepartment.name
-        }
-      }]);
+      ]);
 
       // Reset form and close modal
       setNewAllowance({
