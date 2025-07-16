@@ -101,7 +101,7 @@ const Sidebar = ({
           name: "Loans",
           icon: DollarSign,
           subItems: [
-            // { id: "loanMaster", name: "Loan Master" },
+            { id: "viewLoans", name: "View Loans" },
             { id: "employeeLoan", name: "Employee Wise Loan" },
             // { id: "loanProcess", name: "Loan Process" },
           ],
