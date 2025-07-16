@@ -723,14 +723,23 @@ const CreateNewAllowance = () => {
                     Department
                   </th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden lg:table-cell">
-                    Amount
+                    Category
                   </th>
 
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden sm:table-cell">
-                    Category
+                    Amount
                   </th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden lg:table-cell">
                     Type
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden sm:table-cell">
+                    Fixed Date
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden sm:table-cell">
+                    Start Date
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden sm:table-cell">
+                    End Date
                   </th>
                   <th className="text-left py-4 px-6 font-semibold text-gray-700 hidden lg:table-cell">
                     Status
@@ -813,6 +822,22 @@ const CreateNewAllowance = () => {
                         >
                           {allowance.allowance_type}
                         </span>
+                      </td>
+                      {/* Date columns with conditional rendering */}
+                      <td className="py-4 px-6 hidden sm:table-cell">
+                        {allowance.allowance_type === "fixed"
+                          ? formatDateForInput(allowance.fixed_date)
+                          : "-"}
+                      </td>
+                      <td className="py-4 px-6 hidden sm:table-cell">
+                        {allowance.allowance_type === "variable"
+                          ? formatDateForInput(allowance.variable_from)
+                          : "-"}
+                      </td>
+                      <td className="py-4 px-6 hidden sm:table-cell">
+                        {allowance.allowance_type === "variable"
+                          ? formatDateForInput(allowance.variable_to)
+                          : "-"}
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
                         <span

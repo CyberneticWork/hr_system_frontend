@@ -116,18 +116,19 @@ export const EmployeeFormProvider = ({ children }) => {
         const savedData = localStorage.getItem("employeeFormData");
         if (savedData) {
           const parsedData = JSON.parse(savedData);
-          const documentsWithPreview = parsedData.documents?.map(doc => ({
-            ...doc,
-            preview: null
-          })) || [];
-          
+          const documentsWithPreview =
+            parsedData.documents?.map((doc) => ({
+              ...doc,
+              preview: null,
+            })) || [];
+
           setFormData({
             ...parsedData,
             documents: documentsWithPreview,
             personal: {
               ...parsedData.personal,
-              profilePicture: null
-            }
+              profilePicture: null,
+            },
           });
         }
       } catch (error) {
@@ -145,24 +146,24 @@ export const EmployeeFormProvider = ({ children }) => {
           ...formData,
           personal: {
             ...formData.personal,
-            profilePicture: formData.personal.profilePicturePreview
+            profilePicture: formData.personal.profilePicturePreview,
           },
-          documents: formData.documents.map(doc => ({
+          documents: formData.documents.map((doc) => ({
             ...doc,
             file: null,
             type: doc.type,
             name: doc.name,
             size: doc.size,
-            status: doc.status
-          }))
+            status: doc.status,
+          })),
         };
-        
+
         localStorage.setItem("employeeFormData", JSON.stringify(dataToSave));
       } catch (error) {
         console.error("Error saving form data:", error);
       }
     };
-    
+
     saveData();
   }, [formData]);
 
@@ -177,7 +178,9 @@ export const EmployeeFormProvider = ({ children }) => {
     const newDocs = Array.from(files).map((file) => ({
       file,
       type: "",
-      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+      preview: file.type.startsWith("image/")
+        ? URL.createObjectURL(file)
+        : null,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
       status: "pending",
@@ -187,6 +190,14 @@ export const EmployeeFormProvider = ({ children }) => {
       ...prev,
       documents: [...prev.documents, ...newDocs],
     }));
+  }, []);
+
+  const updateDocumentType = useCallback((index, type) => {
+    setFormData((prev) => {
+      const updatedDocs = [...prev.documents];
+      updatedDocs[index] = { ...updatedDocs[index], type };
+      return { ...prev, documents: updatedDocs };
+    });
   }, []);
 
   const removeDocument = useCallback((index) => {
@@ -216,7 +227,7 @@ export const EmployeeFormProvider = ({ children }) => {
   }, []);
 
   const clearSectionErrors = useCallback((section) => {
-    setErrors(prev => {
+    setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[section];
       return newErrors;
@@ -224,16 +235,16 @@ export const EmployeeFormProvider = ({ children }) => {
   }, []);
 
   const clearFieldError = useCallback((section, field) => {
-    setErrors(prev => {
+    setErrors((prev) => {
       if (!prev[section]) return prev;
-      
+
       const newErrors = { ...prev };
       delete newErrors[section][field];
-      
+
       if (Object.keys(newErrors[section]).length === 0) {
         delete newErrors[section];
       }
-      
+
       return newErrors;
     });
   }, []);
@@ -253,7 +264,8 @@ export const EmployeeFormProvider = ({ children }) => {
         clearSectionErrors,
         clearFieldError,
         isSubmitting,
-        setIsSubmitting
+        setIsSubmitting,
+        updateDocumentType,
       }}
     >
       {children}
@@ -264,7 +276,9 @@ export const EmployeeFormProvider = ({ children }) => {
 export const useEmployeeForm = () => {
   const context = useContext(EmployeeFormContext);
   if (!context) {
-    throw new Error("useEmployeeForm must be used within an EmployeeFormProvider");
+    throw new Error(
+      "useEmployeeForm must be used within an EmployeeFormProvider"
+    );
   }
   return context;
 };
