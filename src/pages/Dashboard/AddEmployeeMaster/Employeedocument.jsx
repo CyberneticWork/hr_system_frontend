@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
-import { Upload, File, Image, CheckCircle, X, AlertCircle } from 'lucide-react';
-import { useEmployeeForm } from '@contexts/EmployeeFormContext';
+import React, { useState } from "react";
+import { Upload, File, Image, CheckCircle, X, AlertCircle } from "lucide-react";
+import { useEmployeeForm } from "@contexts/EmployeeFormContext";
+
+import Swal from "sweetalert2";
 
 const allowedTypes = [
-  { label: 'National ID', value: 'nid', icon: '🆔' },
-  { label: 'Passport', value: 'passport', icon: '📘' },
-  { label: 'Profile Photo', value: 'photo', icon: '📸' },
-  { label: 'Resume', value: 'resume', icon: '📄' },
-  { label: 'Educational Certificates', value: 'education', icon: '🎓' },
-  { label: 'Experience Letters', value: 'experience', icon: '💼' },
-  { label: 'Other Documents', value: 'other', icon: '📋' },
+  { label: "National ID", value: "nid", icon: "🆔" },
+  { label: "Passport", value: "passport", icon: "📘" },
+  { label: "Profile Photo", value: "photo", icon: "📸" },
+  { label: "Resume", value: "resume", icon: "📄" },
+  { label: "Educational Certificates", value: "education", icon: "🎓" },
+  { label: "Experience Letters", value: "experience", icon: "💼" },
+  { label: "Other Documents", value: "other", icon: "📋" },
 ];
 
-const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
-  const { formData, addDocuments, removeDocument } = useEmployeeForm();
+const Employeedocument = ({ onNext, onPrevious, onSubmit, activeCategory }) => {
+  const { formData, addDocuments, removeDocument, updateDocumentType } =
+    useEmployeeForm();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
   const [dragActive, setDragActive] = useState(false);
@@ -38,7 +41,7 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const files = Array.from(e.dataTransfer.files);
       addDocuments(files);
@@ -46,46 +49,49 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
   };
 
   const handleTypeChange = (idx, value) => {
-    const updatedDocuments = [...formData.documents];
-    updatedDocuments[idx].type = value;
-    // Update context with new documents array
-    // Note: In a real app, you might want to add a method to update document types in the context
-    // For now, we'll directly modify the documents array (not ideal but works for this example)
-    updatedDocuments[idx].type = value;
+    updateDocumentType(idx, value);
   };
 
   const handleUpload = async () => {
-    if (formData.documents.some(doc => !doc.type)) {
-      alert('Please select document types for all files');
+    if (formData.documents.some((doc) => !doc.type)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Oops...",
+        text: "Please select document types for all files",
+      });
       return;
     }
 
     setUploading(true);
-    
+
     try {
       const totalFiles = formData.documents.length;
       let uploadedCount = 0;
-      
+
       for (let i = 0; i < formData.documents.length; i++) {
         const doc = formData.documents[i];
-        
+
         for (let progress = 0; progress <= 100; progress += 10) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          setUploadProgress(prev => ({
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          setUploadProgress((prev) => ({
             ...prev,
-            [i]: progress
+            [i]: progress,
           }));
         }
-        
+
         uploadedCount++;
         // Update document status (would need a proper method in context for this)
-        formData.documents[i].status = 'uploaded';
+        formData.documents[i].status = "uploaded";
       }
-      
-      alert(`${uploadedCount} documents uploaded successfully!`);
-      onSubmit(formData);
+
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: `${uploadedCount} documents uploaded successfully!`,
+      });
+      // onSubmit(formData);
     } catch (error) {
-      alert('Error uploading documents: ' + error.message);
+      alert("Error uploading documents: " + error.message);
     } finally {
       setUploading(false);
       setUploadProgress({});
@@ -113,8 +119,8 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
           <div
             className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
               dragActive
-                ? 'border-indigo-500 bg-indigo-50 scale-105'
-                : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
+                ? "border-indigo-500 bg-indigo-50 scale-105"
+                : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -128,12 +134,12 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               disabled={uploading}
             />
-            
+
             <div className="flex flex-col items-center space-y-4">
               <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                 <Upload className="w-10 h-10 text-white" />
               </div>
-              
+
               <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   Drop files here or click to browse
@@ -142,7 +148,7 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                   Support for multiple file types • Maximum 10MB per file
                 </p>
               </div>
-              
+
               <button
                 type="button"
                 className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
@@ -163,7 +169,7 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                 Documents Ready for Upload ({formData.documents.length})
               </h3>
             </div>
-            
+
             <div className="space-y-4">
               {formData.documents.map((doc, idx) => (
                 <div
@@ -188,20 +194,22 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                         <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg border-2 border-gray-200 flex flex-col items-center justify-center text-indigo-600 shadow-sm">
                           <File className="w-6 h-6 mb-1" />
                           <span className="text-xs font-medium">
-                            {doc.file.name.split('.').pop().toUpperCase()}
+                            {doc.file.name.split(".").pop().toUpperCase()}
                           </span>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Content */}
                     <div className="flex-grow min-w-0">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <h4 className="font-medium text-gray-800 truncate">{doc.name}</h4>
+                          <h4 className="font-medium text-gray-800 truncate">
+                            {doc.name}
+                          </h4>
                           <p className="text-sm text-gray-500">{doc.size}</p>
                         </div>
-                        
+
                         <button
                           onClick={() => removeDocument(idx)}
                           className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all duration-200"
@@ -210,14 +218,16 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      
+
                       {/* Document Type Select */}
                       <div className="mb-3">
                         <select
                           value={doc.type}
-                          onChange={(e) => handleTypeChange(idx, e.target.value)}
+                          onChange={(e) =>
+                            handleTypeChange(idx, e.target.value)
+                          }
                           className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                          disabled={doc.status === 'uploaded'}
+                          disabled={doc.status === "uploaded"}
                         >
                           <option value="">Select Document Type</option>
                           {allowedTypes.map((type) => (
@@ -227,13 +237,17 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                           ))}
                         </select>
                       </div>
-                      
+
                       {/* Progress Bar */}
                       {uploadProgress[idx] !== undefined && (
                         <div className="mb-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-indigo-600">Uploading...</span>
-                            <span className="text-sm text-gray-500">{uploadProgress[idx]}%</span>
+                            <span className="text-sm font-medium text-indigo-600">
+                              Uploading...
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {uploadProgress[idx]}%
+                            </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                             <div
@@ -243,19 +257,23 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Status */}
-                      {doc.status === 'uploaded' && (
+                      {doc.status === "uploaded" && (
                         <div className="flex items-center space-x-2 text-green-600">
                           <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">Uploaded successfully</span>
+                          <span className="text-sm font-medium">
+                            Uploaded successfully
+                          </span>
                         </div>
                       )}
-                      
-                      {!doc.type && doc.status !== 'uploaded' && (
+
+                      {!doc.type && doc.status !== "uploaded" && (
                         <div className="flex items-center space-x-2 text-amber-600">
                           <AlertCircle className="w-4 h-4" />
-                          <span className="text-sm">Please select document type</span>
+                          <span className="text-sm">
+                            Please select document type
+                          </span>
                         </div>
                       )}
                     </div>
@@ -263,36 +281,45 @@ const Employeedocument = ({ onPrevious, onSubmit, activeCategory }) => {
                 </div>
               ))}
             </div>
-            
+
             {/* Upload Button */}
             <div className="mt-8 text-center">
-              <button
+              {/* <button
                 onClick={handleUpload}
-                disabled={uploading || formData.documents.some(doc => !doc.type)}
+                disabled={
+                  uploading || formData.documents.some((doc) => !doc.type)
+                }
                 className={`inline-flex items-center px-8 py-3 rounded-xl font-medium text-white transition-all duration-200 transform ${
-                  uploading || formData.documents.some(doc => !doc.type)
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 hover:scale-105 shadow-lg hover:shadow-xl'
+                  uploading || formData.documents.some((doc) => !doc.type)
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 hover:scale-105 shadow-lg hover:shadow-xl"
                 }`}
               >
                 {uploading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Uploading Documents...
+                    Saving Documents...
                   </>
                 ) : (
                   <>
                     <Upload className="w-5 h-5 mr-2" />
-                    Upload All Documents ({formData.documents.length})
+                    Save All Documents ({formData.documents.length})
                   </>
                 )}
-              </button>
+              </button> */}
               <button
                 type="button"
                 onClick={onPrevious}
                 className="inline-flex items-center px-8 py-3 rounded-xl font-medium text-white transition-all duration-200 transform bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 hover:scale-105 shadow-lg hover:shadow-xl ml-4"
               >
                 Previous
+              </button>
+              <button
+                type="button"
+                onClick={onNext}
+                className="inline-flex items-center px-8 py-3 rounded-xl font-medium text-white transition-all duration-200 transform bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 hover:scale-105 shadow-lg hover:shadow-xl ml-4"
+              >
+                Next
               </button>
             </div>
           </div>
