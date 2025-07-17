@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import employeeService from "@services/EmployeeDataService";
 
+import config from '../../config';
+
+const apiUrl = config.apiBaseUrl;
+
 const ShowEmployee = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -189,7 +193,7 @@ const ShowEmployee = () => {
                           <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden">
                             {employee.profile_photo_path ? (
                               <img
-                                src={`http://127.0.0.1:8000/storage/${employee.profile_photo_path}`}
+                                src={`${apiUrl}/storage/${employee.profile_photo_path}`}
                                 alt="Profile photo"
                                 className="h-full w-full object-cover"
                               />
@@ -259,7 +263,7 @@ const ShowEmployee = () => {
                     <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
                       {selectedEmployee.profile_photo_path ? (
                         <img
-                          src={`http://127.0.0.1:8000/storage/${selectedEmployee.profile_photo_path}`}
+                          src={`${apiUrl}/storage/${selectedEmployee.profile_photo_path}`}
                           alt="Profile photo"
                           className="h-full w-full object-cover"
                         />

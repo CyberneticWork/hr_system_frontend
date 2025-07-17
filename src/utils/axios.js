@@ -2,7 +2,7 @@ import axiosLib from "axios";
 import { getToken } from "../services/TokenService";
 import config from '../config';
 
-const apiUrl = config.apiBaseUrl;
+const apiUrl = config.apiBaseUrl+ '/api';
 
 const axios = axiosLib.create({
   baseURL: apiUrl, 
