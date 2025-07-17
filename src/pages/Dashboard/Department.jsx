@@ -1,11 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, UserCheck, Calendar, Plus, Edit2, Trash2, Search, Filter, ChevronDown, ChevronRight } from 'lucide-react';
-import { fetchCompanies, fetchDepartments, fetchSubDepartments } from '../../services/ApiDataService';
+import { Building2, Users, UserCheck, Calendar, Edit2, Trash2, Search, Filter, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import {
+  fetchCompanies,
+  fetchDepartments,
+  fetchSubDepartments,
+  createCompany,
+  updateCompany,
+  deleteCompany,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+  createSubDepartment,
+  updateSubDepartment,
+  deleteSubDepartment,
+} from '../../services/ApiDataService';
+import Swal from "sweetalert2";
+
+// EditModal
+const EditModal = ({
+  show,
+  companyForm,
+  setCompanyForm,
+  editingCompany,
+  setShowAddModal,
+  setCompanies,
+  companies
+}) => {
+  const [localForm, setLocalForm] = React.useState(companyForm);
+
+  React.useEffect(() => {
+    if (show) setLocalForm(companyForm);
+  }, [show, companyForm]);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+        <h3 className="text-lg font-semibold mb-4">Edit Company</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              value={localForm.name}
+              onChange={e => setLocalForm({ ...localForm, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input
+              type="text"
+              value={localForm.location}
+              onChange={e => setLocalForm({ ...localForm, location: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Employees</label>
+            <input
+              type="number"
+              value={localForm.employees}
+              readOnly
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Established</label>
+            <input
+              type="text"
+              value={localForm.established}
+              onChange={e => setLocalForm({ ...localForm, established: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end space-x-3 mt-6">
+          <button
+            onClick={() => setShowAddModal(false)}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              if (editingCompany) {
+                // Edit
+                const updated = await updateCompany(editingCompany.id, localForm);
+                setCompanies(companies.map(c => c.id === editingCompany.id ? updated : c));
+                Swal.fire({
+                  icon: "success",
+                  title: "Company updated successfully!",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              } else {
+                // Add
+                const created = await createCompany(localForm);
+                setCompanies([...companies, created]);
+                Swal.fire({
+                  icon: "success",
+                  title: "Company added successfully!",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              }
+              setShowAddModal(false);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Department = () => {
   const [activeTab, setActiveTab] = useState('companies');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddDeptModal, setShowAddDeptModal] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [modalMode, setModalMode] = useState('add');
   const [editingCompany, setEditingCompany] = useState(null);
@@ -15,10 +132,23 @@ const Department = () => {
     employees: '',
     established: ''
   });
+  const [deptForm, setDeptForm] = useState({
+    company_id: '',
+    name: '',
+    code: '',
+    employees: ''
+  });
+  const [showEditDeptModal, setShowEditDeptModal] = useState(false);
+  const [editingDept, setEditingDept] = useState(null);
 
   const [companies, setCompanies] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [subDepartments, setSubDepartments] = useState([]);
+
+  // Subdepartment modal state
+  const [showAddSubDeptModal, setShowAddSubDeptModal] = useState(false);
+  const [showEditSubDeptModal, setShowEditSubDeptModal] = useState(false);
+  const [editingSubDept, setEditingSubDept] = useState(null);
 
   useEffect(() => {
     fetchCompanies().then(setCompanies);
@@ -60,16 +190,6 @@ const Department = () => {
         </div>
       </div>
     </div>
-  );
-
-  const AddButton = ({ onClick, text }) => (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-    >
-      <Plus className="w-4 h-4 mr-2" />
-      {text}
-    </button>
   );
 
   const ActionButton = ({ icon: Icon, onClick, variant = 'primary' }) => {
@@ -130,7 +250,32 @@ const Department = () => {
                         setShowAddModal(true);
                       }}
                     />
-                    <ActionButton icon={Trash2} onClick={() => {}} variant="danger" />
+                    <ActionButton
+                      icon={Trash2}
+                      onClick={async () => {
+                        const result = await Swal.fire({
+                          title: "Are you sure?",
+                          text: "This action cannot be undone!",
+                          icon: "warning",
+                          showCancelButton: true,
+                          confirmButtonColor: "#d33",
+                          cancelButtonColor: "#3085d6",
+                          confirmButtonText: "Yes, delete it!",
+                        });
+                        if (result.isConfirmed) {
+                          await deleteCompany(company.id);
+                          setCompanies(companies.filter(c => c.id !== company.id));
+                          Swal.fire({
+                            icon: "success",
+                            title: "Deleted!",
+                            text: "Company has been deleted.",
+                            timer: 1500,
+                            showConfirmButton: false,
+                          });
+                        }
+                      }}
+                      variant="danger"
+                    />
                   </div>
                 </td>
               </tr>
@@ -184,8 +329,41 @@ const Department = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.subdepartments.length}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <ActionButton icon={Edit2} onClick={() => {}} />
-                        <ActionButton icon={Trash2} onClick={() => {}} variant="danger" />
+                        <ActionButton icon={Edit2} onClick={() => {setEditingDept(dept);setShowEditDeptModal(true);}} />
+                        <ActionButton
+                          icon={Trash2}
+                          onClick={async () => {
+                            const result = await Swal.fire({
+                              title: "Are you sure?",
+                              text: "This action cannot be undone!",
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonColor: "#d33",
+                              cancelButtonColor: "#3085d6",
+                              confirmButtonText: "Yes, delete it!",
+                            });
+                            if (result.isConfirmed) {
+                              try {
+                                await deleteDepartment(dept.id);
+                                setDepartments(departments.filter(d => d.id !== dept.id));
+                                Swal.fire({
+                                  icon: "success",
+                                  title: "Deleted!",
+                                  text: "Department has been deleted.",
+                                  timer: 1500,
+                                  showConfirmButton: false,
+                                });
+                              } catch (error) {
+                                Swal.fire({
+                                  icon: "error",
+                                  title: "Error",
+                                  text: error?.response?.data?.message || "Failed to delete department.",
+                                });
+                              }
+                            }
+                          }}
+                          variant="danger"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -218,6 +396,480 @@ const Department = () => {
     </div>
   );
 
+  // Add Department Modal
+  const AddDepartmentModal = () => {
+    const [localDeptForm, setLocalDeptForm] = React.useState(deptForm);
+
+    React.useEffect(() => {
+      if (showAddDeptModal) setLocalDeptForm(deptForm);
+    }, [showAddDeptModal, deptForm]);
+
+    if (!showAddDeptModal) return null;
+
+    return (
+      <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <h3 className="text-lg font-semibold mb-4">Add New Department</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <select
+                value={localDeptForm.company_id}
+                onChange={e => setLocalDeptForm({ ...localDeptForm, company_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select Company</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department Name</label>
+              <input
+                type="text"
+                value={localDeptForm.name}
+                onChange={e => setLocalDeptForm({ ...localDeptForm, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            {/* Removed Department Code and Employees fields */}
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={() => setShowAddDeptModal(false)}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (
+                  localDeptForm.company_id &&
+                  localDeptForm.name.trim()
+                ) {
+                  try {
+                    const newDept = await createDepartment({
+                      company_id: localDeptForm.company_id,
+                      name: localDeptForm.name,
+                    });
+                    setDepartments([...departments, newDept]);
+                    setDeptForm({
+                      company_id: '',
+                      name: '',
+                      code: '',
+                      employees: ''
+                    });
+                    setShowAddDeptModal(false);
+                    Swal.fire({
+                      icon: "success",
+                      title: "Department added successfully!",
+                      timer: 1500,
+                      showConfirmButton: false,
+                    });
+                  } catch (error) {
+                    Swal.fire({
+                      icon: "error",
+                      title: "Error",
+                      text: error?.response?.data?.message || "Failed to add department.",
+                    });
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Add Department
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Edit Department Modal
+  const EditDepartmentModal = () => {
+    const [localEditingDept, setLocalEditingDept] = React.useState(editingDept);
+
+    React.useEffect(() => {
+      if (showEditDeptModal && editingDept) setLocalEditingDept(editingDept);
+    }, [showEditDeptModal, editingDept]);
+
+    if (!showEditDeptModal || !localEditingDept) return null;
+
+    return (
+      <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <h3 className="text-lg font-semibold mb-4">Edit Department</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <select
+                value={localEditingDept.company_id}
+                onChange={e => setLocalEditingDept({ ...localEditingDept, company_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select Company</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department Name</label>
+              <input
+                type="text"
+                value={localEditingDept.name}
+                onChange={e => setLocalEditingDept({ ...localEditingDept, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            {/* <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department Code</label>
+              <input
+                type="text"
+                value={localEditingDept.code}
+                onChange={e => setLocalEditingDept({ ...localEditingDept, code: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Employees</label>
+              <input
+                type="number"
+                value={localEditingDept.employees}
+                onChange={e => setLocalEditingDept({ ...localEditingDept, employees: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div> */}
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={() => setShowEditDeptModal(false)}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const updatedDept = await updateDepartment(localEditingDept.id, {
+                    company_id: localEditingDept.company_id,
+                    name: localEditingDept.name,
+                  });
+                  setDepartments(departments.map(dept =>
+                    dept.id === localEditingDept.id ? updatedDept : dept
+                  ));
+                  setShowEditDeptModal(false);
+                  Swal.fire({
+                    icon: "success",
+                    title: "Department updated successfully!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                } catch (error) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: error?.response?.data?.message || "Failed to update department.",
+                  });
+                }
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Subdepartment Modals ---
+  const AddSubDeptModal = ({
+    show,
+    companies,
+    departments,
+    onClose,
+    onCreate,
+  }) => {
+    const [form, setForm] = React.useState({
+      company_id: "",
+      department_id: "",
+      name: "",
+    });
+    const [error, setError] = React.useState("");
+
+    React.useEffect(() => {
+      if (!show) {
+        setForm({ company_id: "", department_id: "", name: "" });
+        setError("");
+      }
+    }, [show]);
+
+    // Filter departments based on selected company
+    const filteredDepartments = form.company_id
+      ? departments.filter((d) => String(d.company_id) === String(form.company_id))
+      : [];
+
+    if (!show) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-opacity-30">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <h3 className="text-lg font-semibold mb-4">Add Sub Department</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <select
+                value={form.company_id}
+                onChange={e => setForm({ ...form, company_id: e.target.value, department_id: "" })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="">Select Company</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <select
+                value={form.department_id}
+                onChange={e => setForm({ ...form, department_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                disabled={!form.company_id}
+              >
+                <option value="">Select Department</option>
+                {filteredDepartments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sub Department Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value.replace(/[^a-zA-Z0-9\s]/g, "") })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="Enter sub department name"
+              />
+            </div>
+            {error && <div className="text-red-600 text-sm">{error}</div>}
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <button onClick={onClose} className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg">Cancel</button>
+            <button
+              onClick={async () => {
+                if (!form.company_id || !form.department_id || !form.name.trim()) {
+                  setError("All fields are required.");
+                  return;
+                }
+                setError("");
+                await onCreate(form);
+              }}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg"
+            >
+              Add Sub Department
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const EditSubDeptModal = ({
+    show,
+    companies,
+    departments,
+    subDept,
+    onClose,
+    onUpdate,
+  }) => {
+    const [form, setForm] = React.useState(subDept || {
+      company_id: "",
+      department_id: "",
+      name: "",
+    });
+    const [error, setError] = React.useState("");
+
+    React.useEffect(() => {
+      if (show && subDept) setForm(subDept);
+      if (!show) setError("");
+    }, [show, subDept]);
+
+    const filteredDepartments = form.company_id
+      ? departments.filter((d) => String(d.company_id) === String(form.company_id))
+      : [];
+
+    if (!show) return null;
+
+    return (
+      <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <h3 className="text-lg font-semibold mb-4">Edit Sub Department</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <select
+                value={form.company_id}
+                onChange={e => setForm({ ...form, company_id: e.target.value, department_id: "" })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select Company</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <select
+                value={form.department_id}
+                onChange={e => setForm({ ...form, department_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={!form.company_id}
+              >
+                <option value="">Select Department</option>
+                {filteredDepartments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sub Department Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value.replace(/[^a-zA-Z0-9\s]/g, "") })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter sub department name"
+              />
+            </div>
+            {error && <div className="text-red-600 text-sm">{error}</div>}
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!form.company_id || !form.department_id || !form.name.trim()) {
+                  setError("All fields are required.");
+                  return;
+                }
+                setError("");
+                await onUpdate(form);
+              }}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Subdepartment handlers ---
+  const refreshAll = async () => {
+    const [companiesData, departmentsData, subDepartmentsData] = await Promise.all([
+      fetchCompanies(),
+      fetchDepartments(),
+      fetchSubDepartments(),
+    ]);
+    setCompanies(companiesData);
+    setDepartments(departmentsData);
+    setSubDepartments(subDepartmentsData);
+  };
+
+  const handleCreateSubDept = async (form) => {
+    try {
+      // Check for duplicate sub department name in the same department of the same company
+      const duplicate = subDepartments.some(
+        (sd) =>
+          String(sd.department_id) === String(form.department_id) &&
+          sd.name.trim().toLowerCase() === form.name.trim().toLowerCase()
+      );
+      if (duplicate) {
+        Swal.fire({
+          icon: "error",
+          title: "Duplicate Sub Department",
+          text: "A sub department with this name already exists in the selected department.",
+        });
+        return;
+      }
+
+      const payload = {
+        department_id: form.department_id,
+        name: form.name,
+      };
+      await createSubDepartment(payload);
+      await refreshAll();
+      setShowAddSubDeptModal(false);
+      Swal.fire({
+        icon: "success",
+        title: "Sub Department added successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error?.response?.data?.message || "Failed to add sub department.",
+      });
+    }
+  };
+
+  const handleUpdateSubDept = async (form) => {
+    try {
+      const payload = {
+        department_id: form.department_id,
+        name: form.name,
+      };
+      await updateSubDepartment(form.id, payload);
+      await refreshAll();
+      setShowEditSubDeptModal(false);
+      Swal.fire({
+        icon: "success",
+        title: "Sub Department updated successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error?.response?.data?.message || "Failed to update sub department.",
+      });
+    }
+  };
+
+  const handleDeleteSubDept = async (id) => {
+    try {
+      await deleteSubDepartment(id);
+      await refreshAll();
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Sub Department has been deleted.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error?.response?.data?.message || "Failed to delete sub department.",
+      });
+    }
+  };
+
+  // --- SubdepartmentsTable with working edit button ---
   const SubdepartmentsTable = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
@@ -227,7 +879,6 @@ const Department = () => {
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartment</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th> */}
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO Of Employees</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -252,22 +903,9 @@ const Department = () => {
                       <div className="text-sm text-gray-500">{dept.code}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
-                    {/* <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-xs font-medium text-gray-600">
-                            {(subdept.manager || '').split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-900">{subdept.manager}</div>
-                      </div>
-                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className=" px-8 py-1 text-sm text-gray-900">{subdept.employees}</div>
-                        {/* <div className="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                          {subdept.employees > 15 ? 'Large' : subdept.employees > 8 ? 'Medium' : 'Small'}
-                        </div> */}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -279,8 +917,51 @@ const Department = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <ActionButton icon={Edit2} onClick={() => {}} />
-                        <ActionButton icon={Trash2} onClick={() => {}} variant="danger" />
+                        <ActionButton
+                          icon={Edit2}
+                          onClick={() => {
+                            setEditingSubDept({
+                              ...subdept,
+                              company_id: dept.company_id,
+                              department_id: dept.id,
+                            });
+                            setShowEditSubDeptModal(true);
+                          }}
+                        />
+                        <ActionButton
+                          icon={Trash2}
+                          onClick={async () => {
+                            const result = await Swal.fire({
+                              title: "Are you sure?",
+                              text: "This action cannot be undone!",
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonColor: "#d33",
+                              cancelButtonColor: "#3085d6",
+                              confirmButtonText: "Yes, delete it!",
+                            });
+                            if (result.isConfirmed) {
+                              try {
+                                await deleteSubDepartment(subdept.id);
+                                setSubDepartments(subDepartments.filter(sd => sd.id !== subdept.id));
+                                Swal.fire({
+                                  icon: "success",
+                                  title: "Deleted!",
+                                  text: "Sub Department has been deleted.",
+                                  timer: 1500,
+                                  showConfirmButton: false,
+                                });
+                              } catch (error) {
+                                Swal.fire({
+                                  icon: "error",
+                                  title: "Error",
+                                  text: error?.response?.data?.message || "Failed to delete sub department.",
+                                });
+                              }
+                            }
+                          }}
+                          variant="danger"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -291,85 +972,6 @@ const Department = () => {
         </table>
       </div>
     </div>
-  );
-
-  const AddModal = () => (
-    showAddModal && (
-      <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-          <h3 className="text-lg font-semibold mb-4">
-            {modalMode === 'add' ? 'Add New Company' : 'Edit Company'}
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input
-                type="text"
-                value={companyForm.name}
-                onChange={e => setCompanyForm({ ...companyForm, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input
-                type="text"
-                value={companyForm.location}
-                onChange={e => setCompanyForm({ ...companyForm, location: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Employees</label>
-              <input
-                type="number"
-                value={companyForm.employees}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-not-allowed"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Established</label>
-              <input
-                type="text"
-                value={companyForm.established}
-                onChange={e => setCompanyForm({ ...companyForm, established: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              onClick={() => setShowAddModal(false)}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                if (modalMode === 'add') {
-                  setCompanies([
-                    ...companies,
-                    {
-                      id: Date.now(),
-                      ...companyForm
-                    }
-                  ]);
-                } else if (modalMode === 'edit' && editingCompany) {
-                  setCompanies(companies.map(c =>
-                    c.id === editingCompany.id ? { ...editingCompany, ...companyForm } : c
-                  ));
-                }
-                setShowAddModal(false);
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {modalMode === 'add' ? 'Add Company' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   );
 
   return (
@@ -449,15 +1051,39 @@ const Department = () => {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </button>
+          {/* Add buttons based on activeTab */}
+          {activeTab === 'companies' && (
+            <button
+              onClick={() => {
+                setModalMode('add');
+                setCompanyForm({ name: '', location: '', employees: '', established: '' });
+                setShowAddModal(true);
+              }}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Company
+            </button>
+          )}
+          {activeTab === 'departments' && (
+            <button
+              onClick={() => setShowAddDeptModal(true)}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Department
+            </button>
+          )}
+          {activeTab === 'subdepartments' && (
+            <button
+              onClick={() => setShowAddSubDeptModal(true)}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Sub Department
+            </button>
+          )}
         </div>
-        <AddButton
-          onClick={() => {
-            setModalMode('add');
-            setCompanyForm({ name: '', location: '', employees: '', established: '' });
-            setShowAddModal(true);
-          }}
-          text="Add Company"
-        />
       </div>
 
       {/* Tables */}
@@ -465,8 +1091,43 @@ const Department = () => {
       {activeTab === 'departments' && <DepartmentsTable />}
       {activeTab === 'subdepartments' && <SubdepartmentsTable />}
 
-      {/* Add Modal */}
-      <AddModal />
+      {/* Edit Modal */}
+      <EditModal
+        show={showAddModal}
+        companyForm={companyForm}
+        setCompanyForm={setCompanyForm}
+        editingCompany={editingCompany}
+        setShowAddModal={setShowAddModal}
+        setCompanies={setCompanies}
+        companies={companies}
+      />
+
+      {/* Add Department Modal */}
+      <AddDepartmentModal />
+
+      {/* Edit Department Modal */}
+      <EditDepartmentModal />
+
+      {/* Add Subdepartment Modal */}
+      <AddSubDeptModal
+        show={showAddSubDeptModal}
+        companies={companies}
+        departments={departments}
+        onClose={() => setShowAddSubDeptModal(false)}
+        onCreate={handleCreateSubDept}
+      />
+      {/* Edit Subdepartment Modal */}
+      <EditSubDeptModal
+        show={showEditSubDeptModal}
+        companies={companies}
+        departments={departments}
+        subDept={editingSubDept}
+        onClose={() => {
+          setShowEditSubDeptModal(false);
+          setEditingSubDept(null);
+        }}
+        onUpdate={handleUpdateSubDept}
+      />
     </div>
   );
 };
