@@ -57,8 +57,8 @@ const EmployeeMaster = () => {
         title: "Success!",
         text: "Employee submitted successfully!",
       });
-      // clearForm();
-      // setActiveCategory("personal");
+      clearForm();
+      setActiveCategory("personal");
     } catch (error) {
       console.error("Submission error:", error);
       if (error.response?.data?.errors) {
