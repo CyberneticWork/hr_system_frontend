@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -15,8 +15,10 @@ import {
   Edit2,
   Trash2,
   X,
+  Loader2
 } from "lucide-react";
-
+import ShiftScheduleService from "../../services/ShiftScheduleService.js";
+import Swal from 'sweetalert2';
 // Modal component for Add/Edit
 const ShiftModal = ({
   open,
@@ -35,8 +37,7 @@ const ShiftModal = ({
     lateDeduction: "",
     midnightRoster: false,
     nightlyHours: 0,
-    department: "",
-    location: "",
+   
     breakTime: "",
     ...initialData,
   });
@@ -96,20 +97,7 @@ const ShiftModal = ({
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Department *
-                </label>
-                <input
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter department name"
-                  value={form.department}
-                  onChange={(e) =>
-                    setForm({ ...form, department: e.target.value })
-                  }
-                />
-              </div>
+             
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
@@ -208,7 +196,8 @@ const ShiftModal = ({
                 </label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter deduction amount"
+                  type="time"
+                  placeholder="HH:MM"
                   value={form.lateDeduction}
                   onChange={(e) =>
                     setForm({ ...form, lateDeduction: e.target.value })
@@ -235,26 +224,14 @@ const ShiftModal = ({
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Location
-                </label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter location"
-                  value={form.location}
-                  onChange={(e) =>
-                    setForm({ ...form, location: e.target.value })
-                  }
-                />
-              </div>
+             
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
                   Break Time
                 </label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter break duration"
+                  placeholder="Enter break duration (e.g., 12:00-13:00)"
                   value={form.breakTime}
                   onChange={(e) =>
                     setForm({ ...form, breakTime: e.target.value })
@@ -358,284 +335,121 @@ const ShiftSchedule = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedShifts, setSelectedShifts] = useState(new Set());
   const [filterType, setFilterType] = useState("all");
-  const [shifts, setShifts] = useState([
-    {
-      code: "001",
-      description: "No OT - WD",
-      startTime: "08:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "08:00",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "General",
-      location: "Main Office",
-      breakTime: "12:00-13:00",
-    },
-    {
-      code: "002",
-      description: "Sril Mgt - FM",
-      startTime: "08:15:00",
-      endTime: "17:15:00",
-      morningOTStart: "08:15",
-      specialOTStart: "17:15:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Management",
-      location: "Floor 2",
-      breakTime: "12:15-13:15",
-    },
-    {
-      code: "003",
-      description: "Sril Mgt - Purchasing",
-      startTime: "07:45:00",
-      endTime: "16:45:00",
-      morningOTStart: "07:45",
-      specialOTStart: "16:45:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Procurement",
-      location: "Building A",
-      breakTime: "12:00-13:00",
-    },
-    {
-      code: "004",
-      description: "Office Executive - WD",
-      startTime: "08:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "08:00",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Administration",
-      location: "Main Office",
-      breakTime: "12:00-13:00",
-    },
-    {
-      code: "005",
-      description: "Office Executive - WE",
-      startTime: "08:00:00",
-      endTime: "13:00:00",
-      morningOTStart: "08:00",
-      specialOTStart: "13:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 5.0,
-      department: "Administration",
-      location: "Main Office",
-      breakTime: "10:30-11:00",
-    },
-    {
-      code: "006",
-      description: "Production Mgr - WD",
-      startTime: "08:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "07:30",
-      specialOTStart: "17:15:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Production",
-      location: "Factory Floor",
-      breakTime: "12:00-13:00",
-    },
-    {
-      code: "007",
-      description: "Production Mgr - WE",
-      startTime: "08:00:00",
-      endTime: "13:00:00",
-      morningOTStart: "07:30",
-      specialOTStart: "17:15:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 5.0,
-      department: "Production",
-      location: "Factory Floor",
-      breakTime: "10:30-11:00",
-    },
-    {
-      code: "008",
-      description: "QC - WE",
-      startTime: "08:00:00",
-      endTime: "13:00:00",
-      morningOTStart: "08:00",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 5.0,
-      department: "Quality Control",
-      location: "Lab",
-      breakTime: "10:30-11:00",
-    },
-    {
-      code: "009",
-      description: "No OT with Late - WD",
-      startTime: "08:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "08:00",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "General",
-      location: "Main Office",
-      breakTime: "12:00-13:00",
-    },
-    {
-      code: "010",
-      description: "Production - WD",
-      startTime: "08:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "07:30",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Production",
-      location: "Factory Floor",
-      breakTime: "12:00-13:00",
-    },
-    {
-      code: "011",
-      description: "Production - WE",
-      startTime: "08:00:00",
-      endTime: "13:00:00",
-      morningOTStart: "07:30",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 2.0,
-      department: "Production",
-      location: "Factory Floor",
-      breakTime: "10:30-11:00",
-    },
-    {
-      code: "012",
-      description: "Production - Night",
-      startTime: "20:00:00",
-      endTime: "07:00:00",
-      morningOTStart: "08:00",
-      specialOTStart: "17:00:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Production",
-      location: "Factory Floor",
-      breakTime: "02:00-02:30",
-    },
-    {
-      code: "013",
-      description: "No OT with Late - WE",
-      startTime: "12:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "12:00",
-      specialOTStart: "17:00:00",
-      lateDeduction: "13:00",
-      midnightRoster: false,
-      nightlyHours: 5.0,
-      department: "General",
-      location: "Main Office",
-      breakTime: "14:30-15:00",
-    },
-    {
-      code: "014",
-      description: "OT with Late - WE",
-      startTime: "12:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "11:30",
-      specialOTStart: "17:00:00",
-      lateDeduction: "12:00",
-      midnightRoster: false,
-      nightlyHours: 5.0,
-      department: "General",
-      location: "Main Office",
-      breakTime: "14:30-15:00",
-    },
-    {
-      code: "015",
-      description: "Security - WD Morning",
-      startTime: "07:00:00",
-      endTime: "15:00:00",
-      morningOTStart: "07:00",
-      specialOTStart: "18:00:00",
-      lateDeduction: "07:00",
-      midnightRoster: false,
-      nightlyHours: 4.0,
-      department: "Security",
-      location: "Gate 1",
-      breakTime: "11:00-11:30",
-    },
-    {
-      code: "016",
-      description: "Security - WD Night",
-      startTime: "19:00:00",
-      endTime: "03:00:00",
-      morningOTStart: "07:00",
-      specialOTStart: "07:00:00",
-      lateDeduction: "07:00",
-      midnightRoster: true,
-      nightlyHours: 4.0,
-      department: "Security",
-      location: "Perimeter",
-      breakTime: "23:00-23:30",
-    },
-    {
-      code: "017",
-      description: "Security - WE Morning",
-      startTime: "07:00:00",
-      endTime: "12:00:00",
-      morningOTStart: "07:00",
-      specialOTStart: "19:00:00",
-      lateDeduction: "07:00",
-      midnightRoster: false,
-      nightlyHours: 5.0,
-      department: "Security",
-      location: "Gate 2",
-      breakTime: "09:30-10:00",
-    },
-    {
-      code: "018",
-      description: "Security - WE Night",
-      startTime: "19:00:00",
-      endTime: "00:00:00",
-      morningOTStart: "07:00",
-      specialOTStart: "07:00:00",
-      lateDeduction: "07:00",
-      midnightRoster: true,
-      nightlyHours: 5.0,
-      department: "Security",
-      location: "Perimeter",
-      breakTime: "21:30-22:00",
-    },
-    {
-      code: "019",
-      description: "Driver - WD",
-      startTime: "08:00:00",
-      endTime: "17:00:00",
-      morningOTStart: "07:30",
-      specialOTStart: "18:30:00",
-      lateDeduction: "00:00",
-      midnightRoster: false,
-      nightlyHours: 4.5,
-      department: "Transport",
-      location: "Garage",
-      breakTime: "12:00-13:00",
-    },
-  ]);
+  const [shifts, setShifts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editShift, setEditShift] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState(null);
 
+  // Fetch shifts on component mount
+  useEffect(() => {
+    fetchShifts();
+  }, []);
+
+  const fetchShifts = async () => {
+    try {
+      setLoading(true);
+      const data = await ShiftScheduleService.getAllShifts();
+      setShifts(data.map(shift => ({
+        code: shift.shift_code,
+        description: shift.shift_description,
+        startTime: shift.start_time,
+        endTime: shift.end_time,
+        morningOTStart: shift.morning_ot_start,
+        specialOTStart: shift.special_ot_start,
+        lateDeduction: shift.late_deduction,
+        midnightRoster: shift.midnight_roster,
+        nightlyHours: parseFloat(shift.nopay_hour_halfday),
+ 
+        location: shift.location,
+        breakTime: shift.break_time,
+        id: shift.id
+      })));
+    } catch (error) {
+      console.error("Failed to fetch shifts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add Shift
+  const handleAddShift = async (shift) => {
+    try {
+      await ShiftScheduleService.createShift(shift);
+      await fetchShifts();
+      setModalOpen(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Shift Created',
+        text: 'The shift was created successfully!',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error?.response?.data?.message || 'Failed to create shift.',
+      });
+    }
+  };
+
+  // Update Shift
+  const handleUpdateShift = async (updatedShift) => {
+    try {
+      await ShiftScheduleService.updateShift(updatedShift.id, updatedShift);
+      await fetchShifts();
+      setEditShift(null);
+      setModalOpen(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Shift Updated',
+        text: 'The shift was updated successfully!',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error?.response?.data?.message || 'Failed to update shift.',
+      });
+    }
+  };
+
+  // Delete Shift
+  const handleDeleteShift = async () => {
+    try {
+      await ShiftScheduleService.deleteShift(shiftToDelete.id);
+      await fetchShifts();
+      setDeleteModalOpen(false);
+      setShiftToDelete(null);
+      setSelectedShifts((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(shiftToDelete.code);
+        return newSet;
+      });
+      Swal.fire({
+        icon: 'success',
+        title: 'Shift Deleted',
+        text: 'The shift was deleted successfully!',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error?.response?.data?.message || 'Failed to delete shift.',
+      });
+    }
+  };
+
   const filteredShifts = shifts.filter((shift) => {
     const matchesSearch =
       shift.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      shift.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      shift.department.toLowerCase().includes(searchTerm.toLowerCase());
+      shift.description.toLowerCase().includes(searchTerm.toLowerCase()) ;
 
     if (filterType === "all") return matchesSearch;
     if (filterType === "weekday")
@@ -724,32 +538,13 @@ const ShiftSchedule = () => {
     ).length,
   };
 
-  // Add Shift
-  const handleAddShift = (shift) => {
-    setShifts((prev) => [...prev, shift]);
-    setModalOpen(false);
-  };
-
-  // Update Shift
-  const handleUpdateShift = (updatedShift) => {
-    setShifts((prev) =>
-      prev.map((s) => (s.code === updatedShift.code ? updatedShift : s))
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
     );
-    setEditShift(null);
-    setModalOpen(false);
-  };
-
-  // Delete Shift
-  const handleDeleteShift = () => {
-    setShifts((prev) => prev.filter((s) => s.code !== shiftToDelete.code));
-    setDeleteModalOpen(false);
-    setShiftToDelete(null);
-    setSelectedShifts((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(shiftToDelete.code);
-      return newSet;
-    });
-  };
+  }
 
   return (
     <>
@@ -981,178 +776,186 @@ const ShiftSchedule = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredShifts.map((shift, index) => (
-                <tr
-                  key={shift.code}
-                  className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
-                    selectedShifts.has(shift.code)
-                      ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500"
-                      : index % 2 === 0
-                      ? "bg-white"
-                      : "bg-gray-50/30"
-                  }`}
-                >
-                  <td className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedShifts.has(shift.code)}
-                      onChange={() => toggleShiftSelection(shift.code)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="font-mono text-sm font-bold text-white bg-gradient-to-r from-gray-700 to-gray-800 px-3 py-2 rounded-lg shadow-sm">
-                      {shift.code}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {shift.description}
-                        </span>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full border ${getShiftTypeColor(
-                            shift.description
-                          )}`}
-                        >
-                          {shift.description.includes("WD")
-                            ? "Weekday"
-                            : shift.description.includes("WE")
-                            ? "Weekend"
-                            : shift.description.includes("Night")
-                            ? "Night"
-                            : "Regular"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <div
-                            className={`w-2 h-2 rounded-full ${getDepartmentColor(
-                              shift.department
-                            )
-                              .replace("text-", "bg-")
-                              .replace("-700", "-500")}`}
-                          ></div>
-                          <span className="font-medium">
-                            {shift.department}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>{shift.location}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-mono font-semibold text-gray-900">
-                            {formatTime(shift.startTime)}
-                          </span>
-                        </div>
-                        <span className="text-gray-400">→</span>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-red-600" />
-                          <span className="text-sm font-mono font-semibold text-gray-900">
-                            {formatTime(shift.endTime)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                          {calculateShiftDuration(
-                            shift.startTime,
-                            shift.endTime
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Coffee className="w-3 h-3" />
-                        <span>Break: {shift.breakTime}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-1 text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-600">Morning:</span>
-                        <span className="font-mono font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
-                          {shift.morningOTStart}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-600">Special:</span>
-                        <span className="font-mono font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-                          {formatTime(shift.specialOTStart)}
-                        </span>
-                      </div>
-                      {shift.lateDeduction !== "00:00" && (
-                        <div className="flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3 text-red-500" />
-                          <span className="text-red-600 font-medium">
-                            Late: {shift.lateDeduction}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
-                      <div className="text-sm">
-                        <span className="text-gray-600">Night Hours: </span>
-                        <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">
-                          {shift.nightlyHours.toFixed(2)}h
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col items-center gap-2">
-                      {shift.midnightRoster ? (
-                        <div className="flex items-center gap-1">
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                          <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
-                            Midnight
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          <Circle className="w-5 h-5 text-gray-300" />
-                          <span className="text-xs text-gray-500">Regular</span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex gap-2">
-                      <button
-                        className="p-1 rounded hover:bg-blue-100"
-                        title="Edit"
-                        onClick={() => {
-                          setEditShift(shift);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <Edit2 className="w-4 h-4 text-blue-600" />
-                      </button>
-                      <button
-                        className="p-1 rounded hover:bg-red-100"
-                        title="Delete"
-                        onClick={() => {
-                          setShiftToDelete(shift);
-                          setDeleteModalOpen(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
+              {filteredShifts.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-4 py-6 text-center text-gray-500">
+                    No shifts found matching your criteria
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredShifts.map((shift, index) => (
+                  <tr
+                    key={shift.code}
+                    className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
+                      selectedShifts.has(shift.code)
+                        ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500"
+                        : index % 2 === 0
+                        ? "bg-white"
+                        : "bg-gray-50/30"
+                    }`}
+                  >
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedShifts.has(shift.code)}
+                        onChange={() => toggleShiftSelection(shift.code)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="font-mono text-sm font-bold text-white bg-gradient-to-r from-gray-700 to-gray-800 px-3 py-2 rounded-lg shadow-sm">
+                        {shift.code}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-900">
+                            {shift.description}
+                          </span>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full border ${getShiftTypeColor(
+                              shift.description
+                            )}`}
+                          >
+                            {shift.description.includes("WD")
+                              ? "Weekday"
+                              : shift.description.includes("WE")
+                              ? "Weekend"
+                              : shift.description.includes("Night")
+                              ? "Night"
+                              : "Regular"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <div
+                              className={`w-2 h-2 rounded-full ${getDepartmentColor(
+                                shift.department
+                              )
+                                .replace("text-", "bg-")
+                                .replace("-700", "-500")}`}
+                            ></div>
+                            <span className="font-medium">
+                              {shift.department}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span>{shift.location}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-mono font-semibold text-gray-900">
+                              {formatTime(shift.startTime)}
+                            </span>
+                          </div>
+                          <span className="text-gray-400">→</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4 text-red-600" />
+                            <span className="text-sm font-mono font-semibold text-gray-900">
+                              {formatTime(shift.endTime)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                            {calculateShiftDuration(
+                              shift.startTime,
+                              shift.endTime
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Coffee className="w-3 h-3" />
+                          <span>Break: {shift.breakTime}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-600">Morning:</span>
+                          <span className="font-mono font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                            {shift.morningOTStart}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-600">Special:</span>
+                          <span className="font-mono font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+                            {formatTime(shift.specialOTStart)}
+                          </span>
+                        </div>
+                        {shift.lateDeduction !== "00:00" && (
+                          <div className="flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-red-500" />
+                            <span className="text-red-600 font-medium">
+                              Late: {shift.lateDeduction}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <div className="text-sm">
+                          <span className="text-gray-600">Night Hours: </span>
+                          <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">
+                            {shift.nightlyHours.toFixed(2)}h
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col items-center gap-2">
+                        {shift.midnightRoster ? (
+                          <div className="flex items-center gap-1">
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
+                              Midnight
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Circle className="w-5 h-5 text-gray-300" />
+                            <span className="text-xs text-gray-500">Regular</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          className="p-1 rounded hover:bg-blue-100"
+                          title="Edit"
+                          onClick={() => {
+                            setEditShift(shift);
+                            setModalOpen(true);
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4 text-blue-600" />
+                        </button>
+                        <button
+                          className="p-1 rounded hover:bg-red-100"
+                          title="Delete"
+                          onClick={() => {
+                            setShiftToDelete(shift);
+                            setDeleteModalOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
