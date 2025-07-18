@@ -343,17 +343,17 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Company</label>
-                  <p className="text-gray-800 mt-1">{formData.organization.company || 'Not specified'}</p>
+                  <p className="text-gray-800 mt-1">{formData.organization.companyName || 'Not specified'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Department</label>
-                  <p className="text-gray-800 mt-1">{formData.organization.department || 'Not specified'}</p>
+                  <p className="text-gray-800 mt-1">{formData.organization.departmentName  || 'Not specified'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Sub Department</label>
-                  <p className="text-gray-800 mt-1">{formData.organization.subDepartment || 'Not specified'}</p>
+                  <p className="text-gray-800 mt-1">{formData.organization.subDepartmentName  || 'Not specified'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Designation</label>
