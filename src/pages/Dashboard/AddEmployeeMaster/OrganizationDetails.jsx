@@ -440,12 +440,12 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
-                      toggleStates.probationEnabled
+                      formData.organization.probationPeriod
                         ? "text-blue-600"
                         : "text-red-400"
                     }`}
                   >
-                    {/* {toggleStates.probationEnabled ? "Enabled" : "Disabled"} */}
+                    {formData.organization.probationPeriod ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.probationPeriod}
@@ -526,12 +526,12 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
-                      toggleStates.trainingEnabled
+                      formData.organization.trainingPeriod
                         ? "text-blue-600"
                         : "text-red-400"
                     }`}
                   >
-                    {/* {toggleStates.trainingEnabled ? "Enabled" : "Disabled"} */}
+                    {formData.organization.trainingPeriod ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.trainingPeriod}
@@ -612,12 +612,12 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
-                      toggleStates.contractEnabled
+                      formData.organization.contractPeriod
                         ? "text-blue-600"
                         : "text-red-400"
                     }`}
                   >
-                    {/* {toggleStates.contractEnabled ? "Enabled" : "Disabled"} */}
+                    {formData.organization.contractPeriod ? "Enabled" : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.contractPeriod}
