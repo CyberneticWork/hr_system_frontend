@@ -10,8 +10,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import axios from "@utils/axios";
-import Swal from "sweetalert2";
+
 import {
   fetchCompanies,
   fetchDepartmentsById,
@@ -27,6 +26,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [isLoadingSubDepartments, setIsLoadingSubDepartments] = useState(false);
+  const [isLoadingDesignations, setIsLoadingDesignations] = useState(true);
 
   // Dropdown data state - now storing objects with id and name
   const [companies, setCompanies] = useState([]);
@@ -54,6 +54,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
         setCompanies(companiesData);
         setIsLoadingCompanies(false);
         setDesignations(DesignationsData);
+        setIsLoadingDesignations(false);
       } catch (e) {
         console.error("Error loading data:", e);
       }
@@ -118,18 +119,62 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   }, [formData.organization.department]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
+  const { name, value, type, checked, files } = e.target;
+  const parsedValue = value === "" ? "" : Number(value); // safely parse to number if not empty
 
-    // Clear error when user makes changes
-    if (errors.organization?.[name]) {
-      clearFieldError("organization", name);
-    }
+  // Clear field error
+  if (errors.organization?.[name]) {
+    clearFieldError("organization", name);
+  }
 
+  if (name === "company") {
+    const selected = companies.find((c) => c.id === parsedValue);
     updateFormData("organization", {
-      [name]:
-        type === "checkbox" ? checked : type === "file" ? files[0] : value,
+      company: parsedValue.toString(),
+      companyName: selected?.name || "",
+      department: "",
+      departmentName: "",
+      subDepartment: "",
+      subDepartmentName: "",
     });
-  };
+    return;
+  }
+
+  if (name === "department") {
+    const selected = departments.find((d) => d.id === parsedValue);
+    updateFormData("organization", {
+      department: parsedValue.toString(),
+      departmentName: selected?.name || "",
+      subDepartment: "",
+      subDepartmentName: "",
+    });
+    return;
+  }
+
+  if (name === "subDepartment") {
+    const selected = subDepartments.find((s) => s.id === parsedValue);
+    updateFormData("organization", {
+      subDepartment: parsedValue.toString(),
+      subDepartmentName: selected?.name || "",
+    });
+    return;
+  }
+
+  if (name === "designation") {
+    const selected = designations.find((s) => s.id === parsedValue);
+    updateFormData("organization", {
+      designation: parsedValue.toString(),
+      designationName: selected?.name || "",
+    });
+    return;
+  }
+
+  updateFormData("organization", {
+    [name]:
+      type === "checkbox" ? checked : type === "file" ? files[0] : value,
+  });
+};
+
 
   const handleToggle = (section) => {
     setToggleStates((prev) => {
@@ -364,25 +409,32 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 Designation <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <select
-                  name="designation"
-                  value={formData.organization.designation}
-                  onChange={handleChange}
-                  className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.designation
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  required
-                >
-                  <option value="">Select designations</option>
-                  {designations.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                {isLoadingDesignations ? (
+                  <div className="flex items-center justify-center h-10 border border-gray-300 rounded-md bg-gray-100">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : (
+                  <select
+                    name="designation"
+                    value={formData.organization.designation}
+                    onChange={handleChange}
+                    className={`w-full pl-8 pr-3 py-2 border ${
+                      errors.organization?.designation
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    required
+                  >
+                    <option value="">Select designations</option>
+                    {designations.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
+
               <FieldError error={errors.organization?.designation} />
             </div>
 
@@ -445,7 +497,9 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {formData.organization.probationPeriod ? "Enabled" : "Disabled"}
+                    {formData.organization.probationPeriod
+                      ? "Enabled"
+                      : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.probationPeriod}
@@ -531,7 +585,9 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {formData.organization.trainingPeriod ? "Enabled" : "Disabled"}
+                    {formData.organization.trainingPeriod
+                      ? "Enabled"
+                      : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.trainingPeriod}
@@ -617,7 +673,9 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                         : "text-red-400"
                     }`}
                   >
-                    {formData.organization.contractPeriod ? "Enabled" : "Disabled"}
+                    {formData.organization.contractPeriod
+                      ? "Enabled"
+                      : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.contractPeriod}
