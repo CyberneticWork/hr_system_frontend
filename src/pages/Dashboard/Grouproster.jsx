@@ -1,148 +1,357 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar, Search, Plus, Edit, Trash2, Save, X, ChevronRight, Eye } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  Calendar,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  ChevronRight,
+  Eye,
+} from "lucide-react";
+import ShiftScheduleService from "@services/ShiftScheduleService";
+import {
+  fetchCompanies,
+  fetchDepartments,
+  fetchSubDepartmentsById,
+  fetchSubDepartments,
+} from "@services/ApiDataService";
 
 const RosterManagementSystem = () => {
-  const [selectedGroup, setSelectedGroup] = useState('001');
+  const [selectedGroup, setSelectedGroup] = useState("001");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [dateFrom, setDateFrom] = useState('2025-06-01');
-  const [dateTo, setDateTo] = useState('2025-12-30');
-  const [rosterDate, setRosterDate] = useState('2025-06-30');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState("2025-06-01");
+  const [dateTo, setDateTo] = useState("2025-12-30");
+  const [rosterDate, setRosterDate] = useState("2025-06-30");
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAddShift, setShowAddShift] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedSubDepartment, setSelectedSubDepartment] = useState('');
-  const [assignMode, setAssignMode] = useState('designation'); // 'designation' or 'employee'
-  const [selectedShift, setSelectedShift] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedSubDepartment, setSelectedSubDepartment] = useState("");
+  const [assignMode, setAssignMode] = useState("designation"); // 'designation' or 'employee'
   const [rosterAssignments, setRosterAssignments] = useState([]); // {company, department, subDepartment, employees, shift, dateFrom, dateTo}
   const [selectedEmployees, setSelectedEmployees] = useState(new Set()); // For employee-wise selection
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
 
   // Groups/Departments data
   const groups = [
-    { code: '001', name: 'Maintenance Department', selected: true },
-    { code: '002', name: 'Office', selected: true },
-    { code: '003', name: 'Production Department', selected: false },
-    { code: '007', name: 'Quality Department', selected: false },
-    { code: '008', name: 'Sanitary & Welfare', selected: false }
+    { code: "001", name: "Maintenance Department", selected: true },
+    { code: "002", name: "Office", selected: true },
+    { code: "003", name: "Production Department", selected: false },
+    { code: "007", name: "Quality Department", selected: false },
+    { code: "008", name: "Sanitary & Welfare", selected: false },
   ];
 
   // Employee data with subDepartment property
   const employees = [
-    { empCode: '001', name: 'SAMANTHA KUMARA', group: '001', subDepartment: '001A' },
-    { empCode: '672', name: 'Jayantha Kumara', group: '001', subDepartment: '001B' },
-    { empCode: '84', name: 'RAMAIAH PULENDRAN', group: '002', subDepartment: '002A' },
-    { empCode: '327', name: 'PRAGEETH PANASINGHA WELLAPPILI', group: '002', subDepartment: '002A' },
-    { empCode: '436', name: 'NALIN BUDDHIKA', group: '003', subDepartment: '003A' },
-    { empCode: '445', name: 'SUNIL FERNANDO', group: '003', subDepartment: '003A' },
-    { empCode: '512', name: 'KAMAL PERERA', group: '007', subDepartment: null },
-    { empCode: '623', name: 'NIMAL SILVA', group: '007', subDepartment: null },
-    { empCode: '734', name: 'ROHAN WICKRAMA', group: '008', subDepartment: null },
-    { empCode: '845', name: 'AJITH BANDARA', group: '008', subDepartment: null }
+    {
+      empCode: "001",
+      name: "SAMANTHA KUMARA",
+      group: "001",
+      subDepartment: "001A",
+    },
+    {
+      empCode: "672",
+      name: "Jayantha Kumara",
+      group: "001",
+      subDepartment: "001B",
+    },
+    {
+      empCode: "84",
+      name: "RAMAIAH PULENDRAN",
+      group: "002",
+      subDepartment: "002A",
+    },
+    {
+      empCode: "327",
+      name: "PRAGEETH PANASINGHA WELLAPPILI",
+      group: "002",
+      subDepartment: "002A",
+    },
+    {
+      empCode: "436",
+      name: "NALIN BUDDHIKA",
+      group: "003",
+      subDepartment: "003A",
+    },
+    {
+      empCode: "445",
+      name: "SUNIL FERNANDO",
+      group: "003",
+      subDepartment: "003A",
+    },
+    { empCode: "512", name: "KAMAL PERERA", group: "007", subDepartment: null },
+    { empCode: "623", name: "NIMAL SILVA", group: "007", subDepartment: null },
+    {
+      empCode: "734",
+      name: "ROHAN WICKRAMA",
+      group: "008",
+      subDepartment: null,
+    },
+    {
+      empCode: "845",
+      name: "AJITH BANDARA",
+      group: "008",
+      subDepartment: null,
+    },
   ];
 
-  // Shift schedules
-  const [shifts, setShifts] = useState([
-    { scode: '004', shiftName: 'Office Executive - WD', shiftStart: '08:00', shiftEnd: '17:00', empCode: '001' },
-    { scode: '005', shiftName: 'Office Executive - WE', shiftStart: '08:00', shiftEnd: '15:00', empCode: '672' },
-    { scode: '006', shiftName: 'Production Mgr - WD', shiftStart: '08:00', shiftEnd: '17:00', empCode: '84' },
-    { scode: '007', shiftName: 'Production Mgr - WE', shiftStart: '08:00', shiftEnd: '13:00', empCode: '327' },
-    { scode: '008', shiftName: 'QC - WE', shiftStart: '08:00', shiftEnd: '13:00', empCode: '436' },
-    { scode: '009', shiftName: 'No OT with Late - WD', shiftStart: '08:00', shiftEnd: '17:00', empCode: '445' }
-  ]);
+  // Add these new data arrays
+  const [companies, setCompanies] = useState([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+  const [companiesError, setCompaniesError] = useState(null);
 
-  // Example data for companies, departments, sub departments
-  const companies = [
-    { code: 'C01', name: 'ABC Holdings' },
-    { code: 'C02', name: 'XYZ Industries' }
-  ];
+  const [departments, setDepartments] = useState([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [departmentsError, setDepartmentsError] = useState(null);
 
-  const departments = [
-    { code: '001', name: 'Maintenance Department', company: 'C01' },
-    { code: '002', name: 'Office', company: 'C01' },
-    { code: '003', name: 'Production Department', company: 'C02' },
-    { code: '007', name: 'Quality Department', company: 'C02' },
-    { code: '008', name: 'Sanitary & Welfare', company: 'C02' }
-  ];
+  const [subDepartments, setSubDepartments] = useState([]);
+  const [isLoadingSubDepartments, setIsLoadingSubDepartments] = useState(false);
+  const [subDepartmentsError, setSubDepartmentsError] = useState(null);
 
-  const subDepartments = [
-    { code: '001A', name: 'Electrical', department: '001' },
-    { code: '001B', name: 'Mechanical', department: '001' },
-    { code: '002A', name: 'Admin', department: '002' },
-    { code: '003A', name: 'Assembly', department: '003' }
-  ];
+  // Replace the shifts state with an empty array initially
+  const [shifts, setShifts] = useState([]);
+
+  // Add state for loading and error handling
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Replace selectedShift with selectedShifts Set to enable multiple selections
+  const [selectedShifts, setSelectedShifts] = useState(new Set());
+
+  // Fetch shifts on component mount
+  useEffect(() => {
+    const fetchShifts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await ShiftScheduleService.getAllShifts();
+
+        // Transform the API response to match our expected shift format
+        const formattedShifts = data.map((shift) => ({
+          scode: shift.shift_code,
+          shiftName: shift.shift_description,
+          shiftStart: shift.start_time.substring(0, 5), // Format time as HH:MM
+          shiftEnd: shift.end_time.substring(0, 5),
+          id: shift.id, // Keep the original ID for API operations
+        }));
+
+        setShifts(formattedShifts);
+      } catch (err) {
+        console.error("Failed to fetch shifts:", err);
+        setError("Failed to load shifts. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchShifts();
+  }, []);
+
+  // Add this after your other useEffect hooks
+  useEffect(() => {
+    const getCompanies = async () => {
+      try {
+        setIsLoadingCompanies(true);
+        const data = await fetchCompanies();
+
+        // Transform data if needed to match expected format
+        const formattedCompanies = data.map((company) => ({
+          code: company.id.toString(), // Assuming API returns id
+          name: company.name,
+        }));
+
+        setCompanies(formattedCompanies);
+      } catch (err) {
+        console.error("Failed to fetch companies:", err);
+        setCompaniesError("Failed to load companies");
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+
+    getCompanies();
+  }, []);
+
+  // Add this after your companies fetch useEffect
+  useEffect(() => {
+    const getDepartments = async () => {
+      try {
+        setIsLoadingDepartments(true);
+        const data = await fetchDepartments();
+
+        // Transform API data to match our expected format
+        const formattedDepartments = data.map((dept) => ({
+          code: dept.id.toString(),
+          name: dept.name,
+          company: dept.company_id.toString(), // Assuming API returns company_id
+        }));
+
+        setDepartments(formattedDepartments);
+      } catch (err) {
+        console.error("Failed to fetch departments:", err);
+        setDepartmentsError("Failed to load departments");
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    };
+
+    getDepartments();
+  }, []);
+
+  // Add this after your departments fetch useEffect
+  useEffect(() => {
+    const getSubDepartments = async () => {
+      if (!selectedDepartment) {
+        setSubDepartments([]);
+        return;
+      }
+
+      try {
+        setIsLoadingSubDepartments(true);
+        setSubDepartmentsError(null);
+
+        // You can use fetchSubDepartmentsById if your API supports filtering on the server
+        // const data = await fetchSubDepartmentsById(selectedDepartment);
+
+        // Or fetch all and filter client-side
+        const data = await fetchSubDepartments();
+
+        // Transform API data to match our expected format
+        const formattedSubDepartments = data
+          .filter((sub) => sub.department_id?.toString() === selectedDepartment)
+          .map((sub) => ({
+            code: sub.id.toString(),
+            name: sub.name,
+            department: sub.department_id?.toString(),
+          }));
+
+        setSubDepartments(formattedSubDepartments);
+      } catch (err) {
+        console.error("Failed to fetch sub-departments:", err);
+        setSubDepartmentsError("Failed to load sub-departments");
+      } finally {
+        setIsLoadingSubDepartments(false);
+      }
+    };
+
+    getSubDepartments();
+  }, [selectedDepartment]);
 
   const filteredDepartments = useMemo(() => {
-    return departments.filter(dep => dep.company === selectedCompany);
+    return departments.filter((dep) => dep.company === selectedCompany);
   }, [selectedCompany]);
 
   const filteredSubDepartments = useMemo(() => {
-    return subDepartments.filter(sub => sub.department === selectedDepartment);
-  }, [selectedDepartment]);
+    return subDepartments.filter(
+      (sub) => sub.department === selectedDepartment
+    );
+  }, [selectedDepartment, subDepartments]);
 
   const filteredEmployees = useMemo(() => {
     let filtered = employees;
     if (selectedCompany) {
-      const deptCodes = departments.filter(dep => dep.company === selectedCompany).map(dep => dep.code);
-      filtered = filtered.filter(emp => deptCodes.includes(emp.group));
+      const deptCodes = departments
+        .filter((dep) => dep.company === selectedCompany)
+        .map((dep) => dep.code);
+      filtered = filtered.filter((emp) => deptCodes.includes(emp.group));
     }
     if (selectedDepartment) {
-      filtered = filtered.filter(emp => emp.group === selectedDepartment);
+      filtered = filtered.filter((emp) => emp.group === selectedDepartment);
     }
     if (selectedSubDepartment) {
-      filtered = filtered.filter(emp => emp.subDepartment === selectedSubDepartment);
+      filtered = filtered.filter(
+        (emp) => emp.subDepartment === selectedSubDepartment
+      );
     }
     if (searchTerm) {
-      filtered = filtered.filter(emp =>
-        emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.empCode.includes(searchTerm)
+      filtered = filtered.filter(
+        (emp) =>
+          emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          emp.empCode.includes(searchTerm)
       );
     }
     return filtered;
-  }, [selectedCompany, selectedDepartment, selectedSubDepartment, searchTerm, employees]);
+  }, [
+    selectedCompany,
+    selectedDepartment,
+    selectedSubDepartment,
+    searchTerm,
+    employees,
+  ]);
 
   // Helper to get display name for company/department/subDepartment
-  const getCompanyName = code => companies.find(c => c.code === code)?.name || '';
-  const getDepartmentName = code => departments.find(d => d.code === code)?.name || '';
-  const getSubDepartmentName = code => subDepartments.find(s => s.code === code)?.name || '';
+  const getCompanyName = (code) =>
+    companies.find((c) => c.code === code)?.name || "";
+  const getDepartmentName = (code) =>
+    departments.find((d) => d.code === code)?.name || "";
+  const getSubDepartmentName = (code) =>
+    subDepartments.find((s) => s.code === code)?.name || "";
 
-  // Add shift assignment for current selection
+  // Replace your existing toggleShift or selection handler with this
+  const toggleShiftSelection = (shift) => {
+    setSelectedShifts((prev) => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(shift.scode)) {
+        newSelected.delete(shift.scode);
+      } else {
+        newSelected.add(shift.scode);
+      }
+      return newSelected;
+    });
+  };
+
+  // Update the handleAddShift function to work with multiple shifts
   const handleAddShift = () => {
-    if (!selectedShift) return;
+    if (selectedShifts.size === 0) return;
+
     let employeesToAssign = [];
-    if (assignMode === 'designation') {
-      employeesToAssign = filteredEmployees.map(e => e.empCode);
-    } else if (assignMode === 'employee') {
+    if (assignMode === "designation") {
+      employeesToAssign = filteredEmployees.map((e) => e.empCode);
+    } else if (assignMode === "employee") {
       employeesToAssign = Array.from(selectedEmployees);
     }
+
     if (employeesToAssign.length === 0) return;
-    setRosterAssignments(prev => [
-      ...prev,
-      {
-        company: selectedCompany,
-        department: selectedDepartment,
-        subDepartment: selectedSubDepartment,
-        employees: employeesToAssign,
-        shift: selectedShift,
-        dateFrom,
-        dateTo
-      }
-    ]);
-    setSelectedShift(null);
+
+    // Get all selected shifts
+    const shiftsToAssign = shifts.filter((shift) =>
+      selectedShifts.has(shift.scode)
+    );
+
+    // Add each selected shift to roster assignments
+    shiftsToAssign.forEach((shift) => {
+      setRosterAssignments((prev) => [
+        ...prev,
+        {
+          company: selectedCompany,
+          department: selectedDepartment,
+          subDepartment: selectedSubDepartment,
+          employees: employeesToAssign,
+          shift: shift,
+          dateFrom,
+          dateTo,
+        },
+      ]);
+    });
+
+    // Clear selections after adding to roster
+    setSelectedShifts(new Set());
     setSelectedEmployees(new Set());
     setSelectedEmployee(null);
   };
 
   // Remove assignment
-  const handleRemoveAssignment = idx => {
-    setRosterAssignments(prev => prev.filter((_, i) => i !== idx));
+  const handleRemoveAssignment = (idx) => {
+    setRosterAssignments((prev) => prev.filter((_, i) => i !== idx));
   };
 
   // Handle employee selection for employee-wise assignment
-  const handleEmployeeSelect = empCode => {
-    if (assignMode !== 'employee') return;
-    setSelectedEmployees(prev => {
+  const handleEmployeeSelect = (empCode) => {
+    if (assignMode !== "employee") return;
+    setSelectedEmployees((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(empCode)) {
         newSet.delete(empCode);
@@ -155,27 +364,27 @@ const RosterManagementSystem = () => {
 
   // Save roster (just log to console)
   const handleSaveRoster = () => {
-    console.log('Roster assignments:', rosterAssignments);
-    alert('Roster assignments logged to console!');
+    console.log("Roster assignments:", rosterAssignments);
+    alert("Roster assignments logged to console!");
   };
 
   // Add or update shift (for modal)
   const addOrUpdateShift = (shift) => {
     if (editingShift) {
-      setShifts(prev =>
-        prev.map(s =>
-          s.scode === editingShift.scode
-            ? { ...s, ...shift }
-            : s
+      setShifts((prev) =>
+        prev.map((s) =>
+          s.scode === editingShift.scode ? { ...s, ...shift } : s
         )
       );
     } else {
-      setShifts(prev => [
+      setShifts((prev) => [
         ...prev,
         {
           ...shift,
-          scode: (Math.max(...prev.map(s => parseInt(s.scode, 10)), 0) + 1).toString().padStart(3, '0')
-        }
+          scode: (Math.max(...prev.map((s) => parseInt(s.scode, 10)), 0) + 1)
+            .toString()
+            .padStart(3, "0"),
+        },
       ]);
     }
     setShowAddShift(false);
@@ -188,7 +397,9 @@ const RosterManagementSystem = () => {
       <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
         <h1 className="text-xl font-bold">Roster Management System</h1>
         <div className="flex items-center space-x-4">
-          <span className="text-sm bg-blue-700 px-3 py-1 rounded-full">Filtering Options</span>
+          <span className="text-sm bg-blue-700 px-3 py-1 rounded-full">
+            Filtering Options
+          </span>
         </div>
       </div>
 
@@ -212,7 +423,9 @@ const RosterManagementSystem = () => {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Date From</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Date From
+                </label>
                 <input
                   type="date"
                   value={dateFrom}
@@ -221,7 +434,9 @@ const RosterManagementSystem = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Date To</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Date To
+                </label>
                 <input
                   type="date"
                   value={dateTo}
@@ -238,7 +453,9 @@ const RosterManagementSystem = () => {
 
           {/* Calendar Legend Section */}
           <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-sm mb-3 text-gray-800">Calendar Legend</h3>
+            <h3 className="font-semibold text-sm mb-3 text-gray-800">
+              Calendar Legend
+            </h3>
             <div className="space-y-2">
               <div className="flex items-center space-x-3">
                 <div className="w-4 h-4 bg-blue-500 rounded-full shadow-sm"></div>
@@ -264,58 +481,106 @@ const RosterManagementSystem = () => {
 
           {/* Company/Department/SubDepartment Dropdowns */}
           <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-sm mb-3 text-gray-800">Select Company / Department / Sub Department</h3>
+            <h3 className="font-semibold text-sm mb-3 text-gray-800">
+              Select Company / Department / Sub Department
+            </h3>
             <div className="space-y-3">
               {/* Company Dropdown */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Company</label>
-                <select
-                  value={selectedCompany}
-                  onChange={e => {
-                    setSelectedCompany(e.target.value);
-                    setSelectedDepartment('');
-                    setSelectedSubDepartment('');
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Company</option>
-                  {companies.map(company => (
-                    <option key={company.code} value={company.code}>{company.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Company
+                </label>
+                {isLoadingCompanies ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 flex items-center justify-center">
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                    Loading...
+                  </div>
+                ) : companiesError ? (
+                  <div className="w-full px-3 py-2 border border-red-300 bg-red-50 rounded-md text-sm text-red-600">
+                    Error loading companies
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCompany}
+                    onChange={(e) => {
+                      setSelectedCompany(e.target.value);
+                      setSelectedDepartment("");
+                      setSelectedSubDepartment("");
+                      setSelectedShifts(new Set()); // Clear shift selections
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map((company) => (
+                      <option key={company.code} value={company.code}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               {/* Department Dropdown */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Department</label>
-                <select
-                  value={selectedDepartment}
-                  onChange={e => {
-                    setSelectedDepartment(e.target.value);
-                    setSelectedSubDepartment('');
-                  }}
-                  disabled={!selectedCompany}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Department</option>
-                  {filteredDepartments.map(dep => (
-                    <option key={dep.code} value={dep.code}>{dep.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Department
+                </label>
+                {isLoadingDepartments ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 flex items-center justify-center">
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                    Loading...
+                  </div>
+                ) : departmentsError ? (
+                  <div className="w-full px-3 py-2 border border-red-300 bg-red-50 rounded-md text-sm text-red-600">
+                    Error loading departments
+                  </div>
+                ) : (
+                  <select
+                    value={selectedDepartment}
+                    onChange={(e) => {
+                      setSelectedDepartment(e.target.value);
+                      setSelectedSubDepartment("");
+                    }}
+                    disabled={!selectedCompany}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Department</option>
+                    {filteredDepartments.map((dep) => (
+                      <option key={dep.code} value={dep.code}>
+                        {dep.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               {/* Sub Department Dropdown */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Sub Department</label>
-                <select
-                  value={selectedSubDepartment}
-                  onChange={e => setSelectedSubDepartment(e.target.value)}
-                  disabled={!selectedDepartment}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Sub Department</option>
-                  {filteredSubDepartments.map(sub => (
-                    <option key={sub.code} value={sub.code}>{sub.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Sub Department
+                </label>
+                {isLoadingSubDepartments ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 flex items-center justify-center">
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                    Loading...
+                  </div>
+                ) : subDepartmentsError ? (
+                  <div className="w-full px-3 py-2 border border-red-300 bg-red-50 rounded-md text-sm text-red-600">
+                    Error loading sub-departments
+                  </div>
+                ) : (
+                  <select
+                    value={selectedSubDepartment}
+                    onChange={(e) => setSelectedSubDepartment(e.target.value)}
+                    disabled={!selectedDepartment}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Sub Department</option>
+                    {filteredSubDepartments.map((sub) => (
+                      <option key={sub.code} value={sub.code}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
           </div>
@@ -328,22 +593,32 @@ const RosterManagementSystem = () => {
                   type="radio"
                   name="wise"
                   id="employee"
-                  checked={assignMode === 'employee'}
-                  onChange={() => setAssignMode('employee')}
+                  checked={assignMode === "employee"}
+                  onChange={() => setAssignMode("employee")}
                   className="w-3 h-3 text-blue-600"
                 />
-                <label htmlFor="employee" className="text-xs font-medium text-gray-700">Employee Wise</label>
+                <label
+                  htmlFor="employee"
+                  className="text-xs font-medium text-gray-700"
+                >
+                  Employee Wise
+                </label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
                   type="radio"
                   name="wise"
                   id="designation"
-                  checked={assignMode === 'designation'}
-                  onChange={() => setAssignMode('designation')}
+                  checked={assignMode === "designation"}
+                  onChange={() => setAssignMode("designation")}
                   className="w-3 h-3 text-blue-600"
                 />
-                <label htmlFor="designation" className="text-xs font-medium text-gray-700">Designation Wise</label>
+                <label
+                  htmlFor="designation"
+                  className="text-xs font-medium text-gray-700"
+                >
+                  Designation Wise
+                </label>
               </div>
             </div>
           </div>
@@ -358,76 +633,126 @@ const RosterManagementSystem = () => {
                 <span className="text-xs text-gray-500">Selected: </span>
                 <span className="font-semibold text-blue-700">
                   {selectedCompany && getCompanyName(selectedCompany)}
-                  {selectedDepartment && ` > ${getDepartmentName(selectedDepartment)}`}
-                  {selectedSubDepartment && ` > ${getSubDepartmentName(selectedSubDepartment)}`}
+                  {selectedDepartment &&
+                    ` > ${getDepartmentName(selectedDepartment)}`}
+                  {selectedSubDepartment &&
+                    ` > ${getSubDepartmentName(selectedSubDepartment)}`}
                 </span>
               </div>
-              {(selectedDepartment && selectedSubDepartment && filteredEmployees.length > 0) && (
-                <button
-                  className="flex items-center text-blue-600 hover:underline text-xs"
-                  onClick={() => setShowEmployeeModal(true)}
-                >
-                  <Eye className="w-4 h-4 mr-1" /> View All ({filteredEmployees.length})
-                </button>
-              )}
+              {selectedDepartment &&
+                selectedSubDepartment &&
+                filteredEmployees.length > 0 && (
+                  <button
+                    className="flex items-center text-blue-600 hover:underline text-xs"
+                    onClick={() => setShowEmployeeModal(true)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" /> View All (
+                    {filteredEmployees.length})
+                  </button>
+                )}
             </div>
             <h3 className="font-semibold text-sm mb-3 text-gray-800">
-              {selectedCompany && !selectedDepartment && 'Departments'}
-              {selectedCompany && selectedDepartment && !selectedSubDepartment && 'Sub Departments'}
-              {selectedCompany && selectedDepartment && selectedSubDepartment && 'Employees'}
+              {selectedCompany && !selectedDepartment && "Departments"}
+              {selectedCompany &&
+                selectedDepartment &&
+                !selectedSubDepartment &&
+                "Sub Departments"}
+              {selectedCompany &&
+                selectedDepartment &&
+                selectedSubDepartment &&
+                "Employees"}
             </h3>
             {/* Show departments */}
             {!selectedDepartment && (
               <div className="space-y-2">
-                {filteredDepartments.map(dep => (
-                  <div
-                    key={dep.code}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedDepartment === dep.code
-                        ? 'bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md'
-                        : 'hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    onClick={() => setSelectedDepartment(dep.code)}
-                  >
-                    <span className="text-sm font-medium text-gray-700">{dep.name}</span>
+                {isLoadingDepartments ? (
+                  <div className="flex items-center justify-center p-4">
+                    <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                    <span>Loading departments...</span>
                   </div>
-                ))}
+                ) : departmentsError ? (
+                  <div className="p-4 text-center text-red-600">
+                    {departmentsError}
+                  </div>
+                ) : filteredDepartments.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    No departments found for this company
+                  </div>
+                ) : (
+                  filteredDepartments.map((dep) => (
+                    <div
+                      key={dep.code}
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        selectedDepartment === dep.code
+                          ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                          : "hover:bg-gray-50 border border-gray-200"
+                      }`}
+                      onClick={() => setSelectedDepartment(dep.code)}
+                    >
+                      <span className="text-sm font-medium text-gray-700">
+                        {dep.name}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             )}
             {/* Show sub departments */}
             {selectedDepartment && !selectedSubDepartment && (
               <div className="space-y-2">
-                {filteredSubDepartments.map(sub => (
-                  <div
-                    key={sub.code}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedSubDepartment === sub.code
-                        ? 'bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md'
-                        : 'hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    onClick={() => setSelectedSubDepartment(sub.code)}
-                  >
-                    <span className="text-sm font-medium text-gray-700">{sub.name}</span>
+                {isLoadingSubDepartments ? (
+                  <div className="flex items-center justify-center p-4">
+                    <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                    <span>Loading sub-departments...</span>
                   </div>
-                ))}
+                ) : subDepartmentsError ? (
+                  <div className="p-4 text-center text-red-600">
+                    {subDepartmentsError}
+                  </div>
+                ) : filteredSubDepartments.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    No sub-departments found for this department
+                  </div>
+                ) : (
+                  filteredSubDepartments.map((sub) => (
+                    <div
+                      key={sub.code}
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        selectedSubDepartment === sub.code
+                          ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                          : "hover:bg-gray-50 border border-gray-200"
+                      }`}
+                      onClick={() => setSelectedSubDepartment(sub.code)}
+                    >
+                      <span className="text-sm font-medium text-gray-700">
+                        {sub.name}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             )}
             {/* Show employees (preview only 3, rest in modal) */}
             {selectedDepartment && selectedSubDepartment && (
               <div>
                 <div className="space-y-2">
-                  {filteredEmployees.slice(0, 3).map(emp => (
+                  {filteredEmployees.slice(0, 3).map((emp) => (
                     <div
                       key={emp.empCode}
                       className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                         selectedEmployees.has(emp.empCode)
-                          ? 'bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md'
-                          : 'hover:bg-gray-50 border border-gray-200'
+                          ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                          : "hover:bg-gray-50 border border-gray-200"
                       }`}
-                      onClick={() => assignMode === 'employee' && handleEmployeeSelect(emp.empCode)}
+                      onClick={() =>
+                        assignMode === "employee" &&
+                        handleEmployeeSelect(emp.empCode)
+                      }
                     >
-                      <span className="text-sm font-medium text-gray-700">{emp.name}</span>
-                      {assignMode === 'employee' && (
+                      <span className="text-sm font-medium text-gray-700">
+                        {emp.name}
+                      </span>
+                      {assignMode === "employee" && (
                         <input
                           type="checkbox"
                           checked={selectedEmployees.has(emp.empCode)}
@@ -443,7 +768,8 @@ const RosterManagementSystem = () => {
                       className="flex items-center mt-2 text-blue-600 hover:underline text-xs"
                       onClick={() => setShowEmployeeModal(true)}
                     >
-                      <Eye className="w-4 h-4 mr-1" /> View All ({filteredEmployees.length})
+                      <Eye className="w-4 h-4 mr-1" /> View All (
+                      {filteredEmployees.length})
                     </button>
                   )}
                 </div>
@@ -452,18 +778,27 @@ const RosterManagementSystem = () => {
           </div>
           {/* Show assigned shifts for this selection */}
           <div className="p-4">
-            <h4 className="font-semibold text-xs mb-2 text-gray-700">Assigned Shifts</h4>
+            <h4 className="font-semibold text-xs mb-2 text-gray-700">
+              Assigned Shifts
+            </h4>
             <div className="space-y-2">
               {rosterAssignments
-                .filter(a =>
-                  a.company === selectedCompany &&
-                  (!selectedDepartment || a.department === selectedDepartment) &&
-                  (!selectedSubDepartment || a.subDepartment === selectedSubDepartment)
+                .filter(
+                  (a) =>
+                    a.company === selectedCompany &&
+                    (!selectedDepartment ||
+                      a.department === selectedDepartment) &&
+                    (!selectedSubDepartment ||
+                      a.subDepartment === selectedSubDepartment)
                 )
                 .map((a, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded shadow">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded shadow"
+                  >
                     <span className="text-xs font-semibold text-blue-800">
-                      {a.shift.shiftName} ({a.shift.shiftStart}-{a.shift.shiftEnd})
+                      {a.shift.shiftName} ({a.shift.shiftStart}-
+                      {a.shift.shiftEnd})
                     </span>
                     <button
                       className="ml-2 text-red-500 hover:text-red-700"
@@ -500,7 +835,10 @@ const RosterManagementSystem = () => {
                   </thead>
                   <tbody>
                     {filteredEmployees.map((emp, idx) => (
-                      <tr key={emp.empCode} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <tr
+                        key={emp.empCode}
+                        className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
                         <td className="px-3 py-2 border">{idx + 1}</td>
                         <td className="px-3 py-2 border">{emp.empCode}</td>
                         <td className="px-3 py-2 border">{emp.name}</td>
@@ -533,61 +871,124 @@ const RosterManagementSystem = () => {
         <div className="flex-1 bg-white flex flex-col">
           <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-25">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-lg text-gray-800">Shift Selection</h3>
+              <h3 className="font-bold text-lg text-gray-800">
+                Shift Selection
+              </h3>
             </div>
             <div className="text-sm text-gray-600">
-              <span className="font-semibold">{dateFrom} - {dateTo}</span>
+              <span className="font-semibold">
+                {dateFrom} - {dateTo}
+              </span>
               <span className="font-semibold text-blue-600 ml-1">
                 {selectedCompany && ` | ${getCompanyName(selectedCompany)}`}
-                {selectedDepartment && ` > ${getDepartmentName(selectedDepartment)}`}
-                {selectedSubDepartment && ` > ${getSubDepartmentName(selectedSubDepartment)}`}
+                {selectedDepartment &&
+                  ` > ${getDepartmentName(selectedDepartment)}`}
+                {selectedSubDepartment &&
+                  ` > ${getSubDepartmentName(selectedSubDepartment)}`}
               </span>
             </div>
           </div>
           <div className="p-4 flex-1 flex flex-col">
             {/* Shift Table */}
             <div className="flex-1 overflow-y-auto border border-gray-300 rounded-lg shadow mb-4">
-              <table className="w-full text-sm">
-                <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white sticky top-0">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">S.Code</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">Shift Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">Start Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">End Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold border-blue-500">Select</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shifts.map((shift, index) => (
-                    <tr key={shift.scode} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200`}>
-                      <td className="px-4 py-3 border-r border-gray-200">
-                        <span className="font-mono text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">{shift.scode}</span>
-                      </td>
-                      <td className="px-4 py-3 border-r border-gray-200">
-                        <span className="font-medium text-gray-700">{shift.shiftName}</span>
-                      </td>
-                      <td className="px-4 py-3 border-r border-gray-200 font-mono text-green-600 font-semibold">{shift.shiftStart}</td>
-                      <td className="px-4 py-3 border-r border-gray-200 font-mono text-red-600 font-semibold">{shift.shiftEnd}</td>
-                      <td className="px-4 py-3 border-gray-200">
-                        <button
-                          className={`px-3 py-1 rounded ${selectedShift?.scode === shift.scode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                          onClick={() => setSelectedShift(shift)}
-                        >
-                          {selectedShift?.scode === shift.scode ? 'Selected' : 'Select'}
-                        </button>
-                      </td>
+              {isLoading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading shifts...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center text-red-500">
+                  <p>{error}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">
+                        S.Code
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">
+                        Shift Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">
+                        Start Time
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold border-r border-blue-500">
+                        End Time
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold border-blue-500">
+                        Select
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {shifts.map((shift, index) => (
+                      <tr
+                        key={shift.scode}
+                        className={`${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        } 
+                        hover:bg-blue-50 transition-colors duration-150 border-b border-gray-200 
+                        ${
+                          selectedShifts.has(shift.scode)
+                            ? "bg-blue-50 border-l-4 border-blue-500"
+                            : ""
+                        }`}
+                      >
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <span className="font-mono text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">
+                            {shift.scode}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <span className="font-medium text-gray-700">
+                            {shift.shiftName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 font-mono text-green-600 font-semibold">
+                          {shift.shiftStart}
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 font-mono text-red-600 font-semibold">
+                          {shift.shiftEnd}
+                        </td>
+                        <td className="px-4 py-3 border-gray-200">
+                          <button
+                            className={`px-3 py-1 rounded ${
+                              selectedShifts.has(shift.scode)
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-200 text-gray-700"
+                            }`}
+                            onClick={() => toggleShiftSelection(shift)}
+                          >
+                            {selectedShifts.has(shift.scode)
+                              ? "Selected"
+                              : "Select"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
             {/* Add to Roster Button */}
             <button
               className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-md transition-all duration-200 transform hover:scale-105"
               onClick={handleAddShift}
-              disabled={!selectedShift || filteredEmployees.length === 0 || (assignMode === 'employee' && selectedEmployees.size === 0)}
+              disabled={
+                selectedShifts.size === 0 ||
+                filteredEmployees.length === 0 ||
+                (assignMode === "employee" && selectedEmployees.size === 0)
+              }
             >
-              Add to Roster
+              Add to Roster{" "}
+              {selectedShifts.size > 0 && `(${selectedShifts.size} shifts)`}
             </button>
             {/* Save Roster Button */}
             <div className="flex space-x-2 mt-2">
@@ -602,17 +1003,17 @@ const RosterManagementSystem = () => {
                 className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-md transition-all duration-200"
                 onClick={() => {
                   setRosterAssignments([]);
-                  setSelectedCompany('');
-                  setSelectedDepartment('');
-                  setSelectedSubDepartment('');
-                  setSelectedShift(null);
+                  setSelectedCompany("");
+                  setSelectedDepartment("");
+                  setSelectedSubDepartment("");
+                  setSelectedShifts(new Set());
                   setSelectedEmployees(new Set());
                   setSelectedEmployee(null);
-                  setDateFrom('2025-06-01');
-                  setDateTo('2025-12-30');
-                  setRosterDate('2025-06-30');
-                  setAssignMode('designation');
-                  setSearchTerm('');
+                  setDateFrom("2025-06-01");
+                  setDateTo("2025-12-30");
+                  setRosterDate("2025-06-30");
+                  setAssignMode("designation");
+                  setSearchTerm("");
                 }}
                 disabled={rosterAssignments.length === 0}
               >
@@ -629,7 +1030,7 @@ const RosterManagementSystem = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all duration-300 scale-100">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-800">
-                {editingShift ? 'Edit Shift' : 'Add New Shift'}
+                {editingShift ? "Edit Shift" : "Add New Shift"}
               </h3>
               <button
                 onClick={() => {
@@ -641,50 +1042,58 @@ const RosterManagementSystem = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Employee Code</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Employee Code
+                </label>
                 <input
                   type="text"
                   id="empCode"
-                  defaultValue={editingShift?.empCode || ''}
+                  defaultValue={editingShift?.empCode || ""}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   placeholder="Enter employee code"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Shift Name</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Shift Name
+                </label>
                 <input
                   type="text"
                   id="shiftName"
-                  defaultValue={editingShift?.shiftName || ''}
+                  defaultValue={editingShift?.shiftName || ""}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   placeholder="Enter shift name"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Start Time</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Start Time
+                  </label>
                   <input
                     type="time"
                     id="shiftStart"
-                    defaultValue={editingShift?.shiftStart || ''}
+                    defaultValue={editingShift?.shiftStart || ""}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">End Time</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    End Time
+                  </label>
                   <input
                     type="time"
                     id="shiftEnd"
-                    defaultValue={editingShift?.shiftEnd || ''}
+                    defaultValue={editingShift?.shiftEnd || ""}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                   />
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-end space-x-3 mt-8">
               <button
                 onClick={() => {
@@ -697,17 +1106,18 @@ const RosterManagementSystem = () => {
               </button>
               <button
                 onClick={() => {
-                  const empCode = document.getElementById('empCode').value;
-                  const shiftName = document.getElementById('shiftName').value;
-                  const shiftStart = document.getElementById('shiftStart').value;
-                  const shiftEnd = document.getElementById('shiftEnd').value;
-                  
+                  const empCode = document.getElementById("empCode").value;
+                  const shiftName = document.getElementById("shiftName").value;
+                  const shiftStart =
+                    document.getElementById("shiftStart").value;
+                  const shiftEnd = document.getElementById("shiftEnd").value;
+
                   if (empCode && shiftName && shiftStart && shiftEnd) {
                     addOrUpdateShift({
                       empCode,
                       shiftName,
                       shiftStart,
-                      shiftEnd
+                      shiftEnd,
                     });
                   }
                 }}
