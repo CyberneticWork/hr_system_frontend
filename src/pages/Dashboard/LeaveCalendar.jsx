@@ -14,6 +14,7 @@ import {
   Search,
   Building2,
   Layers,
+  Loader2 
 } from "lucide-react";
 import {
   fetchLeaveCalendar,
