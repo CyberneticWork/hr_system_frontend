@@ -26,6 +26,7 @@ const ShiftModal = ({
   onSave,
   initialData = {},
   isEdit = false,
+  errors = {}, // Add errors prop
 }) => {
   const [form, setForm] = useState({
     code: "",
@@ -96,6 +97,9 @@ const ShiftModal = ({
                   disabled={isEdit}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                 />
+                {errors.shift_code && (
+                  <div className="text-xs text-red-600 mt-1">{errors.shift_code[0]}</div>
+                )}
               </div>
              
             </div>
@@ -112,6 +116,9 @@ const ShiftModal = ({
                   setForm({ ...form, description: e.target.value })
                 }
               />
+              {errors.shift_description && (
+                <div className="text-xs text-red-600 mt-1">{errors.shift_description[0]}</div>
+              )}
             </div>
           </div>
 
@@ -135,6 +142,9 @@ const ShiftModal = ({
                     setForm({ ...form, startTime: e.target.value })
                   }
                 />
+                {errors.start_time && (
+                  <div className="text-xs text-red-600 mt-1">{errors.start_time[0]}</div>
+                )}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
@@ -149,6 +159,9 @@ const ShiftModal = ({
                     setForm({ ...form, endTime: e.target.value })
                   }
                 />
+                {errors.end_time && (
+                  <div className="text-xs text-red-600 mt-1">{errors.end_time[0]}</div>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -341,6 +354,7 @@ const ShiftSchedule = () => {
   const [editShift, setEditShift] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   // Fetch shifts on component mount
   useEffect(() => {
@@ -379,6 +393,7 @@ const ShiftSchedule = () => {
       await ShiftScheduleService.createShift(shift);
       await fetchShifts();
       setModalOpen(false);
+      setFormErrors({});
       Swal.fire({
         icon: 'success',
         title: 'Shift Created',
@@ -387,11 +402,16 @@ const ShiftSchedule = () => {
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error?.response?.data?.message || 'Failed to create shift.',
-      });
+      if (error.response?.data?.errors) {
+        setFormErrors(error.response.data.errors);
+        // No SweetAlert for validation errors, only set field errors
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error?.response?.data?.message || 'Failed to create shift.',
+        });
+      }
     }
   };
 
@@ -402,6 +422,7 @@ const ShiftSchedule = () => {
       await fetchShifts();
       setEditShift(null);
       setModalOpen(false);
+      setFormErrors({});
       Swal.fire({
         icon: 'success',
         title: 'Shift Updated',
@@ -410,11 +431,16 @@ const ShiftSchedule = () => {
         showConfirmButton: false,
       });
     } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error?.response?.data?.message || 'Failed to update shift.',
-      });
+      if (error.response?.data?.errors) {
+        setFormErrors(error.response.data.errors);
+        // No SweetAlert for validation errors, only set field errors
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error?.response?.data?.message || 'Failed to update shift.',
+        });
+      }
     }
   };
 
@@ -554,10 +580,12 @@ const ShiftSchedule = () => {
         onClose={() => {
           setModalOpen(false);
           setEditShift(null);
+          setFormErrors({});
         }}
         onSave={editShift ? handleUpdateShift : handleAddShift}
         initialData={editShift || {}}
         isEdit={!!editShift}
+        errors={formErrors} // Pass errors to modal
       />
       {/* Delete Modal */}
       <DeleteModal
