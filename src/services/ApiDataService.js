@@ -61,3 +61,60 @@ export const fetchDesignations = async () => {
     return [];
   }
 };
+
+export const createCompany = async (data) => {
+  try {
+    const response = await axios.post(`/companies`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding companies:", error);
+    throw error; // Throw error so frontend can handle validation errors
+  }
+};
+
+export const updateCompany = async (id, data) => {
+  try {
+    const response = await axios.put(`/companies/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating company:", error);
+    throw error;
+  }
+};
+
+export const deleteCompany = async (id) => {
+  try {
+    await axios.delete(`/companies/${id}`);
+  } catch (error) {
+    console.error("Error deleting company:", error);
+    throw error;
+  }
+};
+
+export const createDepartment = async (data) => {
+  const response = await axios.post(`/departments`, data);
+  return response.data;
+};
+
+export const updateDepartment = async (id, data) => {
+  const response = await axios.put(`/departments/${id}`, data);
+  return response.data;
+};
+
+export const deleteDepartment = async (id) => {
+  await axios.delete(`/departments/${id}`);
+};
+
+export const createSubDepartment = async (data) => {
+  const response = await axios.post(`/subdepartments`, data);
+  return response.data;
+};
+
+export const updateSubDepartment = async (id, data) => {
+  const response = await axios.put(`/subdepartments/${id}`, data);
+  return response.data;
+};
+
+export const deleteSubDepartment = async (id) => {
+  await axios.delete(`/subdepartments/${id}`);
+};

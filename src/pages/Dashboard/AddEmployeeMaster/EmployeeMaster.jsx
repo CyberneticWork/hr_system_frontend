@@ -32,7 +32,8 @@ const EmployeeMasterWrapper = () => {
 const EmployeeMaster = () => {
   const [activeCategory, setActiveCategory] = useState("personal");
   const currentStepIndex = steps.indexOf(activeCategory);
-  const { setFormErrors, setIsSubmitting, errors, clearForm } = useEmployeeForm();
+  const { setFormErrors, setIsSubmitting, errors, clearForm } =
+    useEmployeeForm();
 
   const goNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -58,8 +59,6 @@ const EmployeeMaster = () => {
       });
       clearForm();
       setActiveCategory("personal");
-
-
     } catch (error) {
       console.error("Submission error:", error);
       if (error.response?.data?.errors) {
@@ -147,6 +146,7 @@ const EmployeeMaster = () => {
           )}
           {activeCategory === "documents" && (
             <Employeedocument
+              onNext={goNext}
               onPrevious={goPrevious}
               onSubmit={handleSubmit}
               activeCategory={activeCategory}
