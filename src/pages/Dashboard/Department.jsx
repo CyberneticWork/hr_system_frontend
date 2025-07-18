@@ -165,15 +165,26 @@ const Department = () => {
   const [departments, setDepartments] = useState([]);
   const [subDepartments, setSubDepartments] = useState([]);
 
+  // Loading state
+  const [loading, setLoading] = useState(true);
+
   // Subdepartment modal state
   const [showAddSubDeptModal, setShowAddSubDeptModal] = useState(false);
   const [showEditSubDeptModal, setShowEditSubDeptModal] = useState(false);
   const [editingSubDept, setEditingSubDept] = useState(null);
 
   useEffect(() => {
-    fetchCompanies().then(setCompanies);
-    fetchDepartments().then(setDepartments);
-    fetchSubDepartments().then(setSubDepartments);
+    setLoading(true);
+    Promise.all([
+      fetchCompanies(),
+      fetchDepartments(),
+      fetchSubDepartments()
+    ]).then(([companiesData, departmentsData, subDepartmentsData]) => {
+      setCompanies(companiesData);
+      setDepartments(departmentsData);
+      setSubDepartments(subDepartmentsData);
+      setLoading(false);
+    });
   }, []);
 
   // Merge subdepartments into departments
@@ -996,158 +1007,171 @@ const Department = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Department Management</h1>
-        <p className="text-gray-600">
-          Manage your organization's structure including companies, departments, and subdepartments.
-        </p>
-      </div>
+      {/* Loading Spinner */}
+      {loading && (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <svg className="animate-spin h-10 w-10 text-blue-600" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+          </svg>
+        </div>
+      )}
+      {!loading && (
+        <>
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Department Management</h1>
+            <p className="text-gray-600">
+              Manage your organization's structure including companies, departments, and subdepartments.
+            </p>
+          </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard 
-          icon={Building2} 
-          title="Total Companies" 
-          value={companies.length} 
-          color="bg-blue-500" 
-        />
-        <StatCard 
-          icon={Users} 
-          title="Total Departments" 
-          value={departments.length} 
-          color="bg-green-500" 
-        />
-        <StatCard 
-          icon={UserCheck} 
-          title="Subdepartments" 
-          value={subDepartments.length} 
-          color="bg-purple-500" 
-        />
-        <StatCard 
-          icon={Calendar} 
-          title="Total Employees" 
-          value={companies.reduce((sum, c) => sum + (parseInt(c.employees) || 0), 0)} 
-          color="bg-orange-500" 
-        />
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex space-x-1 mb-6">
-        {[
-          { key: 'companies', label: 'Companies', icon: Building2 },
-          { key: 'departments', label: 'Departments', icon: Users },
-          { key: 'subdepartments', label: 'Subdepartments', icon: UserCheck }
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-            }`}
-          >
-            <tab.icon className="w-4 h-4 mr-2" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Search and Actions Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center space-x-4 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder={`Search ${activeTab}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <StatCard 
+              icon={Building2} 
+              title="Total Companies" 
+              value={companies.length} 
+              color="bg-blue-500" 
+            />
+            <StatCard 
+              icon={Users} 
+              title="Total Departments" 
+              value={departments.length} 
+              color="bg-green-500" 
+            />
+            <StatCard 
+              icon={UserCheck} 
+              title="Subdepartments" 
+              value={subDepartments.length} 
+              color="bg-purple-500" 
+            />
+            <StatCard 
+              icon={Calendar} 
+              title="Total Employees" 
+              value={companies.reduce((sum, c) => sum + (parseInt(c.employees) || 0), 0)} 
+              color="bg-orange-500" 
             />
           </div>
-          <button className="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
-          {/* Add buttons based on activeTab */}
-          {activeTab === 'companies' && (
-            <button
-              onClick={() => {
-                setModalMode('add');
-                setCompanyForm({ name: '', location: '', employees: '', established: '' });
-                setShowAddModal(true);
-              }}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Company
-            </button>
-          )}
-          {activeTab === 'departments' && (
-            <button
-              onClick={() => setShowAddDeptModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Department
-            </button>
-          )}
-          {activeTab === 'subdepartments' && (
-            <button
-              onClick={() => setShowAddSubDeptModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Sub Department
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Tables */}
-      {activeTab === 'companies' && <CompaniesTable />}
-      {activeTab === 'departments' && <DepartmentsTable />}
-      {activeTab === 'subdepartments' && <SubdepartmentsTable />}
+          {/* Navigation Tabs */}
+          <div className="flex space-x-1 mb-6">
+            {[
+              { key: 'companies', label: 'Companies', icon: Building2 },
+              { key: 'departments', label: 'Departments', icon: Users },
+              { key: 'subdepartments', label: 'Subdepartments', icon: UserCheck }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                }`}
+              >
+                <tab.icon className="w-4 h-4 mr-2" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-      {/* Edit Modal */}
-      <EditModal
-        show={showAddModal}
-        companyForm={companyForm}
-        setCompanyForm={setCompanyForm}
-        editingCompany={editingCompany}
-        setShowAddModal={setShowAddModal}
-        setCompanies={setCompanies}
-        companies={companies}
-      />
+          {/* Search and Actions Bar */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex items-center space-x-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab}...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button className="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <Filter className="w-4 h-4 mr-2" />
+                Filter
+              </button>
+              {/* Add buttons based on activeTab */}
+              {activeTab === 'companies' && (
+                <button
+                  onClick={() => {
+                    setModalMode('add');
+                    setCompanyForm({ name: '', location: '', employees: '', established: '' });
+                    setShowAddModal(true);
+                  }}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Company
+                </button>
+              )}
+              {activeTab === 'departments' && (
+                <button
+                  onClick={() => setShowAddDeptModal(true)}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Department
+                </button>
+              )}
+              {activeTab === 'subdepartments' && (
+                <button
+                  onClick={() => setShowAddSubDeptModal(true)}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Sub Department
+                </button>
+              )}
+            </div>
+          </div>
 
-      {/* Add Department Modal */}
-      <AddDepartmentModal />
+          {/* Tables */}
+          {activeTab === 'companies' && <CompaniesTable />}
+          {activeTab === 'departments' && <DepartmentsTable />}
+          {activeTab === 'subdepartments' && <SubdepartmentsTable />}
 
-      {/* Edit Department Modal */}
-      <EditDepartmentModal />
+          {/* Edit Modal */}
+          <EditModal
+            show={showAddModal}
+            companyForm={companyForm}
+            setCompanyForm={setCompanyForm}
+            editingCompany={editingCompany}
+            setShowAddModal={setShowAddModal}
+            setCompanies={setCompanies}
+            companies={companies}
+          />
 
-      {/* Add Subdepartment Modal */}
-      <AddSubDeptModal
-        show={showAddSubDeptModal}
-        companies={companies}
-        departments={departments}
-        onClose={() => setShowAddSubDeptModal(false)}
-        onCreate={handleCreateSubDept}
-      />
-      {/* Edit Subdepartment Modal */}
-      <EditSubDeptModal
-        show={showEditSubDeptModal}
-        companies={companies}
-        departments={departments}
-        subDept={editingSubDept}
-        onClose={() => {
-          setShowEditSubDeptModal(false);
-          setEditingSubDept(null);
-        }}
-        onUpdate={handleUpdateSubDept}
-      />
+          {/* Add Department Modal */}
+          <AddDepartmentModal />
+
+          {/* Edit Department Modal */}
+          <EditDepartmentModal />
+
+          {/* Add Subdepartment Modal */}
+          <AddSubDeptModal
+            show={showAddSubDeptModal}
+            companies={companies}
+            departments={departments}
+            onClose={() => setShowAddSubDeptModal(false)}
+            onCreate={handleCreateSubDept}
+          />
+          {/* Edit Subdepartment Modal */}
+          <EditSubDeptModal
+            show={showEditSubDeptModal}
+            companies={companies}
+            departments={departments}
+            subDept={editingSubDept}
+            onClose={() => {
+              setShowEditSubDeptModal(false);
+              setEditingSubDept(null);
+            }}
+            onUpdate={handleUpdateSubDept}
+          />
+        </>
+      )}
     </div>
   );
 };
