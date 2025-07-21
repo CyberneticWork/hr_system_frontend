@@ -10,20 +10,23 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import axios from "@utils/axios";
-import Swal from "sweetalert2";
+
 import {
   fetchCompanies,
   fetchDepartmentsById,
   fetchSubDepartmentsById,
   fetchDesignations,
 } from "@services/ApiDataService";
-import { useEmployeeForm } from '@contexts/EmployeeFormContext';
-import FieldError from '@components/ErrorMessage/FieldError';
+import { useEmployeeForm } from "@contexts/EmployeeFormContext";
+import FieldError from "@components/ErrorMessage/FieldError";
 
 const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
-  const { formData, updateFormData, errors, clearFieldError } = useEmployeeForm();
-  const [isLoading, setIsLoading] = useState(false);
+  const { formData, updateFormData, errors, clearFieldError } =
+    useEmployeeForm();
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [isLoadingSubDepartments, setIsLoadingSubDepartments] = useState(false);
+  const [isLoadingDesignations, setIsLoadingDesignations] = useState(true);
 
   // Dropdown data state - now storing objects with id and name
   const [companies, setCompanies] = useState([]);
@@ -42,7 +45,6 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   // Load companies and designations from API
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
       try {
         const [companiesData, DesignationsData] = await Promise.all([
           fetchCompanies(),
@@ -50,11 +52,11 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
         ]);
 
         setCompanies(companiesData);
+        setIsLoadingCompanies(false);
         setDesignations(DesignationsData);
+        setIsLoadingDesignations(false);
       } catch (e) {
         console.error("Error loading data:", e);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -65,20 +67,22 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   useEffect(() => {
     if (formData.organization.company) {
       const loadDepartments = async () => {
-        setIsLoading(true);
+        setIsLoadingDepartments(true);
         try {
-          const departmentsData = await fetchDepartmentsById(formData.organization.company);
+          const departmentsData = await fetchDepartmentsById(
+            formData.organization.company
+          );
           setDepartments(departmentsData);
           // Reset department and sub-department when company changes
-          updateFormData('organization', {
-            department: '',
-            subDepartment: ''
+          updateFormData("organization", {
+            department: "",
+            subDepartment: "",
           });
           setSubDepartments([]);
         } catch (e) {
           console.error("Error loading departments:", e);
         } finally {
-          setIsLoading(false);
+          setIsLoadingDepartments(false);
         }
       };
       loadDepartments();
@@ -92,18 +96,20 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   useEffect(() => {
     if (formData.organization.department) {
       const loadSubDepartments = async () => {
-        setIsLoading(true);
+        setIsLoadingSubDepartments(true);
         try {
-          const subDepartmentsData = await fetchSubDepartmentsById(formData.organization.department);
+          const subDepartmentsData = await fetchSubDepartmentsById(
+            formData.organization.department
+          );
           setSubDepartments(subDepartmentsData);
           // Reset sub-department when department changes
-          updateFormData('organization', {
-            subDepartment: ''
+          updateFormData("organization", {
+            subDepartment: "",
           });
         } catch (e) {
           console.error("Error loading sub-departments:", e);
         } finally {
-          setIsLoading(false);
+          setIsLoadingSubDepartments(false);
         }
       };
       loadSubDepartments();
@@ -113,17 +119,62 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
   }, [formData.organization.department]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
-    
-    // Clear error when user makes changes
-    if (errors.organization?.[name]) {
-      clearFieldError('organization', name);
-    }
-    
-    updateFormData('organization', {
-      [name]: type === "checkbox" ? checked : type === "file" ? files[0] : value,
+  const { name, value, type, checked, files } = e.target;
+  const parsedValue = value === "" ? "" : Number(value); // safely parse to number if not empty
+
+  // Clear field error
+  if (errors.organization?.[name]) {
+    clearFieldError("organization", name);
+  }
+
+  if (name === "company") {
+    const selected = companies.find((c) => c.id === parsedValue);
+    updateFormData("organization", {
+      company: parsedValue.toString(),
+      companyName: selected?.name || "",
+      department: "",
+      departmentName: "",
+      subDepartment: "",
+      subDepartmentName: "",
     });
-  };
+    return;
+  }
+
+  if (name === "department") {
+    const selected = departments.find((d) => d.id === parsedValue);
+    updateFormData("organization", {
+      department: parsedValue.toString(),
+      departmentName: selected?.name || "",
+      subDepartment: "",
+      subDepartmentName: "",
+    });
+    return;
+  }
+
+  if (name === "subDepartment") {
+    const selected = subDepartments.find((s) => s.id === parsedValue);
+    updateFormData("organization", {
+      subDepartment: parsedValue.toString(),
+      subDepartmentName: selected?.name || "",
+    });
+    return;
+  }
+
+  if (name === "designation") {
+    const selected = designations.find((s) => s.id === parsedValue);
+    updateFormData("organization", {
+      designation: parsedValue.toString(),
+      designationName: selected?.name || "",
+    });
+    return;
+  }
+
+  updateFormData("organization", {
+    [name]:
+      type === "checkbox" ? checked : type === "file" ? files[0] : value,
+  });
+};
+
 
   const handleToggle = (section) => {
     setToggleStates((prev) => {
@@ -137,7 +188,7 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
       };
       const formKey = formKeyMap[section];
       if (formKey) {
-        updateFormData('organization', { [formKey]: newValue });
+        updateFormData("organization", { [formKey]: newValue });
       }
       return {
         ...prev,
@@ -167,14 +218,6 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
     </label>
   );
 
-  if (isLoading) {
-    return (
-      <div className="p-4 md:p-6 bg-white rounded-lg shadow-md flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-4 md:p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -201,24 +244,30 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 Company <span className="text-red-500">*</span>
               </label>
               <div className="relative flex-1">
-                <select
-                  name="company"
-                  value={formData.organization.company}
-                  onChange={handleChange}
-                  className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.company 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  required
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                {isLoadingCompanies ? (
+                  <div className="flex items-center justify-center h-10 border border-gray-300 rounded-md bg-gray-100">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : (
+                  <select
+                    name="company"
+                    value={formData.organization.company}
+                    onChange={handleChange}
+                    className={`w-full pl-8 pr-3 py-2 border ${
+                      errors.organization?.company
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    required
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <FieldError error={errors.organization?.company} />
               </div>
             </div>
@@ -230,26 +279,36 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 Department <span className="text-red-500">*</span>
               </label>
               <div className="relative flex-1">
-                <select
-                  name="department"
-                  value={formData.organization.department}
-                  onChange={handleChange}
-                  disabled={!formData.organization.company}
-                  className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.department 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    !formData.organization.company ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                {isLoadingDepartments ? (
+                  <div className="flex items-center justify-center h-10 border border-gray-300 rounded-md bg-gray-100">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : (
+                  <select
+                    name="department"
+                    value={formData.organization.department}
+                    onChange={handleChange}
+                    disabled={
+                      !formData.organization.company || isLoadingDepartments
+                    }
+                    className={`w-full pl-8 pr-3 py-2 border ${
+                      errors.organization?.department
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      !formData.organization.company
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
+                    }`}
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <FieldError error={errors.organization?.department} />
               </div>
             </div>
@@ -261,27 +320,38 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 Sub Department <span className="text-red-500">*</span>
               </label>
               <div className="relative flex-1">
-                <select
-                  name="subDepartment"
-                  value={formData.organization.subDepartment}
-                  onChange={handleChange}
-                  disabled={!formData.organization.department}
-                  className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.subDepartment 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    !formData.organization.department ? 'bg-gray-100 cursor-not-allowed' : ''
-                  }`}
-                  required
-                >
-                  <option value="">Select Sub Department</option>
-                  {subDepartments.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                {isLoadingSubDepartments ? (
+                  <div className="flex items-center justify-center h-10 border border-gray-300 rounded-md bg-gray-100">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : (
+                  <select
+                    name="subDepartment"
+                    value={formData.organization.subDepartment}
+                    onChange={handleChange}
+                    disabled={
+                      !formData.organization.department ||
+                      isLoadingSubDepartments
+                    }
+                    className={`w-full pl-8 pr-3 py-2 border ${
+                      errors.organization?.subDepartment
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      !formData.organization.department
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
+                    }`}
+                    required
+                  >
+                    <option value="">Select Sub Department</option>
+                    {subDepartments.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <FieldError error={errors.organization?.subDepartment} />
               </div>
             </div>
@@ -299,9 +369,9 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   onChange={handleChange}
                   placeholder="e.g., John Doe"
                   className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.currentSupervisor 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
+                    errors.organization?.currentSupervisor
+                      ? "border-red-500"
+                      : "border-gray-300"
                   } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <User
@@ -324,9 +394,9 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   value={formData.organization.dateOfJoined}
                   onChange={handleChange}
                   className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.dateOfJoined 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
+                    errors.organization?.dateOfJoined
+                      ? "border-red-500"
+                      : "border-gray-300"
                   } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
               </div>
@@ -339,25 +409,32 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 Designation <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <select
-                  name="designation"
-                  value={formData.organization.designation}
-                  onChange={handleChange}
-                  className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.designation 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  required
-                >
-                  <option value="">Select designations</option>
-                  {designations.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                {isLoadingDesignations ? (
+                  <div className="flex items-center justify-center h-10 border border-gray-300 rounded-md bg-gray-100">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : (
+                  <select
+                    name="designation"
+                    value={formData.organization.designation}
+                    onChange={handleChange}
+                    className={`w-full pl-8 pr-3 py-2 border ${
+                      errors.organization?.designation
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    required
+                  >
+                    <option value="">Select designations</option>
+                    {designations.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
+
               <FieldError error={errors.organization?.designation} />
             </div>
 
@@ -372,9 +449,9 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                   value={formData.organization.dayOff || ""}
                   onChange={handleChange}
                   className={`w-full pl-8 pr-3 py-2 border ${
-                    errors.organization?.dayOff 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
+                    errors.organization?.dayOff
+                      ? "border-red-500"
+                      : "border-gray-300"
                   } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                 >
@@ -415,12 +492,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
-                      toggleStates.probationEnabled
+                      formData.organization.probationPeriod
                         ? "text-blue-600"
                         : "text-red-400"
                     }`}
                   >
-                    {/* {toggleStates.probationEnabled ? "Enabled" : "Disabled"} */}
+                    {formData.organization.probationPeriod
+                      ? "Enabled"
+                      : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.probationPeriod}
@@ -439,18 +518,18 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       name="probationFrom"
                       value={formData.organization.probationFrom}
                       onChange={handleChange}
-                      disabled={!toggleStates.probationEnabled}
+                      disabled={!formData.organization.probationPeriod}
                       className={`w-full pl-8 pr-3 py-2 border ${
-                        !toggleStates.probationEnabled
+                        !formData.organization.probationPeriod
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : errors.organization?.probationFrom
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
-                        toggleStates.probationEnabled
+                        formData.organization.probationPeriod
                           ? "text-gray-400"
                           : "text-gray-300"
                       }`}
@@ -467,18 +546,18 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       name="probationTo"
                       value={formData.organization.probationTo}
                       onChange={handleChange}
-                      disabled={!toggleStates.probationEnabled}
+                      disabled={!formData.organization.probationPeriod}
                       className={`w-full pl-8 pr-3 py-2 border ${
-                        !toggleStates.probationEnabled
+                        !formData.organization.probationPeriod
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : errors.organization?.probationTo
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
-                        toggleStates.probationEnabled
+                        formData.organization.probationPeriod
                           ? "text-gray-400"
                           : "text-gray-300"
                       }`}
@@ -501,12 +580,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
-                      toggleStates.trainingEnabled
+                      formData.organization.trainingPeriod
                         ? "text-blue-600"
                         : "text-red-400"
                     }`}
                   >
-                    {/* {toggleStates.trainingEnabled ? "Enabled" : "Disabled"} */}
+                    {formData.organization.trainingPeriod
+                      ? "Enabled"
+                      : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.trainingPeriod}
@@ -525,18 +606,18 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       name="trainingFrom"
                       value={formData.organization.trainingFrom}
                       onChange={handleChange}
-                      disabled={!toggleStates.trainingEnabled}
+                      disabled={!formData.organization.trainingPeriod}
                       className={`w-full pl-8 pr-3 py-2 border ${
-                        !toggleStates.trainingEnabled
+                        !formData.organization.trainingPeriod
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : errors.organization?.trainingFrom
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
-                        toggleStates.trainingEnabled
+                        formData.organization.trainingPeriod
                           ? "text-gray-400"
                           : "text-gray-300"
                       }`}
@@ -553,18 +634,18 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       name="trainingTo"
                       value={formData.organization.trainingTo}
                       onChange={handleChange}
-                      disabled={!toggleStates.trainingEnabled}
+                      disabled={!formData.organization.trainingPeriod}
                       className={`w-full pl-8 pr-3 py-2 border ${
-                        !toggleStates.trainingEnabled
+                        !formData.organization.trainingPeriod
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : errors.organization?.trainingTo
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
-                        toggleStates.trainingEnabled
+                        formData.organization.trainingPeriod
                           ? "text-gray-400"
                           : "text-gray-300"
                       }`}
@@ -587,12 +668,14 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
-                      toggleStates.contractEnabled
+                      formData.organization.contractPeriod
                         ? "text-blue-600"
                         : "text-red-400"
                     }`}
                   >
-                    {/* {toggleStates.contractEnabled ? "Enabled" : "Disabled"} */}
+                    {formData.organization.contractPeriod
+                      ? "Enabled"
+                      : "Disabled"}
                   </span>
                   <ToggleButton
                     enabled={formData.organization.contractPeriod}
@@ -611,18 +694,18 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       name="contractFrom"
                       value={formData.organization.contractFrom}
                       onChange={handleChange}
-                      disabled={!toggleStates.contractEnabled}
+                      disabled={!formData.organization.contractPeriod}
                       className={`w-full pl-8 pr-3 py-2 border ${
-                        !toggleStates.contractEnabled
+                        !formData.organization.contractPeriod
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : errors.organization?.contractFrom
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
-                        toggleStates.contractEnabled
+                        formData.organization.contractPeriod
                           ? "text-gray-400"
                           : "text-gray-300"
                       }`}
@@ -639,18 +722,18 @@ const OrganizationDetails = ({ onNext, onPrevious, activeCategory }) => {
                       name="contractTo"
                       value={formData.organization.contractTo}
                       onChange={handleChange}
-                      disabled={!toggleStates.contractEnabled}
+                      disabled={!formData.organization.contractPeriod}
                       className={`w-full pl-8 pr-3 py-2 border ${
-                        !toggleStates.contractEnabled
+                        !formData.organization.contractPeriod
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : errors.organization?.contractTo
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                     <Calendar
                       className={`absolute left-2 top-2.5 ${
-                        toggleStates.contractEnabled
+                        formData.organization.contractPeriod
                           ? "text-gray-400"
                           : "text-gray-300"
                       }`}
