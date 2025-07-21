@@ -27,12 +27,24 @@ const EditModal = ({
   companies
 }) => {
   const [localForm, setLocalForm] = React.useState(companyForm);
+  const [error, setError] = React.useState("");
 
   React.useEffect(() => {
     if (show) setLocalForm(companyForm);
+    setError("");
   }, [show, companyForm]);
 
   if (!show) return null;
+
+  const validateEstablished = (value) => {
+    const year = Number(value);
+    const currentYear = new Date().getFullYear();
+    return (
+      /^\d{4}$/.test(value) &&
+      year > 0 &&
+      year <= currentYear
+    );
+  };
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
@@ -73,8 +85,11 @@ const EditModal = ({
               value={localForm.established}
               onChange={e => setLocalForm({ ...localForm, established: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g. 2005"
+              maxLength={4}
             />
           </div>
+          {error && <div className="text-red-600 text-sm">{error}</div>}
         </div>
         <div className="flex justify-end space-x-3 mt-6">
           <button
@@ -85,6 +100,11 @@ const EditModal = ({
           </button>
           <button
             onClick={async () => {
+              if (!validateEstablished(localForm.established)) {
+                setError("Established year must be a valid 4-digit year, not in the future, and positive.");
+                return;
+              }
+              setError("");
               if (editingCompany) {
                 // Edit
                 const updated = await updateCompany(editingCompany.id, localForm);
