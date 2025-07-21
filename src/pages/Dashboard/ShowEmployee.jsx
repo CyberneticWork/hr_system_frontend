@@ -18,6 +18,8 @@ import {
   UserCheck,
   ChevronLeft,
   ChevronRight,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import employeeService from "@services/EmployeeDataService";
 import config from "../../config";
@@ -30,6 +32,9 @@ const ShowEmployee = () => {
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,6 +66,9 @@ const ShowEmployee = () => {
     const employeeData = await employeeService.fetchEmployeeById(employee);
     setSelectedEmployee(employeeData);
     setShowModal(true);
+    // Reset delete states when opening a new employee
+    setDeleteError(null);
+    setDeleteSuccess(false);
   };
 
   const closeModal = () => {
@@ -72,6 +80,23 @@ const ShowEmployee = () => {
     if (newPage < 1 || newPage > Math.ceil(totalItems / perPage)) return;
     setIsPageLoading(true);
     setCurrentPage(newPage);
+  };
+
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+ const handleDeleteClick = () => {
+    setShowDeleteConfirmation(true);
+    setDeleteError(null);
+    setDeleteSuccess(false);
+  }
+
+  const confirmDelete = async (employee) => {
+    const employeeData = await employeeService.deleteEmployeeById(employee);
+    setShowDeleteConfirmation(false);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
   };
 
   const getStatusBadge = (status) => {
@@ -924,12 +949,41 @@ const ShowEmployee = () => {
                 )}
               </div>
 
+              <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-between items-center">
+                {showDeleteConfirmation && (
+                  <div className="flex items-center space-x-2 text-red-600">
+                    <span>
+                      Are you sure you want to delete {selectedEmployee.id}?
+                    </span>
+                    <button
+                      onClick={confirmDelete(selectedEmployee.id)}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={cancelDelete}
+                      className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Modal Footer */}
               <div className="bg-gray-50 px-6 py-4 rounded-b-2xl">
-                <div className="flex justify-end">
+                <div className="flex justify-end space-x-4">
                   <button
-                    onClick={closeModal}
-                    className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
+                    onClick={handleDeleteClick}
+                    className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors duration-200"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </button>
+                  <button
+                    onClick={closeModal} // You might want to change this to a different handler
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
                   >
                     Close
                   </button>

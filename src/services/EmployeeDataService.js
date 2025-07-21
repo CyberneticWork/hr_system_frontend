@@ -83,6 +83,16 @@ const employeeService = {
       return [];
     }
   },
+
+  async deleteEmployeeById(id) {
+    try {
+      const response = await axios.delete(`/employees/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error delete employees:", error);
+      return [];
+    }
+  },
 };
 
 export default employeeService;
