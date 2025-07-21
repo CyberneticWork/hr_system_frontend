@@ -1,74 +1,5 @@
-import React, { useState } from 'react';
-
-const tempAttendanceData = [
-  {
-    empNo: 'EMP001',
-    name: 'John Doe',
-    fingerprintClock: 'FP001',
-    time: '08:45 AM',
-    date: '2025-06-15',
-    entry: '1',
-    inOut: 'IN',
-    department: 'IT',
-    status: 'Present',
-  },
-  {
-    empNo: 'EMP001',
-    name: 'John Doe',
-    fingerprintClock: 'FP001',
-    time: '05:30 PM',
-    date: '2025-06-15',
-    entry: '2',
-    inOut: 'OUT',
-    department: 'IT',
-    status: 'Present',
-  },
-  {
-    empNo: 'EMP002',
-    name: 'Jane Smith',
-    fingerprintClock: 'FP002',
-    time: '09:00 AM',
-    date: '2025-06-15',
-    entry: '1',
-    inOut: 'IN',
-    department: 'HR',
-    status: 'Present',
-  },
-  {
-    empNo: 'EMP002',
-    name: 'Jane Smith',
-    fingerprintClock: 'FP002',
-    time: '06:15 PM',
-    date: '2025-06-15',
-    entry: '2',
-    inOut: 'OUT',
-    department: 'HR',
-    status: 'Present',
-  },
-  // Absent and Leave records
-  {
-    empNo: 'EMP003',
-    name: 'Ali Khan',
-    fingerprintClock: '',
-    time: '',
-    date: '2025-06-15',
-    entry: '',
-    inOut: '',
-    department: 'Finance',
-    status: 'Absent',
-  },
-  {
-    empNo: 'EMP004',
-    name: 'Sara Lee',
-    fingerprintClock: '',
-    time: '',
-    date: '2025-06-15',
-    entry: '',
-    inOut: '',
-    department: 'Sales',
-    status: 'Leave',
-  },
-];
+import React, { useState, useEffect } from 'react';
+import { fetchTimeCards } from '../../services/ApiDataService';
 
 const TimeCard = () => {
   // Form state
@@ -83,6 +14,7 @@ const TimeCard = () => {
 
   // Table data state
   const [attendanceData, setAttendanceData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Edit modal state
@@ -119,13 +51,25 @@ const TimeCard = () => {
   ];
   const departments = ['HR', 'Finance', 'IT', 'Operations', 'Sales', 'Marketing'];
 
+  // Fetch data from backend on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      const data = await fetchTimeCards();
+      setAttendanceData(data);
+      setFilteredData(data);
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
+
   // Filter helpers
   const filterAttendance = (statusFilter = null) => {
-    let filtered = tempAttendanceData;
+    let filtered = attendanceData;
 
     if (filterOption === 'employee' && employeeName) {
       filtered = filtered.filter(
-        (rec) => rec.name.toLowerCase().includes(employeeName.toLowerCase())
+        (rec) => rec.name && rec.name.toLowerCase().includes(employeeName.toLowerCase())
       );
     }
     if (filterOption === 'department' && department) {
@@ -146,28 +90,27 @@ const TimeCard = () => {
   const handleProcess = () => {
     setIsLoading(true);
     setTimeout(() => {
-      setAttendanceData(filterAttendance());
+      setFilteredData(filterAttendance());
       setIsLoading(false);
     }, 500);
   };
 
   const handleAbsent = () => {
-    setAttendanceData(filterAttendance('Absent'));
+    setFilteredData(filterAttendance('Absent'));
   };
 
   const handleLeave = () => {
-    setAttendanceData(filterAttendance('Leave'));
+    setFilteredData(filterAttendance('Leave'));
   };
 
   const handleCancel = () => {
-    // Reset form
     setLocation('');
     setDateFrom('');
     setDateTo('');
     setSelectedMonth('');
     setEmployeeName('');
     setDepartment('');
-    setAttendanceData([]);
+    setFilteredData(attendanceData);
   };
 
   // Handle delete
@@ -520,8 +463,8 @@ const TimeCard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {attendanceData.length > 0 ? (
-                        attendanceData.map((record, index) => (
+                      {filteredData.length > 0 ? (
+                        filteredData.map((record, index) => (
                           <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-blue-50/50 transition-colors duration-200 border-b border-gray-100`}>
                             <td className="py-4 px-3 sm:px-6 font-semibold text-slate-700 text-xs sm:text-sm lg:text-base">{record.empNo}</td>
                             <td className="py-4 px-3 sm:px-6 font-medium text-slate-800 text-xs sm:text-sm lg:text-base">{record.name}</td>

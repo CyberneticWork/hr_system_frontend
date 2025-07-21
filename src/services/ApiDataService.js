@@ -118,3 +118,13 @@ export const updateSubDepartment = async (id, data) => {
 export const deleteSubDepartment = async (id) => {
   await axios.delete(`/subdepartments/${id}`);
 };
+
+export const fetchTimeCards = async () => {
+  try {
+    const response = await axios.get("/time-cards");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching time cards:", error);
+    return [];
+  }
+};
