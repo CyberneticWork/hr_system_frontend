@@ -20,6 +20,7 @@ import {
   fetchSubDepartments,
   employeesBySubDepartment,
 } from "@services/ApiDataService";
+import Swal from "sweetalert2";
 
 const RosterManagementSystem = () => {
   // State for form inputs
@@ -314,7 +315,12 @@ const RosterManagementSystem = () => {
 
         if (hasOverlap) {
           // Show error message
-          alert("Cannot select overlapping shifts");
+          Swal.fire({
+            icon: "warning",
+            title: "Cannot Select Shift",
+            text: "Cannot select shifts with overlapping time frames",
+            confirmButtonColor: "#3085d6",
+          });
           return newSelected;
         }
 
@@ -389,7 +395,6 @@ const RosterManagementSystem = () => {
 
       // Iterate through each assignment and create individual records for each employee
       for (const assignment of rosterAssignments) {
-        // For each employee in the assignment, create a separate record
         assignment.employees.forEach((employeeId) => {
           rosterEntries.push({
             shift_code: assignment.shift.id,
@@ -397,8 +402,8 @@ const RosterManagementSystem = () => {
             department_id: parseInt(assignment.department),
             sub_department_id: parseInt(assignment.subDepartment),
             employee_id: parseInt(employeeId),
-            is_recurring: false, // You can make this configurable if needed
-            recurrence_pattern: "none", // You can make this configurable if needed
+            is_recurring: false,
+            recurrence_pattern: "none",
             notes: `Shift assignment: ${assignment.shift.shiftName}`,
             date_from: assignment.dateFrom,
             date_to: assignment.dateTo,
@@ -419,12 +424,26 @@ const RosterManagementSystem = () => {
       setSelectedShifts(new Set());
       setSelectedEmployees(new Set());
 
-      alert("Roster assignments saved successfully!");
+      // Success message
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Roster assignments saved successfully",
+        timer: 2000,
+        showConfirmButton: false,
+        position: "top-end",
+        toast: true,
+      });
     } catch (error) {
       console.error("Error saving roster:", error);
-      alert(
-        `Failed to save roster: ${error.message || "Unknown error occurred"}`
-      );
+
+      // Error message
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: error.message || "Failed to save roster",
+        confirmButtonColor: "#3085d6",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -455,7 +474,12 @@ const RosterManagementSystem = () => {
   // Add the handleViewSummary function
   const handleViewSummary = () => {
     if (rosterAssignments.length === 0) {
-      alert("No roster assignments to view");
+      Swal.fire({
+        icon: "info",
+        title: "No Assignments",
+        text: "No roster assignments to view",
+        confirmButtonColor: "#3085d6",
+      });
       return;
     }
     setShowSummaryModal(true);
@@ -1022,18 +1046,33 @@ const RosterManagementSystem = () => {
                           <td className="px-4 py-3 border-r border-gray-200 font-mono text-red-600 font-semibold">
                             {shift.shiftEnd}
                           </td>
-                          <td className="px-4 py-3 border-gray-200">
+                          <td className="px-4 py-3 border-gray-200 text-center">
                             <button
-                              className={`px-3 py-1 rounded ${
+                              onClick={() => toggleShiftSelection(shift)}
+                              className={`w-6 h-6 rounded-full flex items-center justify-center ${
                                 selectedShifts.has(shift.id)
                                   ? "bg-blue-600 text-white"
-                                  : "bg-gray-200 text-gray-700"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                               }`}
-                              onClick={() => toggleShiftSelection(shift)}
                             >
-                              {selectedShifts.has(shift.id)
-                                ? "Selected"
-                                : "Select"}
+                              {selectedShifts.has(shift.id) ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              ) : (
+                                <Plus className="w-4 h-4" />
+                              )}
                             </button>
                           </td>
                         </tr>
@@ -1041,107 +1080,6 @@ const RosterManagementSystem = () => {
                     </tbody>
                   </table>
                 )}
-              </div>
-
-              {/* Pagination */}
-              <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                      currentPage === 1
-                        ? "text-gray-400 bg-gray-100"
-                        : "text-gray-700 bg-white hover:bg-gray-50"
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) =>
-                        Math.min(
-                          prev + 1,
-                          filteredAndPaginatedShifts.totalPages
-                        )
-                      )
-                    }
-                    disabled={
-                      currentPage === filteredAndPaginatedShifts.totalPages
-                    }
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                      currentPage === filteredAndPaginatedShifts.totalPages
-                        ? "text-gray-400 bg-gray-100"
-                        : "text-gray-700 bg-white hover:bg-gray-50"
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing{" "}
-                      <span className="font-medium">
-                        {Math.min(
-                          (currentPage - 1) * rowsPerPage + 1,
-                          filteredAndPaginatedShifts.totalShifts
-                        )}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium">
-                        {Math.min(
-                          currentPage * rowsPerPage,
-                          filteredAndPaginatedShifts.totalShifts
-                        )}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-medium">
-                        {filteredAndPaginatedShifts.totalShifts}
-                      </span>{" "}
-                      results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                      <button
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
-                        disabled={currentPage === 1}
-                        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
-                          currentPage === 1
-                            ? "bg-gray-100 text-gray-400"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(
-                              prev + 1,
-                              filteredAndPaginatedShifts.totalPages
-                            )
-                          )
-                        }
-                        disabled={
-                          currentPage === filteredAndPaginatedShifts.totalPages
-                        }
-                        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
-                          currentPage === filteredAndPaginatedShifts.totalPages
-                            ? "bg-gray-100 text-gray-400"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        Next
-                      </button>
-                    </nav>
-                  </div>
-                </div>
               </div>
             </div>
             {/* Add to Roster Button */}
