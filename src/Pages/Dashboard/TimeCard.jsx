@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchTimeCards } from '../../services/ApiDataService';
+import { addTimeCard, fetchTimeCards } from '../../services/ApiDataService';
+import employeeService from '../../services/EmployeeDataService';
+import timeCardService from '../../services/timeCardService';
 
 const TimeCard = () => {
   // Form state
@@ -11,6 +13,8 @@ const TimeCard = () => {
   const [filterOption, setFilterOption] = useState('all');
   const [employeeName, setEmployeeName] = useState('');
   const [department, setDepartment] = useState('');
+  const [nic, setNic] = useState('');
+  const [nicError, setNicError] = useState('');
 
   // Table data state
   const [attendanceData, setAttendanceData] = useState([]);
@@ -181,19 +185,101 @@ const TimeCard = () => {
     return newData;
   };
 
-  const handleAddNew = () => {
-    setAttendanceData(prev => insertSorted(prev, newRecord));
-    setShowAddModal(false);
-    setNewRecord({
-      empNo: '',
-      name: '',
-      fingerprintClock: '',
-      time: '',
-      date: '',
-      entry: '',
-      department: '',
-      status: '',
-    });
+  const handleAddNew = async () => {
+    if (!nic) {
+      setNicError('NIC is required');
+      return;
+    }
+    setIsLoading(true);
+    setNicError('');
+
+    // Fetch employee by NIC to get employee_id
+    let employee;
+    try {
+      employee = await timeCardService.fetchEmployeeByNic(nic); // <-- FIXED: use timeCardService
+    } catch {
+      setNicError('Employee not found');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!employee || !employee.id) {
+      setNicError('Employee not found');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate other fields
+    if (!newRecord.time || !newRecord.date || !newRecord.entry || !newRecord.status) {
+      setNicError('All fields are required');
+      setIsLoading(false);
+      return;
+    }
+
+    const payload = {
+      employee_id: employee.id,
+      time: newRecord.time,
+      date: newRecord.date,
+      entry: newRecord.entry,
+      status: newRecord.status,
+    };
+
+    try {
+      await addTimeCard(payload);
+      // Refresh table
+      const updated = await fetchTimeCards();
+      setAttendanceData(updated);
+      setFilteredData(updated);
+      setShowAddModal(false);
+      setNewRecord({
+        empNo: '',
+        name: '',
+        fingerprintClock: '',
+        time: '',
+        date: '',
+        entry: '',
+        department: '',
+        status: '',
+      });
+      setNic('');
+      setNicError('');
+    } catch (e) {
+      setNicError('Failed to add attendance record');
+    }
+    setIsLoading(false);
+  };
+
+  // Handler to fetch employee by NIC
+  const handleNicBlur = async () => {
+    if (!nic) return;
+    setNicError('');
+    try {
+      const emp = await timeCardService.fetchEmployeeByNic(nic);
+      if (emp && emp.attendance_employee_no && emp.full_name) {
+        setNewRecord((prev) => ({
+          ...prev,
+          empNo: emp.attendance_employee_no,
+          name: emp.full_name,
+          department: emp.department || '', // Auto-fill department from backend
+        }));
+      } else {
+        setNicError('Employee not found for this NIC');
+        setNewRecord((prev) => ({
+          ...prev,
+          empNo: '',
+          name: '',
+          department: '',
+        }));
+      }
+    } catch (error) {
+      setNicError('Employee not found for this NIC');
+      setNewRecord((prev) => ({
+        ...prev,
+        empNo: '',
+        name: '',
+        department: '',
+      }));
+    }
   };
 
   return (
@@ -427,8 +513,8 @@ const TimeCard = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6a2 2 0 012-2h2v6z" />
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6a2 2 0 012-2h2v6z" />
                       </svg>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white">Attendance Records</h3>
@@ -598,7 +684,7 @@ const TimeCard = () => {
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">IN Time</label>
                 <input
-                  type="text"
+                  type="time"
                   className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   value={editInTime}
                   onChange={e => setEditInTime(e.target.value)}
@@ -610,7 +696,7 @@ const TimeCard = () => {
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">OUT Time</label>
                 <input
-                  type="text"
+                  type="time"
                   className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   value={editOutTime}
                   onChange={e => setEditOutTime(e.target.value)}
@@ -663,13 +749,25 @@ const TimeCard = () => {
               Add New Attendance Record
             </h2>
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Employee EPF Number</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">NIC Number</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={nic}
+                onChange={e => setNic(e.target.value)}
+                onBlur={handleNicBlur}
+                placeholder="Enter employee NIC number"
+              />
+              {nicError && <div className="text-red-500 text-xs mt-1">{nicError}</div>}
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Employee Number</label>
               <input
                 type="text"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
                 value={newRecord.empNo}
-                onChange={e => setNewRecord({ ...newRecord, empNo: e.target.value })}
-                placeholder="Enter employee EPF number"
+                readOnly
+                placeholder="Auto-filled from NIC"
               />
             </div>
             <div className="mb-4">
@@ -678,8 +776,8 @@ const TimeCard = () => {
                 type="text"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
                 value={newRecord.name}
-                onChange={e => setNewRecord({ ...newRecord, name: e.target.value })}
-                placeholder="Enter employee name"
+                readOnly
+                placeholder="Auto-filled from NIC"
               />
             </div>
             <div className="mb-4">
@@ -695,7 +793,7 @@ const TimeCard = () => {
             <div className="mb-4">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Time</label>
               <input
-                type="text"
+                type="time"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
                 value={newRecord.time}
                 onChange={e => setNewRecord({ ...newRecord, time: e.target.value })}
@@ -713,25 +811,14 @@ const TimeCard = () => {
             </div>
             <div className="mb-4">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
-              <input
-                type="text"
+              <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
                 value={newRecord.entry}
                 onChange={e => setNewRecord({ ...newRecord, entry: e.target.value })}
-                placeholder="e.g. 1 or 2"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Department</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
-                value={newRecord.department}
-                onChange={e => setNewRecord({ ...newRecord, department: e.target.value })}
               >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
+                <option value="">Select Entry</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
               </select>
             </div>
             <div className="mb-3">
@@ -761,11 +848,10 @@ const TimeCard = () => {
                 disabled={
                   !newRecord.empNo ||
                   !newRecord.name ||
-                  !newRecord.fingerprintClock ||
+                  // !newRecord.fingerprintClock ||
                   !newRecord.time ||
                   !newRecord.date ||
                   !newRecord.entry ||
-                  !newRecord.department ||
                   !newRecord.status
                 }
               >

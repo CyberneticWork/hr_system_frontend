@@ -139,3 +139,12 @@ export const employeesBySubDepartment = async (id) => {
     return [];
   }
 };
+
+export const addTimeCard = async (data) => {
+  try {
+    const response = await axios.post('/time-cards', data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
