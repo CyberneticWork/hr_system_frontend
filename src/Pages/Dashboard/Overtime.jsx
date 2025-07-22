@@ -33,12 +33,82 @@ const Overtime = () => {
 
   // Mock data
   const generateMockData = () => [
-  { id: 1, empNo: 101, name: "VINCO SAMEERVA", location: "Jay Sea Foods Processing", date: "2025-06-01", inTime: "8:24 AM", outTime: "5:15 PM", workingHour: "8.51", morningOT: "0.00", eveningOT: "0.00", extraOT: "1.25", isApproved: false },
-  { id: 2, empNo: 102, name: "MAQURA JUDE", location: "Colombo Branch", date: "2025-06-01", inTime: "8:30 AM", outTime: "5:45 PM", workingHour: "9.15", morningOT: "0.30", eveningOT: "0.45", extraOT: "1.50", isApproved: false },
-  { id: 3, empNo: 103, name: "JAINTHA PRASANIA", location: "Kandy Facility", date: "2025-06-02", inTime: "7:56 AM", outTime: "6:15 PM", workingHour: "10.19", morningOT: "0.00", eveningOT: "1.15", extraOT: "2.00", isApproved: false },
-  { id: 4, empNo: 104, name: "NIMAL PERERA", location: "Jay Sea Foods Processing", date: "2025-06-03", inTime: "8:00 AM", outTime: "5:00 PM", workingHour: "8.00", morningOT: "0.10", eveningOT: "0.20", extraOT: "0.50", isApproved: false },
-  { id: 5, empNo: 105, name: "SANDUNI FERNANDO", location: "Colombo Branch", date: "2025-06-03", inTime: "8:10 AM", outTime: "5:30 PM", workingHour: "8.33", morningOT: "0.00", eveningOT: "0.30", extraOT: "1.00", isApproved: false },
-];
+    {
+      id: 1,
+      empNo: 101,
+      name: "VINCO SAMEERVA",
+      location: "Jay Sea Foods Processing",
+      date: "2025-06-01",
+      inTime: "8:24 AM",
+      outTime: "5:15 PM",
+      workingHour: "8.51",
+      morningOT: "0.00",
+      eveningOT: "0.00",
+      specialOT: "1.25", // renamed
+      totalOT: (0.00 + 0.00 + 1.25).toFixed(2),
+      isApproved: false
+    },
+    {
+      id: 2,
+      empNo: 102,
+      name: "MAQURA JUDE",
+      location: "Colombo Branch",
+      date: "2025-06-01",
+      inTime: "8:30 AM",
+      outTime: "5:45 PM",
+      workingHour: "9.15",
+      morningOT: "0.30",
+      eveningOT: "0.45",
+      specialOT: "1.50",
+      totalOT: (0.30 + 0.45 + 1.50).toFixed(2),
+      isApproved: false
+    },
+    {
+      id: 3,
+      empNo: 103,
+      name: "JAINTHA PRASANIA",
+      location: "Kandy Facility",
+      date: "2025-06-02",
+      inTime: "7:56 AM",
+      outTime: "6:15 PM",
+      workingHour: "10.19",
+      morningOT: "0.00",
+      eveningOT: "1.15",
+      specialOT: "2.00",
+      totalOT: (0.00 + 1.15 + 2.00).toFixed(2),
+      isApproved: false
+    },
+    {
+      id: 4,
+      empNo: 104,
+      name: "NIMAL PERERA",
+      location: "Jay Sea Foods Processing",
+      date: "2025-06-03",
+      inTime: "8:00 AM",
+      outTime: "5:00 PM",
+      workingHour: "8.00",
+      morningOT: "0.10",
+      eveningOT: "0.20",
+      specialOT: "0.50",
+      totalOT: (0.10 + 0.20 + 0.50).toFixed(2),
+      isApproved: false
+    },
+    {
+      id: 5,
+      empNo: 105,
+      name: "SANDUNI FERNANDO",
+      location: "Colombo Branch",
+      date: "2025-06-03",
+      inTime: "8:10 AM",
+      outTime: "5:30 PM",
+      workingHour: "8.33",
+      morningOT: "0.00",
+      eveningOT: "0.30",
+      specialOT: "1.00",
+      totalOT: (0.00 + 0.30 + 1.00).toFixed(2),
+      isApproved: false
+    }
+  ];
 
   // Fetch data
   const fetchOvertimeData = async () => {
@@ -131,7 +201,8 @@ const Overtime = () => {
     workingHour: data.reduce((sum, row) => sum + parseFloat(row.workingHour), 0).toFixed(2),
     morningOT: data.reduce((sum, row) => sum + parseFloat(row.morningOT), 0).toFixed(2),
     eveningOT: data.reduce((sum, row) => sum + parseFloat(row.eveningOT), 0).toFixed(2),
-    extraOT: data.reduce((sum, row) => sum + parseFloat(row.extraOT), 0).toFixed(2),
+    totalOT: data.reduce((sum, row) => sum + parseFloat(row.totalOT), 0).toFixed(2),
+    specialOT: data.reduce((sum, row) => sum + parseFloat(row.specialOT), 0).toFixed(2),
   });
 
   const totals = hasSearched 
@@ -271,7 +342,8 @@ const Overtime = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Working Hour</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Morning OT</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Evening OT</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Extra OT</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total OT</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Special OT</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Approve OT</th>
                   </tr>
                 </thead>
@@ -300,7 +372,8 @@ const Overtime = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{row.workingHour}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">{row.morningOT}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">{row.eveningOT}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{row.extraOT}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{row.totalOT}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{row.specialOT}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <label className="inline-flex items-center cursor-pointer">
                             <input
@@ -340,7 +413,8 @@ const Overtime = () => {
                       <td className="px-6 py-4 text-sm font-bold text-gray-900">{totals.workingHour}</td>
                       <td className="px-6 py-4 text-sm font-bold text-orange-600">{totals.morningOT}</td>
                       <td className="px-6 py-4 text-sm font-bold text-orange-600">{totals.eveningOT}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-blue-600">{totals.extraOT}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-indigo-600">{totals.totalOT}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-blue-600">{totals.specialOT}</td>
                       <td className="px-6 py-4 text-sm font-bold text-green-600">
                         {filteredData.filter(row => row.isApproved).length} approved
                       </td>
@@ -392,7 +466,8 @@ const Overtime = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">EMP No</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Extra OT Hours</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total OT</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Special OT</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -401,15 +476,16 @@ const Overtime = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{row.empNo}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{row.extraOT}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{row.totalOT}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{row.specialOT}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-gradient-to-r from-green-50 to-emerald-50">
                   <tr>
-                    <td colSpan="3" className="px-6 py-4 text-sm font-bold text-gray-900 text-right">Total Extra OT:</td>
-                    <td className="px-6 py-4 text-sm font-bold text-green-600">
-                      {approvedRows.reduce((sum, row) => sum + parseFloat(row.extraOT), 0).toFixed(2)} hours
+                    <td colSpan="3" className="px-6 py-4 text-sm font-bold text-gray-900 text-right">Total Special OT:</td>
+                    <td className="px-6 py-4 text-sm font-bold text-green-600" colSpan="2">
+                      {approvedRows.reduce((sum, row) => sum + parseFloat(row.specialOT), 0).toFixed(2)} hours
                     </td>
                   </tr>
                 </tfoot>
@@ -443,7 +519,7 @@ const Overtime = () => {
             <p className="text-lg text-gray-600 mb-8">
               Successfully processed <span className="font-semibold text-green-600">{approvedRows.length} records</span> with a total of{' '}
               <span className="font-semibold text-blue-600">
-                {approvedRows.reduce((sum, row) => sum + parseFloat(row.extraOT), 0).toFixed(2)} extra OT hours
+                {approvedRows.reduce((sum, row) => sum + parseFloat(row.specialOT), 0).toFixed(2)} special OT hours
               </span>
             </p>
             <button
