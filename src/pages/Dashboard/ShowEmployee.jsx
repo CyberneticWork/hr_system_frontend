@@ -84,15 +84,25 @@ const ShowEmployee = () => {
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
- const handleDeleteClick = () => {
+  const handleDeleteClick = () => {
     setShowDeleteConfirmation(true);
     setDeleteError(null);
     setDeleteSuccess(false);
-  }
+  };
 
-  const confirmDelete = async (employee) => {
-    const employeeData = await employeeService.deleteEmployeeById(employee);
-    setShowDeleteConfirmation(false);
+  const confirmDelete = async (employeeId) => {
+    setIsDeleting(true);
+    try {
+      await employeeService.deleteEmployeeById(employeeId);
+      setDeleteSuccess(true);
+      setShowDeleteConfirmation(false);
+      setShowModal(false);
+      loadData(); // Refresh the employee list
+    } catch (error) {
+      setDeleteError(error.message || "Failed to delete employee");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const cancelDelete = () => {
@@ -953,10 +963,11 @@ const ShowEmployee = () => {
                 {showDeleteConfirmation && (
                   <div className="flex items-center space-x-2 text-red-600">
                     <span>
-                      Are you sure you want to delete {selectedEmployee.id}?
+                      Are you sure you want to delete{" "}
+                      {selectedEmployee.full_name}?
                     </span>
                     <button
-                      onClick={confirmDelete(selectedEmployee.id)}
+                      onClick={() => confirmDelete(selectedEmployee.id)}
                       className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm"
                     >
                       Confirm
