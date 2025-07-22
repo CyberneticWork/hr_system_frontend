@@ -472,9 +472,9 @@ const ShowEmployee = () => {
 
         {/* Loading overlay during page changes */}
         {isPageLoading && (
-          <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-40">
+          <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50  flex items-center justify-center z-40">
             <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-3">
-              <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+              <Loader2 className="h-6 w-6 text-purple-600 animate-spin" />
               <span>Loading employees...</span>
             </div>
           </div>
@@ -620,6 +620,45 @@ const ShowEmployee = () => {
                       </label>
                       <div className="mt-2">
                         {getTypeBadge(selectedEmployee.employment_type?.name)}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Compnay Name
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-purple-100 text-purple-800 border-purple-200">
+                          {
+                            selectedEmployee.organization_assignment?.company
+                              ?.name
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Department Name
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-purple-800 border-purple-200">
+                          {
+                            selectedEmployee.organization_assignment?.department
+                              ?.name
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Designation
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-yellow-100 text-purple-800 border-purple-200">
+                          {
+                            selectedEmployee.organization_assignment
+                              ?.designation?.name
+                          }
+                        </span>
                       </div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
