@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import AuthForm from "../../components/AuthForm/AuthForm";
 
 // Login Page Component
@@ -23,18 +24,23 @@ const Login = ({ onSuccess, loading: parentLoading }) => {
   };
 
   return (
-    <AuthForm
-      isLogin={true}
-      formData={formData}
-      onChange={handleChange}
-      onSubmit={handleSubmit}
-      loading={loading || parentLoading}
-      errors={errors}
-      showPassword={showPassword}
-      togglePassword={() => setShowPassword(!showPassword)}
-    />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, delay: 1.2 }}
+    >
+      <AuthForm
+        isLogin={true}
+        formData={formData}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        loading={loading || parentLoading}
+        errors={errors}
+        showPassword={showPassword}
+        togglePassword={() => setShowPassword(!showPassword)}
+      />
+    </motion.div>
   );
 };
-
 
 export default Login;

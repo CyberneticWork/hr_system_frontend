@@ -10,12 +10,16 @@ import {
   Check,
   Edit,
   AlertCircle,
+  LucideCloudAlert,
 } from "lucide-react";
 import { useEmployeeForm } from "@contexts/EmployeeFormContext";
 
+import Swal from "sweetalert2";
+
 const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
-  const { formData, errors } = useEmployeeForm();
+  const { formData, errors, clearForm } = useEmployeeForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isClear, setIsClear] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString || dateString === "1/1/1900") return "Not specified";
@@ -48,6 +52,15 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleClearForm = () => {
+    clearForm();
+    Swal.fire({
+      icon: "success",
+      title: "Success!",
+      text: "Employee Form Cleared successfully!",
+    });
   };
 
   // Function to display errors in a user-friendly way
@@ -832,13 +845,20 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-8 flex justify-between">
+        <div className="mt-8 flex justify-end space-x-4">
           <button
             onClick={onPrevious}
             className="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition duration-200 flex items-center space-x-2"
           >
             <Edit className="w-5 h-5" />
             <span>Edit Information</span>
+          </button>
+          <button
+            onClick={handleClearForm}
+            className="px-6 py-3 bg-red-300 hover:bg-red-400 text-gray-800 font-medium rounded-lg transition duration-200 flex items-center space-x-2"
+          >
+            <LucideCloudAlert className="w-5 h-5" />
+            <span>Clear Form</span>
           </button>
           <button
             onClick={handleSubmit}

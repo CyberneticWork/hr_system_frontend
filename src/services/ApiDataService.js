@@ -128,3 +128,14 @@ export const fetchTimeCards = async () => {
     return [];
   }
 };
+export const employeesBySubDepartment = async (id) => {
+  try {
+    const response = await axios.get(
+      `${API_PREFIX}/subDepartments/${id}/employees`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching employees by sub-department:", error);
+    return [];
+  }
+};
