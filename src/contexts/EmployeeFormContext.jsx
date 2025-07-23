@@ -254,6 +254,7 @@ export const EmployeeFormProvider = ({ children }) => {
       value={{
         formData,
         updateFormData,
+        setFormData,
         addDocuments,
         removeDocument,
         clearForm,

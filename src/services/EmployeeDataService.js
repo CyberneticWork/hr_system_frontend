@@ -64,7 +64,19 @@ const employeeService = {
     }
   },
 
-   async fetchEmployees() {
+  async searchEmployees(searchTerm) {
+    try {
+      const response = await axios.get(`/emp/search`, {
+        params: { search: searchTerm },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      return [];
+    }
+  },
+
+  async fetchEmployees() {
     try {
       const response = await axios.get(`/employees`);
       return response.data;
@@ -74,9 +86,11 @@ const employeeService = {
     }
   },
 
-  async fetchEmployeesForTable(page = 1, perPage = 10) {
+  async fetchEmployeesForTable(page = 1, perPage = 10, search = "") {
     try {
-      const response = await axios.get(`/emp/table?page=${page}&per_page=${perPage}`);
+      const response = await axios.get(
+        `/emp/table?page=${page}&per_page=${perPage}&search=${search}`
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -97,7 +111,7 @@ const employeeService = {
   async deleteEmployeeById(id) {
     try {
       const response = await axios.delete(`/employees/${id}`);
-      return response.data;
+      return true;
     } catch (error) {
       console.error("Error delete employees:", error);
       return [];

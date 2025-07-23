@@ -21,6 +21,7 @@ import {
   Trash2,
   Edit,
 } from "lucide-react";
+import { useDebounce } from "@uidotdev/usehooks";
 import employeeService from "@services/EmployeeDataService";
 import config from "../../config";
 
@@ -35,6 +36,8 @@ const ShowEmployee = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,7 +49,8 @@ const ShowEmployee = () => {
     try {
       const employeesData = await employeeService.fetchEmployeesForTable(
         currentPage,
-        perPage
+        perPage,
+        debouncedSearchTerm
       );
       setEmployees(employeesData.data);
       setTotalItems(employeesData.total);
@@ -58,9 +62,10 @@ const ShowEmployee = () => {
     }
   };
 
+  // Update your useEffect to include debouncedSearchTerm as a dependency
   useEffect(() => {
     loadData();
-  }, [currentPage, perPage]);
+  }, [currentPage, perPage, debouncedSearchTerm]);
 
   const handleViewEmployee = async (employee) => {
     const employeeData = await employeeService.fetchEmployeeById(employee);
@@ -84,15 +89,25 @@ const ShowEmployee = () => {
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
- const handleDeleteClick = () => {
+  const handleDeleteClick = () => {
     setShowDeleteConfirmation(true);
     setDeleteError(null);
     setDeleteSuccess(false);
-  }
+  };
 
-  const confirmDelete = async (employee) => {
-    const employeeData = await employeeService.deleteEmployeeById(employee);
-    setShowDeleteConfirmation(false);
+  const confirmDelete = async (employeeId) => {
+    setIsDeleting(true);
+    try {
+      await employeeService.deleteEmployeeById(employeeId);
+      setDeleteSuccess(true);
+      setShowDeleteConfirmation(false);
+      setShowModal(false);
+      loadData(); // Refresh the employee list
+    } catch (error) {
+      setDeleteError(error.message || "Failed to delete employee");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const cancelDelete = () => {
@@ -199,10 +214,44 @@ const ShowEmployee = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Employee Management
-          </h1>
-          <p className="text-gray-600">Manage and view employee information</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Employee Management
+              </h1>
+              <p className="text-gray-600">
+                Manage and view employee information
+              </p>
+            </div>
+            <div className="relative w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Search employees..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page when searching
+                }}
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Employee Table */}
@@ -423,9 +472,9 @@ const ShowEmployee = () => {
 
         {/* Loading overlay during page changes */}
         {isPageLoading && (
-          <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-40">
+          <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50  flex items-center justify-center z-40">
             <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-3">
-              <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+              <Loader2 className="h-6 w-6 text-purple-600 animate-spin" />
               <span>Loading employees...</span>
             </div>
           </div>
@@ -571,6 +620,45 @@ const ShowEmployee = () => {
                       </label>
                       <div className="mt-2">
                         {getTypeBadge(selectedEmployee.employment_type?.name)}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Compnay Name
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-purple-100 text-purple-800 border-purple-200">
+                          {
+                            selectedEmployee.organization_assignment?.company
+                              ?.name
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Department Name
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-purple-800 border-purple-200">
+                          {
+                            selectedEmployee.organization_assignment?.department
+                              ?.name
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Designation
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-yellow-100 text-purple-800 border-purple-200">
+                          {
+                            selectedEmployee.organization_assignment
+                              ?.designation?.name
+                          }
+                        </span>
                       </div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -953,10 +1041,11 @@ const ShowEmployee = () => {
                 {showDeleteConfirmation && (
                   <div className="flex items-center space-x-2 text-red-600">
                     <span>
-                      Are you sure you want to delete {selectedEmployee.id}?
+                      Are you sure you want to delete{" "}
+                      {selectedEmployee.full_name}?
                     </span>
                     <button
-                      onClick={confirmDelete(selectedEmployee.id)}
+                      onClick={() => confirmDelete(selectedEmployee.id)}
                       className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm"
                     >
                       Confirm

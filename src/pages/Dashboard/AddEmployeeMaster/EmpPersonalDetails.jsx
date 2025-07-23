@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Camera,
   Upload,
@@ -8,9 +8,14 @@ import {
   Briefcase,
   Plus,
   Trash2,
+  Search,
+  Edit,
+  X,
 } from "lucide-react";
 import { useEmployeeForm } from "@contexts/EmployeeFormContext";
 import FieldError from "@components/ErrorMessage/FieldError";
+import { useDebounce } from "@uidotdev/usehooks";
+import employeeService from "@services/EmployeeDataService";
 
 const relationshipOptions = [
   { value: "", label: "Select Relationship Type" },
@@ -21,11 +26,45 @@ const relationshipOptions = [
   { value: "friend", label: "Friend" },
 ];
 
+// Simple Modal Component
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-4">{children}</div>
+      </div>
+    </div>
+  );
+};
+
 const EmpPersonalDetails = ({ onNext, activeCategory }) => {
-  const { formData, updateFormData, errors, clearFieldError } =
-    useEmployeeForm();
+  const {
+    formData,
+    updateFormData,
+    errors,
+    clearFieldError,
+    clearForm,
+    setFormData,
+  } = useEmployeeForm();
   const [preview, setPreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
     if (formData.personal.profilePicture) {
@@ -39,10 +78,32 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
     }
   }, [formData.personal.profilePicture]);
 
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!debouncedSearchTerm) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const response = await employeeService.searchEmployees(
+          debouncedSearchTerm
+        );
+        setSearchResults(response);
+      } catch (error) {
+        console.error("Search error:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    performSearch();
+  }, [debouncedSearchTerm]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Clear error when user makes changes
     if (errors.personal?.[name]) {
       clearFieldError("personal", name);
     }
@@ -117,6 +178,151 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
     setIsDragging(false);
   };
 
+  const loadEmployeeData = async (employeeId) => {
+    try {
+      const response = await employeeService.fetchEmployeeById(employeeId);
+      const apiData = response;
+
+      const transformedData = {
+        personal: {
+          title: apiData.title,
+          attendanceEmpNo: apiData.attendance_employee_no,
+          epfNo: apiData.epf,
+          nicNumber: apiData.nic,
+          dob: apiData.dob,
+          gender: apiData.gender,
+          religion: apiData.religion,
+          countryOfBirth: apiData.country_of_birth,
+          profilePicture: null,
+          profilePicturePreview: apiData.profile_photo_path
+            ? `${config.apiBaseUrl}/storage/${apiData.profile_photo_path}`
+            : null,
+          employmentStatus: apiData.employment_status,
+          nameWithInitial: apiData.name_with_initials,
+          fullName: apiData.full_name,
+          displayName: apiData.display_name,
+          maritalStatus: apiData.marital_status,
+          relationshipType: apiData.relationship_type,
+          spouseTitle: apiData.spouse?.title,
+          spouseName: apiData.spouse?.name,
+          spouseAge: apiData.spouse?.age,
+          spouseDob: apiData.spouse?.dob,
+          spouseNic: apiData.spouse?.nic,
+          children:
+            apiData.children?.length > 0
+              ? apiData.children.map((child) => ({
+                  name: child.name,
+                  age: child.age,
+                  dob: child.dob,
+                  nic: child.nic,
+                }))
+              : [{ name: "", age: "", dob: "", nic: "" }],
+        },
+        address: {
+          permanentAddress: apiData.contact_detail?.permanent_address,
+          temporaryAddress: apiData.contact_detail?.temporary_address,
+          email: apiData.contact_detail?.email,
+          landLine: apiData.contact_detail?.land_line,
+          mobileLine: apiData.contact_detail?.mobile_line,
+          gnDivision: apiData.contact_detail?.gn_division,
+          policeStation: apiData.contact_detail?.police_station,
+          district: apiData.contact_detail?.district,
+          province: apiData.contact_detail?.province,
+          electoralDivision: apiData.contact_detail?.electoral_division,
+          emergencyContact: {
+            relationship: apiData.contact_detail?.emg_relationship,
+            contactName: apiData.contact_detail?.emg_name,
+            contactAddress: apiData.contact_detail?.emg_address,
+            contactTel: apiData.contact_detail?.emg_tel,
+          },
+        },
+        compensation: {
+          basicSalary: apiData.compensation?.basic_salary,
+          incrementValue: apiData.compensation?.increment_value,
+          incrementEffectiveFrom:
+            apiData.compensation?.increment_effective_from,
+          bankName: apiData.compensation?.bank_name,
+          branchName: apiData.compensation?.branch_name,
+          bankCode: apiData.compensation?.bank_code,
+          branchCode: apiData.compensation?.branch_code,
+          bankAccountNo: apiData.compensation?.bank_account_no,
+          comments: apiData.compensation?.comments,
+          secondaryEmp: apiData.compensation?.secondary_emp === 1,
+          primaryEmploymentBasic:
+            apiData.compensation?.primary_employment_basic === 1,
+          enableEpfEtf: apiData.compensation?.enable_epf_etf === 1,
+          otActive: apiData.compensation?.ot_active === 1,
+          earlyDeduction: apiData.compensation?.early_deduction === 1,
+          incrementActive: apiData.compensation?.increment_active === 1,
+          nopayActive: apiData.compensation?.nopay_active === 1,
+          morningOt: apiData.compensation?.morning_ot === 1,
+          eveningOt: apiData.compensation?.evening_ot === 1,
+          budgetaryReliefAllowance2015:
+            apiData.compensation?.budgetary_relief_allowance_2015 === 1,
+          budgetaryReliefAllowance2016:
+            apiData.compensation?.budgetary_relief_allowance_2016 === 1,
+        },
+        organization: {
+          company: apiData.organization_assignment?.company?.id?.toString(),
+          department:
+            apiData.organization_assignment?.department?.id?.toString(),
+          subDepartment:
+            apiData.organization_assignment?.sub_department?.id?.toString(),
+          companyName: apiData.organization_assignment?.company?.name,
+          departmentName: apiData.organization_assignment?.department?.name,
+          subDepartmentName:
+            apiData.organization_assignment?.sub_department?.name,
+          currentSupervisor:
+            apiData.organization_assignment?.current_supervisor,
+          dateOfJoined: apiData.organization_assignment?.date_of_joining,
+          designation:
+            apiData.organization_assignment?.designation?.id?.toString(),
+          designationName: apiData.organization_assignment?.designation?.name,
+          probationPeriod:
+            apiData.organization_assignment?.probationary_period === 1,
+          trainingPeriod:
+            apiData.organization_assignment?.training_period === 1,
+          contractPeriod:
+            apiData.organization_assignment?.contract_period === 1,
+          probationFrom:
+            apiData.organization_assignment?.probationary_period_from,
+          probationTo: apiData.organization_assignment?.probationary_period_to,
+          trainingFrom: apiData.organization_assignment?.training_period_from,
+          trainingTo: apiData.organization_assignment?.training_period_to,
+          contractFrom: apiData.organization_assignment?.contract_period_from,
+          contractTo: apiData.organization_assignment?.contract_period_to,
+          confirmationDate: apiData.organization_assignment?.confirmation_date,
+          resignationDate: apiData.organization_assignment?.date_of_resigning,
+          resignationLetter: null,
+          resignationApproved:
+            apiData.organization_assignment?.resignation_approved === 1,
+          currentStatus: apiData.is_active ? 1 : 0,
+          dayOff: apiData.organization_assignment?.day_off,
+        },
+        documents:
+          apiData.documents?.map((doc) => ({
+            id: doc.id,
+            name: doc.name,
+            type: doc.type,
+            size: doc.size,
+            status: doc.status,
+            preview: doc.path
+              ? `${config.apiBaseUrl}/storage/${doc.path}`
+              : null,
+          })) || [],
+      };
+
+      setFormData((prev) => ({
+        ...prev,
+        ...transformedData,
+      }));
+
+      setIsSearchModalOpen(false);
+    } catch (error) {
+      console.error("Error loading employee data:", error);
+    }
+  };
+
   return (
     <div className="rounded-2xl overflow-hidden">
       <div className="bg-white rounded-2xl shadow-xl mb-6 p-6">
@@ -134,8 +340,80 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
               </p>
             </div>
           </div>
+          <button
+            onClick={() => setIsSearchModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Edit className="w-4 h-4" />
+            <span>Edit Employee</span>
+          </button>
         </div>
       </div>
+
+      <Modal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        title="Search Employee"
+      >
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Search by name, ID, EPF, NIC..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {isSearching && (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+
+          {!isSearching && searchResults.length > 0 && (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {searchResults.map((employee) => (
+                <div
+                  key={employee.id}
+                  className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => loadEmployeeData(employee.id)}
+                >
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {employee.profile_photo_path ? (
+                      <img
+                        src={employee.profile_photo_path}
+                        alt={employee.full_name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-6 w-6 text-gray-500" />
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    <div className="text-sm font-medium text-gray-900">
+                      {employee.full_name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      EPF: {employee.epf} | NIC: {employee.nic}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isSearching && searchTerm && searchResults.length === 0 && (
+            <div className="text-center py-4 text-gray-500">
+              No employees found matching your search.
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <div className="space-y-6">
         {/* Basic Information */}
