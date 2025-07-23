@@ -121,7 +121,9 @@ const HRLeaveApproval = () => {
 
   // Handle HR approval - change status from HR_Approved to Approved
   const handleHRApprove = async (id) => {
-    if (window.confirm("Are you sure you want to approve this leave request?")) {
+    if (
+      window.confirm("Are you sure you want to approve this leave request?")
+    ) {
       try {
         const leaveRequest = leaveRequests.find((req) => req.id === id);
         if (!leaveRequest) return;
@@ -632,10 +634,13 @@ const HRLeaveApproval = () => {
                                   <Eye size={18} />
                                 </button>
 
-                                {(request.status === "Manager Approved" || request.status === "HR_Approved") && (
+                                {(request.status === "Manager Approved" ||
+                                  request.status === "HR_Approved") && (
                                   <>
                                     <button
-                                      onClick={() => handleHRApprove(request.id)}
+                                      onClick={() =>
+                                        handleHRApprove(request.id)
+                                      }
                                       className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
                                       title="Approve"
                                     >
@@ -806,7 +811,8 @@ const HRLeaveApproval = () => {
                                   </p>
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">
-                                  {formatDate(request.hrApprovedDate) || formatDate(new Date())}
+                                  {formatDate(request.hrApprovedDate) ||
+                                    formatDate(new Date())}
                                 </p>
                               </div>
                             )}
@@ -840,7 +846,8 @@ const HRLeaveApproval = () => {
                             )}
                           </div>
 
-                          {(request.status === "Manager Approved" || request.status === "HR_Approved") && (
+                          {(request.status === "Manager Approved" ||
+                            request.status === "HR_Approved") && (
                             <div className="flex justify-end space-x-3 pt-4 border-t">
                               <button
                                 onClick={() => {
