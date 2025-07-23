@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, FileText, CheckCircle, XCircle, User, Download, X, Check, ChevronDown, Upload, Search } from "lucide-react";
+import {
+  Calendar,
+  FileText,
+  CheckCircle,
+  XCircle,
+  User,
+  Download,
+  X,
+  Check,
+  ChevronDown,
+  Upload,
+  Search,
+} from "lucide-react";
 import ResignationsService from "@services/ResignationsService";
 import employeeService from "@services/EmployeeDataService";
 import Swal from "sweetalert2";
@@ -12,9 +24,9 @@ const Resignation = () => {
     resigning_date: "",
     last_working_day: "",
     resignation_reason: "",
-    documents: []
+    documents: [],
   });
-  
+
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
@@ -30,9 +42,9 @@ const Resignation = () => {
       try {
         setLoading(true);
         // In a real app, you would fetch employees from your API
-        const employeesResponse = await employeeService.fetchEmployeesForTable();
+        const employeesResponse = await employeeService.fetchEmployees();
         // setEmployees(employeesResponse.data);
-        
+
         // Mock employees data
         // const mockEmployees = [
         //   { id: 1, full_name: "John Doe", attendance_employee_no: "EMP001", department: "Engineering" },
@@ -43,8 +55,9 @@ const Resignation = () => {
         // ];
         setEmployees(employeesResponse);
         setFilteredEmployees(employeesResponse);
-        
-        const resignationsResponse = await ResignationsService.getAllResignations();
+
+        const resignationsResponse =
+          await ResignationsService.getAllResignations();
         setResignations(resignationsResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -52,7 +65,7 @@ const Resignation = () => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -61,10 +74,13 @@ const Resignation = () => {
     if (searchTerm.trim() === "") {
       setFilteredEmployees(employees);
     } else {
-      const filtered = employees.filter(emp => 
-        String(emp.attendance_employee_no).toLowerCase().includes(searchTerm.toLowerCase()) || 
-        emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.id.toString().includes(searchTerm)
+      const filtered = employees.filter(
+        (emp) =>
+          String(emp.attendance_employee_no)
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          emp.id.toString().includes(searchTerm)
       );
       setFilteredEmployees(filtered);
     }
@@ -75,14 +91,14 @@ const Resignation = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: null
+        [name]: null,
       });
     }
   };
@@ -93,7 +109,7 @@ const Resignation = () => {
       ...formData,
       employee_id: employee.id,
       employee_name: employee.full_name, // Use the correct field from employee object
-      employee_number: employee.attendance_employee_no // Use the correct field from employee object
+      employee_number: employee.attendance_employee_no, // Use the correct field from employee object
     });
     setShowEmployeeDropdown(false);
     setSearchTerm("");
@@ -104,7 +120,7 @@ const Resignation = () => {
     const files = Array.from(e.target.files);
     setFormData({
       ...formData,
-      documents: [...formData.documents, ...files]
+      documents: [...formData.documents, ...files],
     });
   };
 
@@ -114,20 +130,24 @@ const Resignation = () => {
     updatedDocuments.splice(index, 1);
     setFormData({
       ...formData,
-      documents: updatedDocuments
+      documents: updatedDocuments,
     });
   };
 
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.employee_id) newErrors.employee_id = "Employee selection is required";
-    if (!formData.resigning_date) newErrors.resigning_date = "Resignation date is required";
-    if (!formData.last_working_day) newErrors.last_working_day = "Last working day is required";
+    if (!formData.employee_id)
+      newErrors.employee_id = "Employee selection is required";
+    if (!formData.resigning_date)
+      newErrors.resigning_date = "Resignation date is required";
+    if (!formData.last_working_day)
+      newErrors.last_working_day = "Last working day is required";
     if (!formData.resignation_reason) {
       newErrors.resignation_reason = "Resignation reason is required";
     } else if (formData.resignation_reason.length < 10) {
-      newErrors.resignation_reason = "Please provide the reason for resignation (10 characters minimum)";
+      newErrors.resignation_reason =
+        "Please provide the reason for resignation (10 characters minimum)";
     }
     return newErrors;
   };
@@ -139,9 +159,9 @@ const Resignation = () => {
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       Swal.fire({
-        icon: 'error',
-        title: 'Form Error',
-        text: 'Please fill all required fields correctly.',
+        icon: "error",
+        title: "Form Error",
+        text: "Please fill all required fields correctly.",
       });
       return;
     }
@@ -153,12 +173,13 @@ const Resignation = () => {
         resigning_date: formData.resigning_date,
         last_working_day: formData.last_working_day,
         resignation_reason: formData.resignation_reason,
-        documents: formData.documents
+        documents: formData.documents,
       };
       await ResignationsService.createResignation(submissionData);
 
       // Update the resignations list
-      const updatedResignations = await ResignationsService.getAllResignations();
+      const updatedResignations =
+        await ResignationsService.getAllResignations();
       setResignations(updatedResignations.data);
 
       // Reset form
@@ -169,22 +190,24 @@ const Resignation = () => {
         resigning_date: "",
         last_working_day: "",
         resignation_reason: "",
-        documents: []
+        documents: [],
       });
 
       Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: 'Resignation submitted successfully!',
+        icon: "success",
+        title: "Success",
+        text: "Resignation submitted successfully!",
         timer: 2000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     } catch (error) {
       console.error("Error submitting resignation:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Submission Failed',
-        text: error?.message || 'An error occurred while submitting the resignation.',
+        icon: "error",
+        title: "Submission Failed",
+        text:
+          error?.message ||
+          "An error occurred while submitting the resignation.",
       });
       if (error.errors) {
         setErrors(error.errors);
@@ -197,21 +220,21 @@ const Resignation = () => {
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   // Get status badge color
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'pending':
-        return 'bg-orange-100 text-orange-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
+      case "pending":
+        return "bg-orange-100 text-orange-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -219,11 +242,29 @@ const Resignation = () => {
     <div className="space-y-8">
       {loading && employees.length === 0 && resignations.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
-          <svg className="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          <svg
+            className="animate-spin h-10 w-10 text-blue-500 mb-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            ></path>
           </svg>
-          <div className="text-lg text-blue-600 font-semibold">Loading data...</div>
+          <div className="text-lg text-blue-600 font-semibold">
+            Loading data...
+          </div>
         </div>
       ) : (
         <>
@@ -234,7 +275,7 @@ const Resignation = () => {
                 Manage Resignation Details
               </h2>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Employee Selection */}
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -242,7 +283,7 @@ const Resignation = () => {
                   <User className="text-blue-500" size={18} />
                   Search Employee
                 </label>
-                
+
                 <div className="relative">
                   <div className="relative">
                     <input
@@ -254,16 +295,25 @@ const Resignation = () => {
                       }}
                       onFocus={() => setShowEmployeeDropdown(true)}
                       placeholder="Search by ID, name or employee number..."
-                      className={`w-full pl-10 pr-8 py-2 border ${errors.employee_id ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                      className={`w-full pl-10 pr-8 py-2 border ${
+                        errors.employee_id
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                       disabled={loading}
                     />
-                    <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                    <Search
+                      className="absolute left-3 top-2.5 text-gray-400"
+                      size={18}
+                    />
                   </div>
-                  
+
                   {showEmployeeDropdown && (
                     <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none max-h-60 overflow-auto">
                       {filteredEmployees.length === 0 ? (
-                        <div className="px-4 py-2 text-gray-500">No employees found</div>
+                        <div className="px-4 py-2 text-gray-500">
+                          No employees found
+                        </div>
                       ) : (
                         filteredEmployees.map((employee) => (
                           <div
@@ -272,9 +322,13 @@ const Resignation = () => {
                             onClick={() => handleEmployeeSelect(employee)}
                           >
                             <div>
-                              <div className="font-medium">{employee.full_name}</div>
+                              <div className="font-medium">
+                                {employee.full_name}
+                              </div>
                               <div className="text-sm text-gray-500">
-                                ID: {employee.id} | {employee.attendance_employee_no} | {employee.department}
+                                ID: {employee.id} |{" "}
+                                {employee.attendance_employee_no} |{" "}
+                                {employee.department}
                               </div>
                             </div>
                           </div>
@@ -282,28 +336,34 @@ const Resignation = () => {
                       )}
                     </div>
                   )}
-                  
+
                   {errors.employee_id && (
-                    <p className="mt-1 text-sm text-red-500">{errors.employee_id}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.employee_id}
+                    </p>
                   )}
                 </div>
-                
+
                 {/* Selected Employee Info */}
                 {formData.employee_id && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-gray-800">{formData.employee_name}</h4>
-                        <p className="text-sm text-gray-600">Employee No: {formData.employee_number}</p>
+                        <h4 className="font-medium text-gray-800">
+                          {formData.employee_name}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          Employee No: {formData.employee_number}
+                        </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
-                          setFormData(prev => ({
+                          setFormData((prev) => ({
                             ...prev,
                             employee_id: "",
                             employee_name: "",
-                            employee_number: ""
+                            employee_number: "",
                           }));
                           setSearchTerm("");
                         }}
@@ -328,12 +388,21 @@ const Resignation = () => {
                     name="resigning_date"
                     value={formData.resigning_date}
                     onChange={handleChange}
-                    className={`w-full md:w-1/2 pl-10 pr-3 py-2 border ${errors.resigning_date ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full md:w-1/2 pl-10 pr-3 py-2 border ${
+                      errors.resigning_date
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     disabled={loading}
                   />
-                  <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <Calendar
+                    className="absolute left-3 top-2.5 text-gray-400"
+                    size={18}
+                  />
                   {errors.resigning_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.resigning_date}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.resigning_date}
+                    </p>
                   )}
                 </div>
               </div>
@@ -350,12 +419,21 @@ const Resignation = () => {
                     name="last_working_day"
                     value={formData.last_working_day}
                     onChange={handleChange}
-                    className={`w-full md:w-1/2 pl-10 pr-3 py-2 border ${errors.last_working_day ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full md:w-1/2 pl-10 pr-3 py-2 border ${
+                      errors.last_working_day
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     disabled={loading}
                   />
-                  <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <Calendar
+                    className="absolute left-3 top-2.5 text-gray-400"
+                    size={18}
+                  />
                   {errors.last_working_day && (
-                    <p className="mt-1 text-sm text-red-500">{errors.last_working_day}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.last_working_day}
+                    </p>
                   )}
                 </div>
               </div>
@@ -373,12 +451,21 @@ const Resignation = () => {
                     onChange={handleChange}
                     rows="4"
                     placeholder="Please provide the reason for resignation"
-                    className={`w-full pl-10 pr-3 py-2 border ${errors.resignation_reason ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none`}
+                    className={`w-full pl-10 pr-3 py-2 border ${
+                      errors.resignation_reason
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none`}
                     disabled={loading}
                   />
-                  <FileText className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <FileText
+                    className="absolute left-3 top-2.5 text-gray-400"
+                    size={18}
+                  />
                   {errors.resignation_reason && (
-                    <p className="mt-1 text-sm text-red-500">{errors.resignation_reason}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.resignation_reason}
+                    </p>
                   )}
                 </div>
               </div>
@@ -389,16 +476,25 @@ const Resignation = () => {
                   <Upload className="text-blue-500" size={18} />
                   Upload Documents (Multiple files allowed)
                 </label>
-                
+
                 {/* Upload Area */}
-                <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors mb-4"
-                  style={{ borderColor: errors.documents ? '#ef4444' : '#d1d5db' }}>
+                <label
+                  className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors mb-4"
+                  style={{
+                    borderColor: errors.documents ? "#ef4444" : "#d1d5db",
+                  }}
+                >
                   <div className="flex flex-col items-center justify-center">
                     <Upload className="w-10 h-10 mb-3 text-gray-400" />
                     <p className="mb-1 text-sm text-gray-500">
-                      <span className="font-semibold text-blue-500">Click to upload</span> or drag and drop
+                      <span className="font-semibold text-blue-500">
+                        Click to upload
+                      </span>{" "}
+                      or drag and drop
                     </p>
-                    <p className="text-xs text-gray-400">PDF, DOCX, JPG, PNG (MAX. 5MB each)</p>
+                    <p className="text-xs text-gray-400">
+                      PDF, DOCX, JPG, PNG (MAX. 5MB each)
+                    </p>
                   </div>
                   <input
                     type="file"
@@ -414,16 +510,25 @@ const Resignation = () => {
                 {/* Uploaded Files Display */}
                 {formData.documents.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-700">Uploaded Documents ({formData.documents.length})</h4>
+                    <h4 className="font-medium text-gray-700">
+                      Uploaded Documents ({formData.documents.length})
+                    </h4>
                     {formData.documents.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white border border-green-100 rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-white border border-green-100 rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-green-50 rounded-full">
                             <FileText className="text-green-500" size={16} />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800 text-sm">{file.name}</p>
-                            <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
+                            <p className="font-medium text-gray-800 text-sm">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(file.size / (1024 * 1024)).toFixed(1)} MB
+                            </p>
                           </div>
                         </div>
                         <button
@@ -439,9 +544,11 @@ const Resignation = () => {
                     ))}
                   </div>
                 )}
-                
+
                 {errors.documents && (
-                  <p className="mt-1 text-sm text-red-500">{errors.documents}</p>
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.documents}
+                  </p>
                 )}
               </div>
 
@@ -478,7 +585,7 @@ const Resignation = () => {
               <FileText className="text-blue-500" size={20} />
               Resignation Records
             </h2>
-            
+
             {loading && resignations.length === 0 ? (
               <div className="text-center py-8">Loading resignations...</div>
             ) : (
@@ -486,33 +593,44 @@ const Resignation = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee No</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resignation Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Working Day</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                     
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Employee
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Employee No
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Resignation Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Working Day
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Reason
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {resignations.map((resignation) => (
                       <tr key={resignation.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {
-                            (() => {
-                              const emp = employees.find(e => e.id === resignation.employee_id);
-                              return emp ? emp.full_name : "N/A";
-                            })()
-                          }
+                          {(() => {
+                            const emp = employees.find(
+                              (e) => e.id === resignation.employee_id
+                            );
+                            return emp ? emp.full_name : "N/A";
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {
-                            (() => {
-                              const emp = employees.find(e => e.id === resignation.employee_id);
-                              return emp ? emp.attendance_employee_no : "N/A";
-                            })()
-                          }
+                          {(() => {
+                            const emp = employees.find(
+                              (e) => e.id === resignation.employee_id
+                            );
+                            return emp ? emp.attendance_employee_no : "N/A";
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(resignation.resigning_date)}
@@ -524,7 +642,11 @@ const Resignation = () => {
                           {resignation.resignation_reason}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(resignation.status)}`}>
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
+                              resignation.status
+                            )}`}
+                          >
                             {resignation.status}
                           </span>
                         </td>

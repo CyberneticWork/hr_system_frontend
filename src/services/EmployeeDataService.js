@@ -64,6 +64,16 @@ const employeeService = {
     }
   },
 
+   async fetchEmployees() {
+    try {
+      const response = await axios.get(`/employees`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      return [];
+    }
+  },
+
   async fetchEmployeesForTable(page = 1, perPage = 10) {
     try {
       const response = await axios.get(`/emp/table?page=${page}&per_page=${perPage}`);
