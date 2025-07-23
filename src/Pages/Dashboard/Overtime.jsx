@@ -210,7 +210,7 @@ const Overtime = () => {
     : calculateTotals(timeData);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen p-4">
       {/* Header */}
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
@@ -218,7 +218,7 @@ const Overtime = () => {
             <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
               <Clock className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-800 to-blue-600 bg-clip-text text-transparent">
               Overtime Management System
             </h1>
           </div>
@@ -226,7 +226,7 @@ const Overtime = () => {
         </div>
         
         {/* Filters */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
+        {/* <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
           <div className="flex items-center space-x-2 mb-4">
             <Filter className="h-5 w-5 text-gray-600" />
             <h3 className="text-lg font-semibold text-gray-800">Filter Options</h3>
@@ -325,7 +325,7 @@ const Overtime = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Main Content - Always show table */}
         {currentStep === 1 && (
