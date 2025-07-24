@@ -35,7 +35,7 @@ const SalaryProcessPage = () => {
       '2025-02-28', '2025-03-31', '2025-04-30', '2025-05-31', '2025-06-30', '2025-07-31'
     ];
 
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 1; i++) {
       const hasEPF = i % 2 === 0;
       const empHistory = months.map((month, idx) => ({
         EMPNo: `EMP${i.toString().padStart(3, '0')}`,

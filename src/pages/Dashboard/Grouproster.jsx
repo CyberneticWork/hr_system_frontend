@@ -393,10 +393,14 @@ const RosterManagementSystem = () => {
       // Create an array to hold all roster entries
       const rosterEntries = [];
 
+      // Generate a roster_id (you can use timestamp or UUID if needed)
+      const rosterId = Date.now(); // or use a UUID generator
+
       // Iterate through each assignment and create individual records for each employee
       for (const assignment of rosterAssignments) {
         assignment.employees.forEach((employeeId) => {
           rosterEntries.push({
+            roster_id: rosterId, // Same ID for all entries in this batch
             shift_code: assignment.shift.id,
             company_id: parseInt(assignment.company),
             department_id: parseInt(assignment.department),
@@ -411,10 +415,15 @@ const RosterManagementSystem = () => {
         });
       }
 
-      // Process each roster entry
-      await Promise.all(
-        rosterEntries.map((entry) => RosterService.createRoster(entry))
-      );
+      // Send all entries in a single API call
+      try {
+        const response = await RosterService.createRoster(rosterEntries);
+        // Handle success
+      } catch (error) {
+        // Handle error
+      } finally {
+        setIsSaving(false);
+      }
 
       // Reset form after successful save
       setRosterAssignments([]);
