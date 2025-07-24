@@ -14,6 +14,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { getAllLeaves, updateLeave } from "../../services/LeaveMaster"; // Import getAllLeaves
 
 const LeaveApproval = () => {
   // State for filtering and search
@@ -30,90 +31,195 @@ const LeaveApproval = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectingRequestId, setRejectingRequestId] = useState(null);
 
-  // Sample leave requests data
-  const [leaveRequests, setLeaveRequests] = useState([
-    {
-      id: 1,
-      employeeNo: "EMP001",
-      employeeName: "John Smith",
-      department: "IT",
-      leaveType: "Annual Leave",
-      startDate: "2025-07-15",
-      endDate: "2025-07-18",
-      duration: 4,
-      reason: "Family vacation",
-      status: "Pending",
-      submittedDate: "2025-07-01",
-    },
-    {
-      id: 2,
-      employeeNo: "EMP007",
-      employeeName: "Sarah Williams",
-      department: "HR",
-      leaveType: "Medical Leave",
-      startDate: "2025-07-10",
-      endDate: "2025-07-11",
-      duration: 2,
-      reason: "Doctor appointment",
-      status: "Pending",
-      submittedDate: "2025-06-28",
-    },
-    {
-      id: 3,
-      employeeNo: "EMP014",
-      employeeName: "Robert Johnson",
-      department: "Finance",
-      leaveType: "Casual Leave",
-      startDate: "2025-07-21",
-      endDate: "2025-07-21",
-      duration: 1,
-      reason: "Personal matters",
-      status: "Pending",
-      submittedDate: "2025-07-05",
-    },
-    {
-      id: 4,
-      employeeNo: "EMP023",
-      employeeName: "Amanda Chen",
-      department: "Marketing",
-      leaveType: "Annual Leave",
-      startDate: "2025-07-25",
-      endDate: "2025-07-31",
-      duration: 5,
-      reason: "Family event",
-      status: "Approved",
-      submittedDate: "2025-06-20",
-      approvedBy: "Michael Manager",
-      approvedDate: "2025-06-25",
-    },
-    {
-      id: 5,
-      employeeNo: "EMP009",
-      employeeName: "David Wilson",
-      department: "IT",
-      leaveType: "Special Leave",
-      startDate: "2025-08-01",
-      endDate: "2025-08-03",
-      duration: 3,
-      reason: "Wedding ceremony",
-      status: "Rejected",
-      submittedDate: "2025-07-02",
-      rejectedBy: "Michael Manager",
-      rejectedDate: "2025-07-04",
-      rejectionReason: "Resource constraints during critical project phase",
-    },
-  ]);
+  // State for leave requests
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Sample departments
-  const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
+  // Fetch leave requests on component mount
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, []);
 
-  // Sample leave types
-  const leaveTypes = [
-    "Annual Leave",
-    "Medical Leave",
-    "Casual Leave",
-    "Special Leave",
-  ];
+  // Function to fetch leave requests
+  const fetchLeaveRequests = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await getAllLeaves();
+
+      // Transform the API data to match our component's expected format
+      const formattedData = data.map((leave) => ({
+        id: leave.id,
+        employeeNo:
+          leave.employee?.attendance_employee_no?.toString() ||
+          leave.employee_id?.toString() ||
+          "N/A",
+        employeeName:
+          leave.employee?.full_name ||
+          leave.employee?.name_with_initials ||
+          "Unknown Employee",
+        department:
+          leave.employee?.organization_assignment?.department?.name || "N/A",
+        leaveType: leave.leave_type,
+        startDate: leave.leave_date || leave.leave_from,
+        endDate: leave.leave_date || leave.leave_to,
+        duration: calculateDuration(
+          leave.leave_date,
+          leave.leave_from,
+          leave.leave_to
+        ),
+        reason: leave.reason || "No reason provided",
+        status: leave.status || "Pending",
+        submittedDate:
+          leave.created_at?.split("T")[0] ||
+          new Date().toISOString().split("T")[0],
+        approvedBy: leave.approved_by || "",
+        approvedDate: leave.approved_date || "",
+        rejectedBy: leave.rejected_by || "",
+        rejectedDate: leave.rejected_date || "",
+        rejectionReason: leave.rejection_reason || "",
+      }));
+
+      setLeaveRequests(formattedData);
+    } catch (err) {
+      console.error("Failed to fetch leave requests:", err);
+      setError("Failed to load leave requests. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to calculate duration between dates
+  const calculateDuration = (singleDate, fromDate, toDate) => {
+    if (singleDate) {
+      return 1; // Single day leave
+    }
+
+    if (fromDate && toDate) {
+      const start = new Date(fromDate);
+      const end = new Date(toDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include both start and end days
+      return diffDays;
+    }
+
+    return 1; // Default to 1 if dates are not available
+  };
+
+  // Count statistics
+  const pendingCount = leaveRequests.filter(
+    (req) => req.status === "Pending"
+  ).length;
+  const approvedCount = leaveRequests.filter(
+    (req) => req.status === "Approved"
+  ).length;
+  const hrApprovedCount = leaveRequests.filter(
+    (req) => req.status === "HR_Approved"
+  ).length;
+  const rejectedCount = leaveRequests.filter(
+    (req) => req.status === "Rejected"
+  ).length;
+  const managerApprovedCount = leaveRequests.filter(
+    (req) => req.status === "Manager Approved"
+  ).length;
+
+  // Handle approval
+  const handleApprove = async (id) => {
+    if (
+      window.confirm("Are you sure you want to approve this leave request?")
+    ) {
+      try {
+        const leaveRequest = leaveRequests.find((req) => req.id === id);
+        if (!leaveRequest) return;
+
+        // Format the data for the API - Change status to HR_Approved
+        const updateData = {
+          status: "HR_Approved",
+          approved_by: "Current HR Manager", // You might want to get this from user context
+          approved_date: new Date().toISOString().split("T")[0],
+        };
+
+        // Call API to update the leave request
+        await updateLeave(id, updateData);
+
+        // Update local state
+        setLeaveRequests((prevRequests) =>
+          prevRequests.map((request) =>
+            request.id === id
+              ? {
+                  ...request,
+                  status: "HR_Approved",
+                  approvedBy: "Current HR Manager",
+                  approvedDate: new Date().toISOString().split("T")[0],
+                }
+              : request
+          )
+        );
+
+        // Show success message
+        alert("Leave request has been approved successfully.");
+
+        // Refresh the data
+        fetchLeaveRequests();
+      } catch (error) {
+        console.error("Failed to approve leave request:", error);
+        alert("Failed to approve leave request. Please try again.");
+      }
+    }
+  };
+
+  // Handle rejection
+  const handleReject = (id) => {
+    setRejectingRequestId(id);
+    setRejectionReason("");
+    setShowRejectionModal(true);
+  };
+
+  // Add this new function to process the rejection once the reason is provided
+  const confirmReject = async () => {
+    if (rejectionReason.trim() && rejectingRequestId) {
+      try {
+        // Format the data for the API
+        const updateData = {
+          status: "Rejected",
+          rejected_by: "Current Manager", // You might want to get this from user context
+          rejected_date: new Date().toISOString().split("T")[0],
+          rejection_reason: rejectionReason,
+        };
+
+        // Call API to update the leave request
+        await updateLeave(rejectingRequestId, updateData);
+
+        // Update local state
+        setLeaveRequests((prevRequests) =>
+          prevRequests.map((request) =>
+            request.id === rejectingRequestId
+              ? {
+                  ...request,
+                  status: "Rejected",
+                  rejectedBy: "Current Manager",
+                  rejectedDate: new Date().toISOString().split("T")[0],
+                  rejectionReason: rejectionReason,
+                }
+              : request
+          )
+        );
+
+        // Close the modal after processing
+        setShowRejectionModal(false);
+        setRejectingRequestId(null);
+        setRejectionReason("");
+
+        // Refresh the data
+        fetchLeaveRequests();
+      } catch (error) {
+        console.error("Failed to reject leave request:", error);
+        alert("Failed to reject leave request. Please try again.");
+      }
+    }
+  };
 
   // Filter leave requests based on search and filter criteria
   const filteredRequests = leaveRequests.filter((request) => {
@@ -153,79 +259,22 @@ const LeaveApproval = () => {
     );
   });
 
-  // Count statistics
-  const pendingCount = leaveRequests.filter(
-    (req) => req.status === "Pending"
-  ).length;
-  const approvedCount = leaveRequests.filter(
-    (req) => req.status === "Approved"
-  ).length;
-  const rejectedCount = leaveRequests.filter(
-    (req) => req.status === "Rejected"
-  ).length;
-  const managerApprovedCount = leaveRequests.filter(
-    (req) => req.status === "Manager Approved"
-  ).length;
-
-  // Handle approval
-  const handleApprove = (id) => {
-    if (
-      window.confirm("Are you sure you want to approve this leave request?")
-    ) {
-      setLeaveRequests((prevRequests) =>
-        prevRequests.map((request) =>
-          request.id === id
-            ? {
-                ...request,
-                status: "Manager Approved", // Changed from "Approved" to "Manager Approved"
-                approvedBy: "Current Manager",
-                approvedDate: new Date().toISOString().split("T")[0],
-              }
-            : request
-        )
-      );
-    }
-  };
-
-  // Handle rejection
-  const handleReject = (id) => {
-    setRejectingRequestId(id);
-    setRejectionReason("");
-    setShowRejectionModal(true);
-  };
-
-  // Add this new function to process the rejection once the reason is provided
-  const confirmReject = () => {
-    if (rejectionReason.trim() && rejectingRequestId) {
-      setLeaveRequests((prevRequests) =>
-        prevRequests.map((request) =>
-          request.id === rejectingRequestId
-            ? {
-                ...request,
-                status: "Rejected",
-                rejectedBy: "Current Manager",
-                rejectedDate: new Date().toISOString().split("T")[0],
-                rejectionReason: rejectionReason,
-              }
-            : request
-        )
-      );
-      // Close the modal after processing
-      setShowRejectionModal(false);
-      setRejectingRequestId(null);
-      setRejectionReason("");
-    }
-  };
-
   // Format date
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+
     const options = {
       weekday: "short",
       year: "numeric",
       month: "short",
       day: "numeric",
     };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    } catch (error) {
+      return dateString || "N/A";
+    }
   };
 
   // Get status badge style
@@ -233,8 +282,10 @@ const LeaveApproval = () => {
     switch (status) {
       case "Approved":
         return "bg-green-100 text-green-800";
-      case "Manager Approved":
+      case "HR_Approved":
         return "bg-blue-100 text-blue-800";
+      case "Manager Approved":
+        return "bg-indigo-100 text-indigo-800";
       case "Rejected":
         return "bg-red-100 text-red-800";
       default:
@@ -247,8 +298,10 @@ const LeaveApproval = () => {
     switch (status) {
       case "Approved":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "Manager Approved":
+      case "HR_Approved":
         return <UserCheck className="w-4 h-4 text-blue-600" />;
+      case "Manager Approved":
+        return <UserCheck className="w-4 h-4 text-indigo-600" />;
       case "Rejected":
         return <XCircle className="w-4 h-4 text-red-600" />;
       default:
@@ -265,6 +318,16 @@ const LeaveApproval = () => {
     setDateTo("");
     setSearchTerm("");
   };
+
+  // Extract unique departments from leave requests
+  const departments = [
+    ...new Set(leaveRequests.map((req) => req.department).filter(Boolean)),
+  ];
+
+  // Extract unique leave types from leave requests
+  const leaveTypes = [
+    ...new Set(leaveRequests.map((req) => req.leaveType).filter(Boolean)),
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 py-4 sm:py-8">
@@ -339,6 +402,22 @@ const LeaveApproval = () => {
                 </div>
               </div>
             </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    HR Approved
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {hrApprovedCount}
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <UserCheck className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Filter Section */}
@@ -363,6 +442,7 @@ const LeaveApproval = () => {
                   >
                     <option value="All">All Statuses</option>
                     <option value="Pending">Pending</option>
+                    <option value="HR_Approved">HR Approved</option>
                     <option value="Manager Approved">Manager Approved</option>
                     <option value="Approved">Approved</option>
                     <option value="Rejected">Rejected</option>
@@ -456,162 +536,186 @@ const LeaveApproval = () => {
           {/* Leave Requests Table */}
           <div className="px-4 sm:px-6 lg:px-8 pb-8">
             <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Employee
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Department
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Leave Type
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Duration
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Status
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredRequests.length > 0 ? (
-                      filteredRequests.map((request) => (
-                        <tr key={request.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 font-medium">
-                                  {request.employeeName
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </span>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {request.employeeName}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <p className="ml-3 text-gray-600">
+                    Loading leave requests...
+                  </p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center">
+                  <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+                  <h3 className="text-lg font-medium text-red-800 mb-2">
+                    Error Loading Data
+                  </h3>
+                  <p className="text-gray-600">{error}</p>
+                  <button
+                    onClick={fetchLeaveRequests}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Employee
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Department
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Leave Type
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Duration
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Status
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredRequests.length > 0 ? (
+                        filteredRequests.map((request) => (
+                          <tr key={request.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-600 font-medium">
+                                    {request.employeeName
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
+                                  </span>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  {request.employeeNo}
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {request.employeeName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {request.employeeNo}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {request.department}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {request.leaveType}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {formatDate(request.startDate)} -{" "}
-                              {formatDate(request.endDate)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {request.duration} day
-                              {request.duration !== 1 ? "s" : ""}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(
-                                request.status
-                              )}`}
-                            >
-                              {getStatusIcon(request.status)}
-                              <span className="ml-1.5">{request.status}</span>
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                            <div className="flex justify-center space-x-2">
-                              <button
-                                onClick={() =>
-                                  setShowDetails(
-                                    showDetails === request.id
-                                      ? null
-                                      : request.id
-                                  )
-                                }
-                                className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                                title="View Details"
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {request.department}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {request.leaveType}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {formatDate(request.startDate)} -{" "}
+                                {formatDate(request.endDate)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {request.duration} day
+                                {request.duration !== 1 ? "s" : ""}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(
+                                  request.status
+                                )}`}
                               >
-                                <Eye size={18} />
-                              </button>
+                                {getStatusIcon(request.status)}
+                                <span className="ml-1.5">{request.status}</span>
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                              <div className="flex justify-center space-x-2">
+                                <button
+                                  onClick={() =>
+                                    setShowDetails(
+                                      showDetails === request.id
+                                        ? null
+                                        : request.id
+                                    )
+                                  }
+                                  className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye size={18} />
+                                </button>
 
-                              {request.status === "Pending" && (
-                                <>
-                                  <button
-                                    onClick={() => handleApprove(request.id)}
-                                    className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
-                                    title="Approve"
-                                  >
-                                    <Check size={18} />
-                                  </button>
+                                {request.status === "Pending" && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApprove(request.id)}
+                                      className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                                      title="Approve"
+                                    >
+                                      <Check size={18} />
+                                    </button>
 
-                                  <button
-                                    onClick={() => handleReject(request.id)} // This now opens the modal instead of showing a prompt
-                                    className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-                                    title="Reject"
-                                  >
-                                    <X size={18} />
-                                  </button>
-                                </>
-                              )}
+                                    <button
+                                      onClick={() => handleReject(request.id)} // This now opens the modal instead of showing a prompt
+                                      className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                                      title="Reject"
+                                    >
+                                      <X size={18} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="px-6 py-10 text-center text-gray-500"
+                          >
+                            <div className="flex flex-col items-center">
+                              <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+                              <p className="text-lg font-medium mb-1">
+                                No leave requests found
+                              </p>
+                              <p className="text-sm">
+                                Adjust your filters or try a different search
+                                term
+                              </p>
                             </div>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          <div className="flex flex-col items-center">
-                            <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-                            <p className="text-lg font-medium mb-1">
-                              No leave requests found
-                            </p>
-                            <p className="text-sm">
-                              Adjust your filters or try a different search term
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
 
