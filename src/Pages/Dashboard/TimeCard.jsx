@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { addTimeCard, fetchTimeCards } from '../../services/ApiDataService';
 import employeeService from '../../services/EmployeeDataService';
 import timeCardService from '../../services/timeCardService';
+import Swal from 'sweetalert2'; // Make sure sweetalert2 is installed
+import axios from 'axios';
 
 const TimeCard = () => {
   // Form state
@@ -118,9 +120,29 @@ const TimeCard = () => {
   };
 
   // Handle delete
-  const handleDelete = (index) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      setAttendanceData((prev) => prev.filter((_, i) => i !== index));
+  const handleDelete = async (index) => {
+    const record = filteredData[index];
+    if (!record || !record.id) {
+      Swal.fire({ icon: 'error', title: 'Delete failed', text: 'Record ID not found.' });
+      return;
+    }
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This will permanently delete the record.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+    });
+    if (confirm.isConfirmed) {
+      try {
+        await timeCardService.deleteTimeCard(record.id);
+        const updated = await fetchTimeCards();
+        setAttendanceData(updated);
+        setFilteredData(updated);
+        Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1200, showConfirmButton: false });
+      } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Delete failed', text: e.message });
+      }
     }
   };
 
@@ -136,28 +158,24 @@ const TimeCard = () => {
   };
 
   // Handle edit save
-  const handleEditSave = () => {
-    setAttendanceData((prev) =>
-      prev.map((rec, idx) => {
-        if (idx !== editRecord.index) return rec;
-        return {
-          ...rec,
-          date: editDate,
-          entry: editEntry,
-          status: editStatus,
-          // Optionally update time/inOut if you want to allow that as well
-          time:
-            editStatus === 'IN'
-              ? editInTime
-              : editStatus === 'OUT'
-              ? editOutTime
-              : '',
-          inOut: editStatus === 'IN' || editStatus === 'OUT' ? editStatus : '',
-        };
-      })
-    );
-    setShowEditModal(false);
-    setEditRecord(null);
+  const handleEditSave = async () => {
+    try {
+      const payload = {
+        date: editDate,
+        time: editStatus === 'IN' ? editInTime : editOutTime,
+        entry: editEntry,
+        status: editStatus,
+      };
+      await timeCardService.updateTimeCard(editRecord.id, payload);
+      const updated = await fetchTimeCards();
+      setAttendanceData(updated);
+      setFilteredData(updated);
+      setShowEditModal(false);
+      setEditRecord(null);
+      Swal.fire({ icon: 'success', title: 'Updated!', timer: 1200, showConfirmButton: false });
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: 'Update failed', text: e.message });
+    }
   };
 
   // Helper to sort by date, time, empNo, and entry
@@ -226,7 +244,6 @@ const TimeCard = () => {
 
     try {
       await addTimeCard(payload);
-      // Refresh table
       const updated = await fetchTimeCards();
       setAttendanceData(updated);
       setFilteredData(updated);
@@ -243,6 +260,13 @@ const TimeCard = () => {
       });
       setNic('');
       setNicError('');
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Attendance record added successfully.',
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (e) {
       setNicError('Failed to add attendance record');
     }
@@ -495,9 +519,26 @@ const TimeCard = () => {
               </button> */}
               <button
                 className="px-4 sm:px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
-                onClick={handleAbsent}
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    const { data } = await axios.post('/attendance/mark-absentees', { date: dateFrom || new Date().toISOString().slice(0, 10) });
+                    // If absentees are returned, show them immediately
+                    if (data.absentees && data.absentees.length > 0) {
+                      setAttendanceData(data.absentees);
+                      setFilteredData(data.absentees);
+                    } else {
+                      const updated = await fetchTimeCards();
+                      setAttendanceData(updated);
+                      setFilteredData(updated);
+                    }
+                  } catch (e) {
+                    // Optionally show an error message
+                  }
+                  setIsLoading(false);
+                }}
               >
-                Absent
+                Mark Absentees
               </button>
               <button
                 className="px-4 sm:px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
@@ -657,21 +698,19 @@ const TimeCard = () => {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
-              <input
-                type="text"
-                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                value={editEntry}
-                onChange={e => setEditEntry(e.target.value)}
-                placeholder="e.g. 1 or 2"
-              />
-            </div>
-            <div className="mb-4">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Status</label>
               <select
                 className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 value={editStatus}
-                onChange={e => setEditStatus(e.target.value)}
+                onChange={e => {
+                  const status = e.target.value;
+                  let entry = '';
+                  if (status === 'IN') entry = '1';
+                  else if (status === 'OUT') entry = '2';
+                  else if (status === 'Absent') entry = '0';
+                  setEditStatus(status);
+                  setEditEntry(entry);
+                }}
               >
                 <option value="">Select Status</option>
                 <option value="IN">IN</option>
@@ -680,30 +719,29 @@ const TimeCard = () => {
                 <option value="Leave">Leave</option>
               </select>
             </div>
-            {(editStatus === 'IN' || editStatus === 'Absent' || editStatus === 'Leave') && (
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-slate-700 mb-1">IN Time</label>
-                <input
-                  type="time"
-                  className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  value={editInTime}
-                  onChange={e => setEditInTime(e.target.value)}
-                  placeholder="e.g. 08:45 AM"
-                />
-              </div>
-            )}
-            {(editStatus === 'OUT' || editStatus === 'Absent' || editStatus === 'Leave') && (
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-slate-700 mb-1">OUT Time</label>
-                <input
-                  type="time"
-                  className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  value={editOutTime}
-                  onChange={e => setEditOutTime(e.target.value)}
-                  placeholder="e.g. 05:30 PM"
-                />
-              </div>
-            )}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={editEntry}
+                readOnly
+                placeholder="Auto-filled from Status"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Time</label>
+              <input
+                type="time"
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                value={editStatus === 'IN' ? editInTime : editStatus === 'OUT' ? editOutTime : ''}
+                onChange={e => {
+                  if (editStatus === 'IN') setEditInTime(e.target.value);
+                  else if (editStatus === 'OUT') setEditOutTime(e.target.value);
+                }}
+                placeholder="e.g. 08:45 AM"
+              />
+            </div>
             <div className="flex justify-end gap-3 mt-8">
               <button
                 className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
@@ -809,24 +847,23 @@ const TimeCard = () => {
                 onChange={e => setNewRecord({ ...newRecord, date: e.target.value })}
               />
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
-                value={newRecord.entry}
-                onChange={e => setNewRecord({ ...newRecord, entry: e.target.value })}
-              >
-                <option value="">Select Entry</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-              </select>
-            </div>
             <div className="mb-3">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Status</label>
               <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
                 value={newRecord.status}
-                onChange={e => setNewRecord({ ...newRecord, status: e.target.value })}
+                onChange={e => {
+                  const status = e.target.value;
+                  let entry = '';
+                  if (status === 'IN') entry = '1';
+                  else if (status === 'OUT') entry = '2';
+                  else if (status === 'Absent') entry = '0';
+                  setNewRecord(prev => ({
+                    ...prev,
+                    status,
+                    entry,
+                  }));
+                }}
               >
                 <option value="">Select Status</option>
                 <option value="IN">IN</option>
@@ -834,6 +871,16 @@ const TimeCard = () => {
                 <option value="Absent">Absent</option>
                 <option value="Leave">Leave</option>
               </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Entry</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100"
+                value={newRecord.entry}
+                readOnly
+                placeholder="Auto-filled from Status"
+              />
             </div>
             <div className="flex justify-end gap-3 mt-8">
               <button
