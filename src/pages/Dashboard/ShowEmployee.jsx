@@ -9,8 +9,6 @@ import {
   Briefcase,
   X,
   Loader2,
-  Users,
-  Building,
   Heart,
   Baby,
   Shield,
@@ -19,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
-  Edit,
   DollarSign,
 } from "lucide-react";
 import { useDebounce } from "@uidotdev/usehooks";
