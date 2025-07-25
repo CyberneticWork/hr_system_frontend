@@ -12,6 +12,22 @@ const timeCardService = {
       return null;
     }
   },
+
+  markAbsentees: async (date) => {
+    const response = await axios.post('/attendance/mark-absentees', { date });
+    return response.data;
+  },
+
+  // Add these methods:
+  updateTimeCard: async (id, data) => {
+    const response = await axios.put(`/time-cards/${id}`, data);
+    return response.data;
+  },
+
+  deleteTimeCard: async (id) => {
+    const response = await axios.delete(`/time-cards/${id}`);
+    return response.data;
+  },
 };
 
 export default timeCardService;

@@ -75,7 +75,7 @@ const SalaryProcessPage = () => {
       "2025-07-31",
     ];
 
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 1; i++) {
       const hasEPF = i % 2 === 0;
       const companyId = (i % 4) + 1; // Map to a company ID (1-4)
       const departmentId = (i % 5) + 1; // Map to a department ID (1-5)
