@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import { fetchCompanies, fetchDepartmentsById } from "@services/ApiDataService";
+import AllowancesService from "@services/AllowancesService";
+import * as DeductionService from "@services/DeductionService";
 
 const STORAGE_KEY = "processedSalaryData";
 
@@ -40,6 +42,9 @@ const SalaryProcessPage = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [availableAllowances, setAvailableAllowances] = useState([]);
+  const [availableDeductions, setAvailableDeductions] = useState([]);
+  const [isLoadingAllowances, setIsLoadingAllowances] = useState(false);
 
   // New state for selected employees
   const [selectedEmployees, setSelectedEmployees] = useState([]);
@@ -621,6 +626,111 @@ const SalaryProcessPage = () => {
     setShowingHistory(false);
   };
 
+  // Add this function to load allowances by company
+  const loadAllowancesByCompany = async (companyId) => {
+    setIsLoadingAllowances(true);
+    try {
+      const allowances =
+        await AllowancesService.getAllowancesByCompanyOrDepartment(
+          companyId,
+          null
+        );
+      setAvailableAllowances(allowances || []);
+    } catch (error) {
+      console.error("Error loading allowances by company:", error);
+    } finally {
+      setIsLoadingAllowances(false);
+    }
+  };
+
+  // Add this useEffect to load allowances and deductions when the component mounts
+  useEffect(() => {
+    const loadAllowancesAndDeductions = async () => {
+      setIsLoadingAllowances(true);
+      try {
+        // Get all allowances
+        const allowances = await AllowancesService.getAllAllowances();
+        setAvailableAllowances(allowances || []);
+
+        // Get all deductions
+        const deductions = await DeductionService.fetchDeductions();
+        setAvailableDeductions(deductions || []);
+      } catch (error) {
+        console.error("Error loading allowances and deductions:", error);
+      } finally {
+        setIsLoadingAllowances(false);
+      }
+    };
+
+    loadAllowancesAndDeductions();
+  }, []);
+
+  // Add this function to your SalaryProcessPage component
+  const handleCompanyChange = (e) => {
+    const companyId = e.target.value;
+    setSelectedCompany(companyId);
+    setSelectedDepartment("");
+
+    // If a company is selected, fetch its allowances
+    if (companyId) {
+      loadAllowancesByCompany(companyId);
+    } else {
+      // If no company is selected, load all allowances
+      loadAllowancesAndDeductions();
+    }
+  };
+
+  // Function to map allowance name to field name
+  const mapAllowanceToField = (allowanceName) => {
+    const mappings = {
+      "Travelling Allowance": "TravellingAllowance",
+      "Special Allowance": "SpecialAllowance",
+      "Attendance Allowance": "AttendanceAllowance",
+      "Production Incentive": "ProductionIncentive",
+      "Medical Reimbursement": "MedicalReimbursement",
+    };
+    return mappings[allowanceName] || allowanceName;
+  };
+
+  // Function to map deduction name to field name
+  const mapDeductionToField = (deductionName) => {
+    const mappings = {
+      "Salary Advance": "SalaryAdvance",
+      "Meal Deduction": "MealDeduction",
+      "Other Deduction": "OtherDeduction",
+      "Bond Deduction": "BondDeduction",
+      Loan: "Loan",
+    };
+    return mappings[deductionName] || deductionName;
+  };
+
+  // Handle selection of allowance or deduction and auto-fill amount
+  const handleAllowanceDeductionChange = (value) => {
+    // Set the selected action name
+    setBulkActionName(value);
+
+    // Find the selected allowance or deduction to get its amount
+    if (bulkActionType === "allowance") {
+      const selectedAllowance = availableAllowances.find(
+        (allowance) => mapAllowanceToField(allowance.allowance_name) === value
+      );
+      if (selectedAllowance && selectedAllowance.amount) {
+        // Convert to number and format to 2 decimal places if needed
+        const amount = parseFloat(selectedAllowance.amount).toFixed(2);
+        setBulkActionAmount(amount);
+      }
+    } else {
+      const selectedDeduction = availableDeductions.find(
+        (deduction) => mapDeductionToField(deduction.deduction_name) === value
+      );
+      if (selectedDeduction && selectedDeduction.amount) {
+        // Convert to number and format to 2 decimal places if needed
+        const amount = parseFloat(selectedDeduction.amount).toFixed(2);
+        setBulkActionAmount(amount);
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
@@ -783,10 +893,7 @@ const SalaryProcessPage = () => {
                     <select
                       id="company"
                       value={selectedCompany}
-                      onChange={(e) => {
-                        setSelectedCompany(e.target.value);
-                        setSelectedDepartment("");
-                      }}
+                      onChange={handleCompanyChange}
                       className="appearance-none w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
                     >
                       <option value="">All Companies</option>
@@ -1026,7 +1133,11 @@ const SalaryProcessPage = () => {
               </label>
               <select
                 value={bulkActionType}
-                onChange={(e) => setBulkActionType(e.target.value)}
+                onChange={(e) => {
+                  setBulkActionType(e.target.value);
+                  setBulkActionName(""); // Reset selection
+                  setBulkActionAmount(""); // Reset amount
+                }}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="allowance">Add Allowance</option>
@@ -1042,35 +1153,27 @@ const SalaryProcessPage = () => {
               </label>
               <select
                 value={bulkActionName}
-                onChange={(e) => setBulkActionName(e.target.value)}
+                onChange={(e) => handleAllowanceDeductionChange(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Type</option>
-                {bulkActionType === "allowance" ? (
-                  <>
-                    <option value="TravellingAllowance">
-                      Travelling Allowance
-                    </option>
-                    <option value="SpecialAllowance">Special Allowance</option>
-                    <option value="AttendanceAllowance">
-                      Attendance Allowance
-                    </option>
-                    <option value="ProductionIncentive">
-                      Production Incentive
-                    </option>
-                    <option value="MedicalReimbursement">
-                      Medical Reimbursement
-                    </option>
-                  </>
-                ) : (
-                  <>
-                    <option value="SalaryAdvance">Salary Advance</option>
-                    <option value="MealDeduction">Meal Deduction</option>
-                    <option value="OtherDeduction">Other Deduction</option>
-                    <option value="BondDeduction">Bond Deduction</option>
-                    <option value="Loan">Loan</option>
-                  </>
-                )}
+                {bulkActionType === "allowance"
+                  ? availableAllowances.map((allowance) => (
+                      <option
+                        key={allowance.id}
+                        value={mapAllowanceToField(allowance.allowance_name)}
+                      >
+                        {allowance.allowance_name}
+                      </option>
+                    ))
+                  : availableDeductions.map((deduction) => (
+                      <option
+                        key={deduction.id}
+                        value={mapDeductionToField(deduction.deduction_name)}
+                      >
+                        {deduction.deduction_name}
+                      </option>
+                    ))}
               </select>
             </div>
 
