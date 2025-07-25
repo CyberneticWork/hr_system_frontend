@@ -28,6 +28,11 @@ const timeCardService = {
     const response = await axios.delete(`/time-cards/${id}`);
     return response.data;
   },
+
+  async searchEmployeeTimeCards(search) {
+    const res = await axios.get(`/time-cards/search-employee?q=${encodeURIComponent(search)}`);
+    return res.data;
+  },
 };
 
 export default timeCardService;
