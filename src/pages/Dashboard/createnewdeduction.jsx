@@ -176,10 +176,17 @@ const CreateNewDeduction = () => {
   const validateForm = () => {
     const errors = {};
     if (!formData.company_id) errors.company_id = "Company is required";
-    if (!formData.department_id) errors.department_id = "Department is required";
-    if (!formData.deduction_code) errors.deduction_code = "Deduction code is required";
-    if (!formData.deduction_name) errors.deduction_name = "Deduction name is required";
-    if (formData.amount === "" || isNaN(formData.amount) || Number(formData.amount) < 0)
+    if (!formData.department_id)
+      errors.department_id = "Department is required";
+    if (!formData.deduction_code)
+      errors.deduction_code = "Deduction code is required";
+    if (!formData.deduction_name)
+      errors.deduction_name = "Deduction name is required";
+    if (
+      formData.amount === "" ||
+      isNaN(formData.amount) ||
+      Number(formData.amount) < 0
+    )
       errors.amount = "Amount must be a number and >= 0";
     if (!["active", "inactive"].includes(formData.status))
       errors.status = "Status must be active or inactive";
@@ -202,7 +209,8 @@ const CreateNewDeduction = () => {
       !formData.id &&
       deductions.some(
         (d) =>
-          d.deduction_code.trim().toLowerCase() === formData.deduction_code.trim().toLowerCase()
+          d.deduction_code.trim().toLowerCase() ===
+          formData.deduction_code.trim().toLowerCase()
       )
     ) {
       errors.deduction_code = "Deduction code must be unique";
@@ -236,21 +244,29 @@ const CreateNewDeduction = () => {
         category: formData.category,
         deduction_type: formData.deduction_type,
         startDate: formData.startDate,
-        endDate: formData.deduction_type === "variable" ? formData.endDate : null,
+        endDate:
+          formData.deduction_type === "variable" ? formData.endDate : null,
       };
 
       // POST to /api/deductions
       const result = await createDeduction(deductionData);
 
       // Update list and UI
-      const selectedCompany = companies.find((c) => c.id === parseInt(formData.company_id));
-      const selectedDepartment = departments.find((d) => d.id === parseInt(formData.department_id));
+      const selectedCompany = companies.find(
+        (c) => c.id === parseInt(formData.company_id)
+      );
+      const selectedDepartment = departments.find(
+        (d) => d.id === parseInt(formData.department_id)
+      );
       setDeductions((prev) => [
         ...prev,
         {
           ...result,
           company: { id: selectedCompany.id, name: selectedCompany.name },
-          department: { id: selectedDepartment.id, name: selectedDepartment.name },
+          department: {
+            id: selectedDepartment.id,
+            name: selectedDepartment.name,
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -266,7 +282,11 @@ const CreateNewDeduction = () => {
       setShowModal(false);
     } catch (err) {
       // Laravel validation errors (422)
-      if (err.response && err.response.status === 422 && err.response.data.errors) {
+      if (
+        err.response &&
+        err.response.status === 422 &&
+        err.response.data.errors
+      ) {
         setValidationErrors(err.response.data.errors);
       } else {
         Swal.fire({
