@@ -53,6 +53,7 @@ const CreateNewDeduction = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Fetch deductions and companies
   useEffect(() => {
@@ -171,123 +172,109 @@ const CreateNewDeduction = () => {
     }));
   };
 
+  // Enhanced client-side validation
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.company_id) errors.company_id = "Company is required";
+    if (!formData.department_id) errors.department_id = "Department is required";
+    if (!formData.deduction_code) errors.deduction_code = "Deduction code is required";
+    if (!formData.deduction_name) errors.deduction_name = "Deduction name is required";
+    if (formData.amount === "" || isNaN(formData.amount) || Number(formData.amount) < 0)
+      errors.amount = "Amount must be a number and >= 0";
+    if (!["active", "inactive"].includes(formData.status))
+      errors.status = "Status must be active or inactive";
+    if (!["EPF", "ETF", "Other"].includes(formData.category))
+      errors.category = "Category must be EPF, ETF, or Other";
+    if (!["fixed", "variable"].includes(formData.deduction_type))
+      errors.deduction_type = "Deduction type must be fixed or variable";
+    if (!formData.startDate) errors.startDate = "Start date is required";
+    if (formData.deduction_type === "variable" && !formData.endDate)
+      errors.endDate = "End date is required for variable deductions";
+    if (
+      formData.deduction_type === "variable" &&
+      formData.startDate &&
+      formData.endDate &&
+      formData.startDate >= formData.endDate
+    )
+      errors.endDate = "End date must be after start date";
+    // Deduction code uniqueness (client-side check)
+    if (
+      !formData.id &&
+      deductions.some(
+        (d) =>
+          d.deduction_code.trim().toLowerCase() === formData.deduction_code.trim().toLowerCase()
+      )
+    ) {
+      errors.deduction_code = "Deduction code must be unique";
+    }
+    return errors;
+  };
+
   // Update the handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setValidationErrors({});
+    setDateError("");
 
-    // Check for validation errors
-    if (
-      formData.deduction_type === "variable" &&
-      (!formData.startDate || !formData.endDate)
-    ) {
-      setDateError(
-        "Please select both Start Date and End Date for variable deductions."
-      );
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
 
-    if (formData.deduction_type === "variable") {
-      if (formData.startDate >= formData.endDate) {
-        setDateError("End Date must be after Start Date.");
-        return;
-      }
-    }
-
-    setDateError("");
     setIsSubmitting(true);
-
     try {
       // Prepare data for API
       const deductionData = {
+        company_id: parseInt(formData.company_id),
         department_id: parseInt(formData.department_id),
         deduction_code: formData.deduction_code,
         deduction_name: formData.deduction_name,
         description: formData.description,
         amount: parseFloat(formData.amount),
         status: formData.status,
-        category: formData.category, // Remove the conditional handling
+        category: formData.category,
         deduction_type: formData.deduction_type,
         startDate: formData.startDate,
-        endDate:
-          formData.deduction_type === "variable" ? formData.endDate : null,
+        endDate: formData.deduction_type === "variable" ? formData.endDate : null,
       };
 
-      // Find company and department objects regardless if creating or updating
-      const selectedCompany = companies.find(
-        (c) => c.id === parseInt(formData.company_id)
-      );
-      const selectedDepartment = departments.find(
-        (d) => d.id === parseInt(formData.department_id)
-      );
+      // POST to /api/deductions
+      const result = await createDeduction(deductionData);
 
-      if (formData.id) {
-        // Update existing deduction
-        const result = await updateDeduction(formData.id, deductionData);
-
-        // Update the local state with properly structured data
-        // This ensures that company and department objects are present
-        setDeductions(
-          deductions.map((item) =>
-            item.id === formData.id
-              ? {
-                  ...result, // API response data
-                  id: formData.id, // Ensure ID is preserved
-                  company: {
-                    id: selectedCompany.id,
-                    name: selectedCompany.name,
-                  },
-                  department: {
-                    id: selectedDepartment.id,
-                    name: selectedDepartment.name,
-                  },
-                  updated_at: new Date().toISOString(),
-                }
-              : item
-          )
-        );
-      } else {
-        // Create new deduction
-        const result = await createDeduction(deductionData);
-
-        // Add to local state with properly formatted data
-        const newDeduction = {
-          ...result, // API response data
-          id: result.id || Date.now(), // Use API ID or generate one
-          company: {
-            id: selectedCompany.id,
-            name: selectedCompany.name,
-          },
-          department: {
-            id: selectedDepartment.id,
-            name: selectedDepartment.name,
-          },
+      // Update list and UI
+      const selectedCompany = companies.find((c) => c.id === parseInt(formData.company_id));
+      const selectedDepartment = departments.find((d) => d.id === parseInt(formData.department_id));
+      setDeductions((prev) => [
+        ...prev,
+        {
+          ...result,
+          company: { id: selectedCompany.id, name: selectedCompany.name },
+          department: { id: selectedDepartment.id, name: selectedDepartment.name },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        };
-
-        setDeductions((prev) => [...prev, newDeduction]);
-      }
-
-      // Show success message
+        },
+      ]);
       Swal.fire({
         icon: "success",
         title: "Success",
-        text: `Deduction ${formData.id ? "updated" : "created"} successfully!`,
+        text: "Deduction created successfully!",
         timer: 2000,
         showConfirmButton: false,
       });
-
-      // Close modal and reset form
       resetForm();
       setShowModal(false);
-      setShowEditModal(false);
     } catch (err) {
-      console.error("Error saving deduction:", err);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to save deduction. Please try again.",
-      });
+      // Laravel validation errors (422)
+      if (err.response && err.response.status === 422 && err.response.data.errors) {
+        setValidationErrors(err.response.data.errors);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to save deduction. Please try again.",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -746,6 +733,11 @@ const CreateNewDeduction = () => {
                         </option>
                       ))}
                     </select>
+                    {validationErrors.company_id && (
+                      <div className="text-red-500 text-xs mt-1">
+                        {validationErrors.company_id}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -783,6 +775,11 @@ const CreateNewDeduction = () => {
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                       </div>
                     )}
+                    {validationErrors.department_id && (
+                      <div className="text-red-500 text-xs mt-1">
+                        {validationErrors.department_id}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -798,6 +795,11 @@ const CreateNewDeduction = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="e.g., D001, EPF"
                   />
+                  {validationErrors.deduction_code && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {validationErrors.deduction_code}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -812,6 +814,11 @@ const CreateNewDeduction = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="e.g., Health Insurance"
                   />
+                  {validationErrors.deduction_name && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {validationErrors.deduction_name}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -829,6 +836,11 @@ const CreateNewDeduction = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="e.g., 500.00"
                   />
+                  {validationErrors.amount && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {validationErrors.amount}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -861,6 +873,11 @@ const CreateNewDeduction = () => {
                     <option value="ETF">ETF</option>
                     <option value="Other">Other</option>
                   </select>
+                  {validationErrors.category && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {validationErrors.category}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -903,6 +920,11 @@ const CreateNewDeduction = () => {
                       </label>
                     </div>
                   </div>
+                  {validationErrors.deduction_type && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {validationErrors.deduction_type}
+                    </div>
+                  )}
                 </div>
 
                 {/* Start Date - Required for both fixed and variable */}
@@ -918,6 +940,11 @@ const CreateNewDeduction = () => {
                     required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
+                  {validationErrors.startDate && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {validationErrors.startDate}
+                    </div>
+                  )}
                 </div>
 
                 {/* End Date - Only required for variable deductions */}
@@ -934,6 +961,11 @@ const CreateNewDeduction = () => {
                       required={formData.deduction_type === "variable"}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     />
+                    {validationErrors.endDate && (
+                      <div className="text-red-500 text-xs mt-1">
+                        {validationErrors.endDate}
+                      </div>
+                    )}
                   </div>
                 )}
 
