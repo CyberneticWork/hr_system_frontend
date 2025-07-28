@@ -13,6 +13,8 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  Check,
+  X,
 } from "lucide-react";
 import axios from "@utils/axios";
 import { format, parseISO } from "date-fns";
@@ -28,10 +30,12 @@ const NoPayManagement = () => {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [noPayRecords, setNoPayRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [selectedRecords, setSelectedRecords] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [recordsPerPage] = useState(20); // Changed to 20 records per page
+  const [recordsPerPage] = useState(20);
   const [totalRecords, setTotalRecords] = useState(0);
 
   // List of months
@@ -116,6 +120,128 @@ const NoPayManagement = () => {
     fetchStats();
   }, [month, year, noPayRecords]);
 
+  // Handle record selection
+  const handleSelectRecord = (id) => {
+    setSelectedRecords(prev => 
+      prev.includes(id) 
+        ? prev.filter(recordId => recordId !== id)
+        : [...prev, id]
+    );
+  };
+
+  // Handle select all records
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedRecords([]);
+    } else {
+      setSelectedRecords(noPayRecords.map(record => record.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Handle bulk status update
+  const handleBulkStatusUpdate = async (status) => {
+    if (selectedRecords.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No records selected',
+        text: 'Please select at least one record to update',
+        confirmButtonColor: '#3b82f6',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Update Status?',
+      text: `This will update ${selectedRecords.length} records to ${status}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Update',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.post("/no-pay-records/bulk-update", {
+          ids: selectedRecords,
+          status: status
+        });
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: response.data.message,
+          confirmButtonColor: '#3b82f6',
+        });
+
+        fetchNoPayRecords();
+        fetchStats();
+        setSelectedRecords([]);
+        setSelectAll(false);
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to update records',
+          confirmButtonColor: '#3b82f6',
+        });
+      }
+    }
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedRecords.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No records selected',
+        text: 'Please select at least one record to delete',
+        confirmButtonColor: '#3b82f6',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Delete Records?',
+      text: `This will permanently delete ${selectedRecords.length} records`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.delete("/no-pay-records/bulk-delete", {
+          data: { ids: selectedRecords }
+        });
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: response.data.message,
+          confirmButtonColor: '#3b82f6',
+        });
+
+        fetchNoPayRecords();
+        fetchStats();
+        setSelectedRecords([]);
+        setSelectAll(false);
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to delete records',
+          confirmButtonColor: '#3b82f6',
+        });
+      }
+    }
+  };
+
   // Handle record removal with SweetAlert
   const handleRemoveRecord = async (id) => {
     const result = await Swal.fire({
@@ -153,45 +279,46 @@ const NoPayManagement = () => {
   };
 
   // Handle generate NoPay records with SweetAlert
-  const handleGenerateNoPay = async () => {
-    setIsGenerating(true);
-    try {
-      const result = await Swal.fire({
-        title: 'Generate No-Pay Records?',
-        text: `This will generate records for ${format(new Date(selectedDate), 'MMMM d, yyyy')}`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3b82f6',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Generate',
-        cancelButtonText: 'Cancel'
-      });
+ const handleGenerateNoPay = async () => {
+  setIsGenerating(true);
+  try {
+    const result = await Swal.fire({
+      title: 'Generate No-Pay Records?',
+      text: `This will generate records for ${format(new Date(selectedDate), 'MMMM d, yyyy')}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Generate',
+      cancelButtonText: 'Cancel'
+    });
 
-      if (result.isConfirmed) {
-        const response = await axios.post("/no-pay-records/generate", {
-          date: selectedDate,
-        });
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'Success!',
-          text: response.data.message,
-          confirmButtonColor: '#3b82f6',
-        });
-        
-        fetchNoPayRecords();
-      }
-    } catch (error) {
+    if (result.isConfirmed) {
+      const response = await axios.post("/no-pay-records/generate", {
+        date: selectedDate
+      });
+      
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to generate no-pay records',
+        icon: 'success',
+        title: 'Success!',
+        text: response.data.message,
         confirmButtonColor: '#3b82f6',
       });
-    } finally {
-      setIsGenerating(false);
+      
+      fetchNoPayRecords();
+      fetchStats();
     }
-  };
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.response?.data?.message || 'Failed to generate no-pay records',
+      confirmButtonColor: '#3b82f6',
+    });
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   // Handle print
   const handlePrint = () => {
@@ -309,6 +436,38 @@ const NoPayManagement = () => {
           </div>
 
           <div className="p-4 sm:p-6 lg:p-8">
+            {/* Bulk Actions */}
+            {selectedRecords.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div className="text-blue-800 font-medium">
+                  {selectedRecords.length} record(s) selected
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleBulkStatusUpdate('Approved')}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    Approve Selected
+                  </button>
+                  <button
+                    onClick={() => handleBulkStatusUpdate('Rejected')}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Reject Selected
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Selected
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Filter Section */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div>
@@ -319,7 +478,7 @@ const NoPayManagement = () => {
                   value={month}
                   onChange={(e) => {
                     setMonth(e.target.value);
-                    setCurrentPage(1); // Reset to first page when filter changes
+                    setCurrentPage(1);
                   }}
                   className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
                 >
@@ -338,7 +497,7 @@ const NoPayManagement = () => {
                   value={year}
                   onChange={(e) => {
                     setYear(parseInt(e.target.value));
-                    setCurrentPage(1); // Reset to first page when filter changes
+                    setCurrentPage(1);
                   }}
                   className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
                 >
@@ -384,7 +543,7 @@ const NoPayManagement = () => {
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  setCurrentPage(1); // Reset to first page when search changes
+                  setCurrentPage(1);
                 }}
                 className="w-full p-3 pl-10 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
               />
@@ -404,6 +563,14 @@ const NoPayManagement = () => {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={selectAll}
+                              onChange={handleSelectAll}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                          </th>
                           <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                           </th>
@@ -431,6 +598,14 @@ const NoPayManagement = () => {
                         {filteredRecords.length > 0 ? (
                           filteredRecords.map((record) => (
                             <tr key={record.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedRecords.includes(record.id)}
+                                  onChange={() => handleSelectRecord(record.id)}
+                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 {format(parseISO(record.date), "MMM dd, yyyy")}
                               </td>
@@ -447,15 +622,36 @@ const NoPayManagement = () => {
                                 {record.description}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                  record.status === 'Approved' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : record.status === 'Rejected' 
-                                      ? 'bg-red-100 text-red-800' 
-                                      : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {record.status}
-                                </span>
+                                <select
+                                  value={record.status}
+                                  onChange={async (e) => {
+                                    try {
+                                      await axios.put(`/no-pay-records/${record.id}`, {
+                                        status: e.target.value
+                                      });
+                                      fetchNoPayRecords();
+                                      fetchStats();
+                                    } catch (error) {
+                                      Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: 'Failed to update status',
+                                        confirmButtonColor: '#3b82f6',
+                                      });
+                                    }
+                                  }}
+                                  className={`px-2 py-1 text-xs rounded-full ${
+                                    record.status === 'Approved' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : record.status === 'Rejected' 
+                                        ? 'bg-red-100 text-red-800' 
+                                        : 'bg-yellow-100 text-yellow-800'
+                                  }`}
+                                >
+                                  <option value="Pending" className="bg-yellow-100">Pending</option>
+                                  <option value="Approved" className="bg-green-100">Approved</option>
+                                  <option value="Rejected" className="bg-red-100">Rejected</option>
+                                </select>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center flex justify-center gap-2">
                                 <button
@@ -471,7 +667,7 @@ const NoPayManagement = () => {
                         ) : (
                           <tr>
                             <td
-                              colSpan="7"
+                              colSpan="8"
                               className="px-6 py-16 text-center text-gray-500"
                             >
                               No records found. Adjust your filters or add new records.
