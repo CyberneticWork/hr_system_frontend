@@ -49,14 +49,10 @@ const TimeCard = () => {
   // Import Data section toggle state
   const [showImport, setShowImport] = useState(true);
 
-  // Sample data for dropdowns
-  const locations = ['Main Office', 'Warehouse', 'Branch 1', 'Branch 2'];
-  const months = [
-    'January', 'February', 'March', 'April', 
-    'May', 'June', 'July', 'August',
-    'September', 'October', 'November', 'December'
-  ];
-  const departments = ['HR', 'Finance', 'IT', 'Operations', 'Sales', 'Marketing'];
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [excelFile, setExcelFile] = useState(null);
 
   // Fetch data from backend on mount
   useEffect(() => {
@@ -68,6 +64,15 @@ const TimeCard = () => {
       setIsLoading(false);
     };
     loadData();
+  }, []);
+
+  // Fetch companies from backend (example)
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      const data = await timeCardService.fetchCompanies();
+      setCompanies(data);
+    };
+    fetchCompanies();
   }, []);
 
   // Filter helpers
@@ -341,6 +346,50 @@ const TimeCard = () => {
     // eslint-disable-next-line
   }, [employeeSearch, filterOption]);
 
+  const handleExcelUpload = (e) => {
+    setExcelFile(e.target.files[0]);
+  };
+
+  const handleImportExcel = async () => {
+    if (!excelFile) {
+      Swal.fire({ icon: 'error', title: 'No file selected', text: 'Please select an Excel file.' });
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', excelFile);
+    formData.append('company_id', selectedCompany);
+    formData.append('date', selectedDate);
+
+    try {
+      const res = await timeCardService.importExcel(formData);
+      Swal.fire({
+        icon: 'success',
+        title: 'Import Complete',
+        html: `
+          <div>
+            <p>Imported: <b>${res.imported}</b></p>
+            <p>Absent: <b>${res.absent}</b></p>
+            ${res.errors.length > 0 ? `<p class="text-red-600">Errors:<br>${res.errors.join('<br>')}</p>` : ''}
+          </div>
+        `
+      });
+      const updated = await fetchTimeCards();
+      setAttendanceData(updated);
+      setFilteredData(updated);
+
+      // Auto-clear import fields
+      setSelectedCompany('');
+      setSelectedDate('');
+      setExcelFile(null);
+    } catch (e) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Import failed',
+        text: e.response?.data?.message || 'Excel import failed'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 py-4 sm:py-8">
       <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
@@ -380,50 +429,25 @@ const TimeCard = () => {
                 <div className="mt-4 p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl shadow-sm">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-700">Location</label>
+                      <label className="block text-sm font-semibold text-slate-700">Company</label>
                       <select
                         className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
+                        value={selectedCompany}
+                        onChange={e => setSelectedCompany(e.target.value)}
                       >
-                        <option value="">Select Location</option>
-                        {locations.map((loc) => (
-                          <option key={loc} value={loc}>{loc}</option>
+                        <option value="">Select Company</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.id}>{company.name}</option>
                         ))}
                       </select>
                     </div>
-                    
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-700">Month</label>
-                      <select
-                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                      >
-                        <option value="">Select Month</option>
-                        {months.map((month) => (
-                          <option key={month} value={month}>{month}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-700">Date From</label>
+                      <label className="block text-sm font-semibold text-slate-700">Date</label>
                       <input
                         type="date"
                         className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-700">Date To</label>
-                      <input
-                        type="date"
-                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
                       />
                     </div>
                   </div>
@@ -431,16 +455,8 @@ const TimeCard = () => {
                   <div className="mt-6">
                     <label className="block text-sm font-semibold text-slate-700 mb-4">Import Method</label>
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+                      {/* Remove the fingerprint radio button */}
                       <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
-                        <input
-                          type="radio"
-                          className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                          checked={importMethod === 'fingerprint'}
-                          onChange={() => setImportMethod('fingerprint')}
-                        />
-                        <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Fingerprint</span>
-                      </label>
-                      {/* <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                         <input
                           type="radio"
                           className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
@@ -448,8 +464,25 @@ const TimeCard = () => {
                           onChange={() => setImportMethod('excel')}
                         />
                         <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Excel Sheet</span>
-                      </label> */}
+                      </label>
                     </div>
+                    {importMethod === 'excel' && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Excel File</label>
+                        <input
+                          type="file"
+                          accept=".xlsx,.xls"
+                          className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
+                          onChange={handleExcelUpload}
+                        />
+                        <button
+                          className="mt-3 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg"
+                          onClick={handleImportExcel}
+                        >
+                          Import Excel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
