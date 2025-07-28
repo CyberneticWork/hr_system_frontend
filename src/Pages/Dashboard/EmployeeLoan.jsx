@@ -137,12 +137,16 @@ const EmployeeLoan = () => {
       (calculationType === "byCount" && !installmentCount) ||
       (interestType === "withInterest" && !interestRate)
     ) {
-      showErrorMessage("Missing Information", "Please fill all required fields");
+      showErrorMessage(
+        "Missing Information",
+        "Please fill all required fields"
+      );
       return;
     }
 
     const principal = parseFloat(loanAmount);
-    const rate = interestType === "withInterest" ? parseFloat(interestRate) / 100 / 12 : 0;
+    const rate =
+      interestType === "withInterest" ? parseFloat(interestRate) / 100 / 12 : 0;
     let numberOfInstallments;
     let installmentAmt;
 
@@ -153,8 +157,10 @@ const EmployeeLoan = () => {
       if (interestType === "withInterest") {
         // Using loan amortization formula: PMT = P[r(1+r)^n]/[(1+r)^n-1]
         const ratePerPeriod = rate;
-        const numerator = ratePerPeriod * Math.pow(1 + ratePerPeriod, numberOfInstallments);
-        const denominator = Math.pow(1 + ratePerPeriod, numberOfInstallments) - 1;
+        const numerator =
+          ratePerPeriod * Math.pow(1 + ratePerPeriod, numberOfInstallments);
+        const denominator =
+          Math.pow(1 + ratePerPeriod, numberOfInstallments) - 1;
         installmentAmt = principal * (numerator / denominator);
       } else {
         // Simple division for non-interest loans
@@ -168,7 +174,8 @@ const EmployeeLoan = () => {
         // Iteratively calculate the number of payments needed
         let remaining = principal;
         let count = 0;
-        while (remaining > 0 && count < 1000) { // limit to prevent infinite loop
+        while (remaining > 0 && count < 1000) {
+          // limit to prevent infinite loop
           const interest = remaining * rate;
           const principalPayment = installmentAmt - interest;
           remaining -= principalPayment;
@@ -188,7 +195,7 @@ const EmployeeLoan = () => {
     for (let i = 1; i <= numberOfInstallments; i++) {
       const interest = remaining * rate;
       let principalPayment = installmentAmt - interest;
-      
+
       // Adjust final payment if needed
       if (i === numberOfInstallments) {
         if (principalPayment > remaining) {
