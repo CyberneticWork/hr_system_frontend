@@ -11,8 +11,13 @@ import {
   CheckCircle,
   AlertCircle,
   Search,
+  Building2,
+  Layers,
 } from "lucide-react";
 import jsPDF from "jspdf";
+import { fetchCompanies, fetchDepartmentsById } from "@services/ApiDataService";
+import AllowancesService from "@services/AllowancesService";
+import * as DeductionService from "@services/DeductionService";
 
 const STORAGE_KEY = "processedSalaryData";
 
@@ -27,8 +32,19 @@ const SalaryProcessPage = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [showHistory, setShowHistory] = useState(false);
-  const [employeeHistoryData, setEmployeeHistoryData] = useState([]); // For showing history rows
+  const [employeeHistoryData, setEmployeeHistoryData] = useState([]);
   const [showingHistory, setShowingHistory] = useState(false);
+
+  // New state for companies and departments
+  const [companies, setCompanies] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [availableAllowances, setAvailableAllowances] = useState([]);
+  const [availableDeductions, setAvailableDeductions] = useState([]);
+  const [isLoadingAllowances, setIsLoadingAllowances] = useState(false);
 
   // New state for selected employees
   const [selectedEmployees, setSelectedEmployees] = useState([]);
@@ -44,18 +60,11 @@ const SalaryProcessPage = () => {
     lastProcessDate: "2025-05-30",
   };
 
-  // Generate structured temporary data with EPF status
+  // Generate structured temporary data with EPF status and company info
   const generateTempData = () => {
     const employees = [];
-    const locations = ["company 1", "company 2", "company 3", "company 4"];
+    const companyNames = ["Company 1", "Company 2", "Company 3", "Company 4"];
     const departments = ["Finance", "HR", "IT", "Operations", "Marketing"];
-    const designations = [
-      "Manager",
-      "Executive",
-      "Developer",
-      "Analyst",
-      "Officer",
-    ];
     // Generate 6 months of history for each employee
     const months = [
       "2025-02-28",
@@ -68,6 +77,9 @@ const SalaryProcessPage = () => {
 
     for (let i = 1; i <= 1; i++) {
       const hasEPF = i % 2 === 0;
+      const companyId = (i % 4) + 1; // Map to a company ID (1-4)
+      const departmentId = (i % 5) + 1; // Map to a department ID (1-5)
+
       const empHistory = months.map((month, idx) => ({
         EMPNo: `EMP${i.toString().padStart(3, "0")}`,
         Name: `Employee ${i}`,
@@ -99,9 +111,10 @@ const SalaryProcessPage = () => {
         NetSalary: 41000 + i * 2700 + idx * 900,
         ETF3: hasEPF ? 1140 + i * 84 + idx * 20 : 0,
         EPF12: hasEPF ? 4560 + i * 336 + idx * 80 : 0,
-        Department: departments[i % 5],
-        Designation: designations[i % 5],
-        Location: locations[i % 4],
+        Company: companyId.toString(), // Add company ID
+        Department: departmentId.toString(), // Add department ID as string
+        CompanyName: companyNames[i % 4], // For display purposes
+        DepartmentName: departments[i % 5], // For display purposes
         HasEPF: hasEPF,
         ProcessDate: month,
       }));
@@ -346,20 +359,46 @@ const SalaryProcessPage = () => {
     setDisplayedData(nonEPFEmployees);
   };
 
-  // Handle reset filter
-  const resetFilter = () => {
-    setActiveFilter("All");
-    setEmployeeData(allEmployeeData);
-    setDisplayedData(allEmployeeData);
-    setLocation("All Locations");
-    setMonth("");
-    setSearchTerm("");
-    setFromDate("");
-    setToDate("");
-    setShowHistory(false);
-  };
+  // Fetch companies on component mount
+  useEffect(() => {
+    const loadCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const companiesData = await fetchCompanies();
+        setCompanies(companiesData);
+      } catch (error) {
+        console.error("Error loading companies:", error);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
 
-  // Apply filters
+    loadCompanies();
+  }, []);
+
+  // Fetch departments when company is selected
+  useEffect(() => {
+    const loadDepartments = async () => {
+      if (selectedCompany) {
+        setIsLoadingDepartments(true);
+        try {
+          const departmentsData = await fetchDepartmentsById(selectedCompany);
+          setDepartments(departmentsData);
+        } catch (error) {
+          console.error("Error loading departments:", error);
+        } finally {
+          setIsLoadingDepartments(false);
+        }
+      } else {
+        setDepartments([]);
+        setSelectedDepartment("");
+      }
+    };
+
+    loadDepartments();
+  }, [selectedCompany]);
+
+  // Apply filters - update to use company and department
   const applyFilters = () => {
     let filtered = allEmployeeData;
 
@@ -369,8 +408,16 @@ const SalaryProcessPage = () => {
       filtered = filtered.filter((emp) => !emp.HasEPF);
     }
 
-    if (location !== "All Locations") {
-      filtered = filtered.filter((emp) => emp.Location === location);
+    // Filter by company
+    if (selectedCompany) {
+      filtered = filtered.filter((emp) => emp.Company === selectedCompany);
+    }
+
+    // Filter by department
+    if (selectedDepartment) {
+      filtered = filtered.filter(
+        (emp) => emp.Department === selectedDepartment
+      );
     }
 
     if (month) {
@@ -544,6 +591,146 @@ const SalaryProcessPage = () => {
     setSelectAll(false);
   }, [searchTerm, location, month, activeFilter, showHistory]);
 
+  // Utility function to get company name by ID
+  const getCompanyName = (id) => {
+    if (!id) return "N/A";
+    const company = companies.find((c) => c.id.toString() === id.toString());
+    return company ? company.name : "Unknown";
+  };
+
+  // Utility function to get department name by ID
+  const getDepartmentName = (id) => {
+    if (!id) return "N/A";
+    const department = departments.find(
+      (d) => d.id.toString() === id.toString()
+    );
+    return department ? department.name : "Unknown";
+  };
+
+  // Add this function after the applyFilters function
+
+  // Reset filter function
+  const resetFilter = () => {
+    setActiveFilter("All");
+    setEmployeeData(allEmployeeData);
+    setDisplayedData(allEmployeeData);
+    setFilteredData(allEmployeeData);
+    setSelectedCompany("");
+    setSelectedDepartment("");
+    setMonth("");
+    setSearchTerm("");
+    setFromDate("");
+    setToDate("");
+    setShowHistory(false);
+    setEmployeeHistoryData([]);
+    setShowingHistory(false);
+  };
+
+  // Add this function to load allowances by company
+  const loadAllowancesByCompany = async (companyId) => {
+    setIsLoadingAllowances(true);
+    try {
+      const allowances =
+        await AllowancesService.getAllowancesByCompanyOrDepartment(
+          companyId,
+          null
+        );
+      setAvailableAllowances(allowances || []);
+    } catch (error) {
+      console.error("Error loading allowances by company:", error);
+    } finally {
+      setIsLoadingAllowances(false);
+    }
+  };
+
+  // Add this useEffect to load allowances and deductions when the component mounts
+  useEffect(() => {
+    const loadAllowancesAndDeductions = async () => {
+      setIsLoadingAllowances(true);
+      try {
+        // Get all allowances
+        const allowances = await AllowancesService.getAllAllowances();
+        setAvailableAllowances(allowances || []);
+
+        // Get all deductions
+        const deductions = await DeductionService.fetchDeductions();
+        setAvailableDeductions(deductions || []);
+      } catch (error) {
+        console.error("Error loading allowances and deductions:", error);
+      } finally {
+        setIsLoadingAllowances(false);
+      }
+    };
+
+    loadAllowancesAndDeductions();
+  }, []);
+
+  // Add this function to your SalaryProcessPage component
+  const handleCompanyChange = (e) => {
+    const companyId = e.target.value;
+    setSelectedCompany(companyId);
+    setSelectedDepartment("");
+
+    // If a company is selected, fetch its allowances
+    if (companyId) {
+      loadAllowancesByCompany(companyId);
+    } else {
+      // If no company is selected, load all allowances
+      loadAllowancesAndDeductions();
+    }
+  };
+
+  // Function to map allowance name to field name
+  const mapAllowanceToField = (allowanceName) => {
+    const mappings = {
+      "Travelling Allowance": "TravellingAllowance",
+      "Special Allowance": "SpecialAllowance",
+      "Attendance Allowance": "AttendanceAllowance",
+      "Production Incentive": "ProductionIncentive",
+      "Medical Reimbursement": "MedicalReimbursement",
+    };
+    return mappings[allowanceName] || allowanceName;
+  };
+
+  // Function to map deduction name to field name
+  const mapDeductionToField = (deductionName) => {
+    const mappings = {
+      "Salary Advance": "SalaryAdvance",
+      "Meal Deduction": "MealDeduction",
+      "Other Deduction": "OtherDeduction",
+      "Bond Deduction": "BondDeduction",
+      Loan: "Loan",
+    };
+    return mappings[deductionName] || deductionName;
+  };
+
+  // Handle selection of allowance or deduction and auto-fill amount
+  const handleAllowanceDeductionChange = (value) => {
+    // Set the selected action name
+    setBulkActionName(value);
+
+    // Find the selected allowance or deduction to get its amount
+    if (bulkActionType === "allowance") {
+      const selectedAllowance = availableAllowances.find(
+        (allowance) => mapAllowanceToField(allowance.allowance_name) === value
+      );
+      if (selectedAllowance && selectedAllowance.amount) {
+        // Convert to number and format to 2 decimal places if needed
+        const amount = parseFloat(selectedAllowance.amount).toFixed(2);
+        setBulkActionAmount(amount);
+      }
+    } else {
+      const selectedDeduction = availableDeductions.find(
+        (deduction) => mapDeductionToField(deduction.deduction_name) === value
+      );
+      if (selectedDeduction && selectedDeduction.amount) {
+        // Convert to number and format to 2 decimal places if needed
+        const amount = parseFloat(selectedDeduction.amount).toFixed(2);
+        setBulkActionAmount(amount);
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
@@ -687,25 +874,79 @@ const SalaryProcessPage = () => {
             <div className="flex flex-col md:flex-row gap-5 mb-4">
               <div className="relative flex-1">
                 <label
-                  htmlFor="location"
+                  htmlFor="company"
                   className="block text-xs font-semibold text-gray-500 mb-1"
                 >
-                  Location
+                  Company
                 </label>
-                <select
-                  id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="appearance-none w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                >
-                  {locations.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-9 h-5 w-5 text-blue-400" />
+                <div className="relative">
+                  <Building2
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={18}
+                  />
+                  {isLoadingCompanies ? (
+                    <div className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                      <span className="ml-2 text-gray-500">Loading...</span>
+                    </div>
+                  ) : (
+                    <select
+                      id="company"
+                      value={selectedCompany}
+                      onChange={handleCompanyChange}
+                      className="appearance-none w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                    >
+                      <option value="">All Companies</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
+                </div>
               </div>
+
+              <div className="relative flex-1">
+                <label
+                  htmlFor="department"
+                  className="block text-xs font-semibold text-gray-500 mb-1"
+                >
+                  Department
+                </label>
+                <div className="relative">
+                  <Layers
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={18}
+                  />
+                  {isLoadingDepartments ? (
+                    <div className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                      <span className="ml-2 text-gray-500">Loading...</span>
+                    </div>
+                  ) : (
+                    <select
+                      id="department"
+                      value={selectedDepartment}
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                      disabled={!selectedCompany}
+                      className={`appearance-none w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm ${
+                        !selectedCompany ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <option value="">All Departments</option>
+                      {departments.map((department) => (
+                        <option key={department.id} value={department.id}>
+                          {department.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
+                </div>
+              </div>
+
               <div className="relative flex-1">
                 <label
                   htmlFor="month"
@@ -726,7 +967,7 @@ const SalaryProcessPage = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-9 h-5 w-5 text-blue-400" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
               </div>
             </div>
 
@@ -892,7 +1133,11 @@ const SalaryProcessPage = () => {
               </label>
               <select
                 value={bulkActionType}
-                onChange={(e) => setBulkActionType(e.target.value)}
+                onChange={(e) => {
+                  setBulkActionType(e.target.value);
+                  setBulkActionName(""); // Reset selection
+                  setBulkActionAmount(""); // Reset amount
+                }}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="allowance">Add Allowance</option>
@@ -908,35 +1153,27 @@ const SalaryProcessPage = () => {
               </label>
               <select
                 value={bulkActionName}
-                onChange={(e) => setBulkActionName(e.target.value)}
+                onChange={(e) => handleAllowanceDeductionChange(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Type</option>
-                {bulkActionType === "allowance" ? (
-                  <>
-                    <option value="TravellingAllowance">
-                      Travelling Allowance
-                    </option>
-                    <option value="SpecialAllowance">Special Allowance</option>
-                    <option value="AttendanceAllowance">
-                      Attendance Allowance
-                    </option>
-                    <option value="ProductionIncentive">
-                      Production Incentive
-                    </option>
-                    <option value="MedicalReimbursement">
-                      Medical Reimbursement
-                    </option>
-                  </>
-                ) : (
-                  <>
-                    <option value="SalaryAdvance">Salary Advance</option>
-                    <option value="MealDeduction">Meal Deduction</option>
-                    <option value="OtherDeduction">Other Deduction</option>
-                    <option value="BondDeduction">Bond Deduction</option>
-                    <option value="Loan">Loan</option>
-                  </>
-                )}
+                {bulkActionType === "allowance"
+                  ? availableAllowances.map((allowance) => (
+                      <option
+                        key={allowance.id}
+                        value={mapAllowanceToField(allowance.allowance_name)}
+                      >
+                        {allowance.allowance_name}
+                      </option>
+                    ))
+                  : availableDeductions.map((deduction) => (
+                      <option
+                        key={deduction.id}
+                        value={mapDeductionToField(deduction.deduction_name)}
+                      >
+                        {deduction.deduction_name}
+                      </option>
+                    ))}
               </select>
             </div>
 
@@ -996,6 +1233,12 @@ const SalaryProcessPage = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                   Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                  Company
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                  Department
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                   Process Date
@@ -1114,6 +1357,12 @@ const SalaryProcessPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {employee.Name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getCompanyName(employee.Company)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getDepartmentName(employee.Department)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {employee.ProcessDate ||
