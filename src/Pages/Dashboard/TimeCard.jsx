@@ -17,6 +17,7 @@ const TimeCard = () => {
   const [department, setDepartment] = useState('');
   const [nic, setNic] = useState('');
   const [nicError, setNicError] = useState('');
+  const [employeeSearch, setEmployeeSearch] = useState('');
 
   // Table data state
   const [attendanceData, setAttendanceData] = useState([]);
@@ -73,9 +74,11 @@ const TimeCard = () => {
   const filterAttendance = (statusFilter = null) => {
     let filtered = attendanceData;
 
-    if (filterOption === 'employee' && employeeName) {
+    if (filterOption === 'employee' && employeeSearch) {
       filtered = filtered.filter(
-        (rec) => rec.name && rec.name.toLowerCase().includes(employeeName.toLowerCase())
+        (rec) =>
+          (rec.nic && rec.nic.toLowerCase().includes(employeeSearch.toLowerCase())) ||
+          (rec.empNo && rec.empNo.toLowerCase().includes(employeeSearch.toLowerCase()))
       );
     }
     if (filterOption === 'department' && department) {
@@ -268,7 +271,14 @@ const TimeCard = () => {
         showConfirmButton: false,
       });
     } catch (e) {
-      setNicError('Failed to add attendance record');
+      // Show backend error message if available
+      const msg = e.response?.data?.message || 'Failed to add attendance record';
+      setNicError(msg);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+      });
     }
     setIsLoading(false);
   };
@@ -305,6 +315,31 @@ const TimeCard = () => {
       }));
     }
   };
+
+  // (Optional) Reset employeeSearch when filter changes
+  useEffect(() => {
+    if (filterOption !== 'employee') setEmployeeSearch('');
+  }, [filterOption]);
+
+  // Fetch employee records based on search and filter
+  useEffect(() => {
+    const fetchEmployeeRecords = async () => {
+      if (filterOption === 'employee' && employeeSearch.trim() !== '') {
+        setIsLoading(true);
+        try {
+          const data = await timeCardService.searchEmployeeTimeCards(employeeSearch.trim());
+          setFilteredData(data);
+        } catch (e) {
+          setFilteredData([]);
+        }
+        setIsLoading(false);
+      } else if (filterOption === 'all') {
+        setFilteredData(attendanceData);
+      }
+    };
+    fetchEmployeeRecords();
+    // eslint-disable-next-line
+  }, [employeeSearch, filterOption]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 py-4 sm:py-8">
@@ -467,13 +502,13 @@ const TimeCard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {filterOption === 'employee' && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Employee Name</label>
+                    <label className="block text-sm font-semibold text-slate-700">Search by NIC or EPF Number</label>
                     <input
                       type="text"
                       className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                      value={employeeName}
-                      onChange={(e) => setEmployeeName(e.target.value)}
-                      placeholder="Enter employee name"
+                      value={employeeSearch}
+                      onChange={(e) => setEmployeeSearch(e.target.value)}
+                      placeholder="Enter NIC or EPF number"
                     />
                   </div>
                 )}

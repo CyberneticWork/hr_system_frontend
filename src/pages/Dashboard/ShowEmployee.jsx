@@ -9,8 +9,6 @@ import {
   Briefcase,
   X,
   Loader2,
-  Users,
-  Building,
   Heart,
   Baby,
   Shield,
@@ -19,7 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
-  Edit,
+  DollarSign,
 } from "lucide-react";
 import { useDebounce } from "@uidotdev/usehooks";
 import employeeService from "@services/EmployeeDataService";
@@ -624,7 +622,7 @@ const ShowEmployee = () => {
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <label className="block text-sm font-medium text-gray-600 mb-1">
-                        Compnay Name
+                        Company Name
                       </label>
                       <div className="mt-2">
                         <span className="px-3 py-1 rounded-full text-xs font-medium border bg-purple-100 text-purple-800 border-purple-200">
@@ -645,6 +643,17 @@ const ShowEmployee = () => {
                             selectedEmployee.organization_assignment?.department
                               ?.name
                           }
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">
+                        Sub Department
+                      </label>
+                      <div className="mt-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-green-100 text-purple-800 border-purple-200">
+                          {selectedEmployee.organization_assignment
+                            ?.sub_department?.name || "Not assigned"}
                         </span>
                       </div>
                     </div>
@@ -699,7 +708,7 @@ const ShowEmployee = () => {
                         {formatDate(
                           selectedEmployee.organization_assignment
                             ?.confirmation_date
-                        )}
+                        ) || "Not confirmed"}
                       </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -1003,6 +1012,73 @@ const ShowEmployee = () => {
                   </div>
                 </div>
 
+                {/* Compensation Information */}
+                {selectedEmployee.compensation && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                      Compensation Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <label className="block text-sm font-medium text-green-800 mb-1">
+                          Basic Salary
+                        </label>
+                        <p className="text-green-900 font-semibold">
+                          Rs. {selectedEmployee.compensation.basic_salary}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <label className="block text-sm font-medium text-green-800 mb-1">
+                          Bank Name
+                        </label>
+                        <p className="text-green-900 font-semibold">
+                          {selectedEmployee.compensation.bank_name ||
+                            "Not specified"}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <label className="block text-sm font-medium text-green-800 mb-1">
+                          Branch Name
+                        </label>
+                        <p className="text-green-900 font-semibold">
+                          {selectedEmployee.compensation.branch_name ||
+                            "Not specified"}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <label className="block text-sm font-medium text-green-800 mb-1">
+                          Account Number
+                        </label>
+                        <p className="text-green-900 font-semibold">
+                          {selectedEmployee.compensation.bank_account_no ||
+                            "Not specified"}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <label className="block text-sm font-medium text-green-800 mb-1">
+                          EPF/ETF Enabled
+                        </label>
+                        <p className="text-green-900 font-semibold">
+                          {selectedEmployee.compensation.enable_epf_etf
+                            ? "Yes"
+                            : "No"}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <label className="block text-sm font-medium text-green-800 mb-1">
+                          OT Active
+                        </label>
+                        <p className="text-green-900 font-semibold">
+                          {selectedEmployee.compensation.ot_active
+                            ? "Yes"
+                            : "No"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Additional Information */}
                 {selectedEmployee.organization_assignment
                   ?.date_of_resigning && (
@@ -1071,7 +1147,7 @@ const ShowEmployee = () => {
                     Delete
                   </button>
                   <button
-                    onClick={closeModal} // You might want to change this to a different handler
+                    onClick={closeModal}
                     className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
                   >
                     Close
