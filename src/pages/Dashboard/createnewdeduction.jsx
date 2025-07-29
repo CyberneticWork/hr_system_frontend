@@ -545,11 +545,13 @@ const CreateNewDeduction = () => {
                 ...result,
                 company: {
                   id: parseInt(formData.company_id),
-                  name: companies.find((c) => c.id == formData.company_id)?.name,
+                  name: companies.find((c) => c.id == formData.company_id)
+                    ?.name,
                 },
                 department: {
                   id: parseInt(formData.department_id),
-                  name: departments.find((d) => d.id == formData.department_id)?.name,
+                  name: departments.find((d) => d.id == formData.department_id)
+                    ?.name,
                 },
                 updated_at: new Date().toISOString(),
               }
@@ -568,7 +570,11 @@ const CreateNewDeduction = () => {
       setShowEditModal(false);
     } catch (err) {
       // Laravel validation errors (422)
-      if (err.response && err.response.status === 422 && err.response.data.errors) {
+      if (
+        err.response &&
+        err.response.status === 422 &&
+        err.response.data.errors
+      ) {
         setValidationErrors(err.response.data.errors);
       } else {
         Swal.fire({
@@ -870,7 +876,10 @@ const CreateNewDeduction = () => {
             </div>
 
             {/* Form Section */}
-            <form onSubmit={showEditModal ? handleUpdate : handleSubmit} className="p-6">
+            <form
+              onSubmit={showEditModal ? handleUpdate : handleSubmit}
+              className="p-6"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Company Field */}
                 <div className="space-y-2">
@@ -948,7 +957,8 @@ const CreateNewDeduction = () => {
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Deduction Code {!showEditModal && <span className="text-red-500">*</span>}
+                    Deduction Code{" "}
+                    {!showEditModal && <span className="text-red-500">*</span>}
                   </label>
                   {showEditModal ? (
                     <div className="w-full px-3 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
