@@ -16,6 +16,10 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import { fetchCompanies, fetchDepartmentsById } from "@services/ApiDataService";
+import {
+  getSalaryData,
+  UpdateAllowances,
+} from "@services/SalaryProcessService";
 import AllowancesService from "@services/AllowancesService";
 import * as DeductionService from "@services/DeductionService";
 
@@ -25,6 +29,7 @@ const SalaryProcessPage = () => {
   // State for filters
   const [location, setLocation] = useState("All Locations");
   const [month, setMonth] = useState("");
+  const [year, setYear] = useState(new Date().getFullYear().toString());
   const [status, setStatus] = useState("Unprocessed");
   const [filteredData, setFilteredData] = useState([]);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -34,6 +39,7 @@ const SalaryProcessPage = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [employeeHistoryData, setEmployeeHistoryData] = useState([]);
   const [showingHistory, setShowingHistory] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // New state for companies and departments
   const [companies, setCompanies] = useState([]);
@@ -53,6 +59,7 @@ const SalaryProcessPage = () => {
   const [bulkActionType, setBulkActionType] = useState("allowance");
   const [bulkActionAmount, setBulkActionAmount] = useState("");
   const [bulkActionName, setBulkActionName] = useState("");
+  const [bulkActionId, setBulkActionId] = useState(""); // Replace bulkActionName
 
   // Status information
   const statusInfo = {
@@ -60,106 +67,28 @@ const SalaryProcessPage = () => {
     lastProcessDate: "2025-05-30",
   };
 
-  // Generate structured temporary data with EPF status and company info
-  const generateTempData = () => {
-    const employees = [];
-    const companyNames = ["Company 1", "Company 2", "Company 3", "Company 4"];
-    const departments = ["Finance", "HR", "IT", "Operations", "Marketing"];
-    // Generate 6 months of history for each employee
-    const months = [
-      "2025-02-28",
-      "2025-03-31",
-      "2025-04-30",
-      "2025-05-31",
-      "2025-06-30",
-      "2025-07-31",
-    ];
-
-    for (let i = 1; i <= 1; i++) {
-      const hasEPF = i % 2 === 0;
-      const companyId = (i % 4) + 1; // Map to a company ID (1-4)
-      const departmentId = (i % 5) + 1; // Map to a department ID (1-5)
-
-      const empHistory = months.map((month, idx) => ({
-        EMPNo: `EMP${i.toString().padStart(3, "0")}`,
-        Name: `Employee ${i}`,
-        Basic: 30000 + i * 2000 + idx * 500,
-        Budgetary1: 5000 + i * 500 + idx * 100,
-        Budgetary2: 3000 + i * 300 + idx * 50,
-        Basic_Salary: 38000 + i * 2800 + idx * 700,
-        NoPayMinutes: i % 3 === 0 ? 30 : 0,
-        NoPay: i % 3 === 0 ? 1000 : 0,
-        Epf_Purposes: 38000 + i * 2800 + idx * 700,
-        OTMinutes: i % 2 === 0 ? 60 : 0,
-        OverTime: i % 2 === 0 ? 3000 + idx * 100 : 0,
-        DoubleOTtime: i % 5 === 0 ? 30 : 0,
-        TravellingAllowance: 2000 + i * 100 + idx * 20,
-        SpecialAllowance: 1000 + i * 50 + idx * 10,
-        AttendanceAllowance: 500 + idx * 10,
-        ProductionIncentive: i % 4 === 0 ? 1500 + idx * 50 : 0,
-        MedicalReimbursement: i % 6 === 0 ? 2000 + idx * 50 : 0,
-        GrossAmount: 45000 + i * 3000 + idx * 1000,
-        SalaryAdvance: i % 7 === 0 ? 5000 : 0,
-        StampDuty: 50,
-        MealDeduction: i % 3 === 0 ? 500 : 0,
-        OtherDeduction: i % 5 === 0 ? 1000 : 0,
-        BondDeduction: 0,
-        Deduct_epf8: hasEPF ? 3040 + i * 224 + idx * 50 : 0,
-        PayeeTax: i > 5 ? 2000 + i * 100 + idx * 50 : 0,
-        Loan: i % 4 === 0 ? 2000 : 0,
-        TotalDeduction: 4000 + i * 300 + idx * 100,
-        NetSalary: 41000 + i * 2700 + idx * 900,
-        ETF3: hasEPF ? 1140 + i * 84 + idx * 20 : 0,
-        EPF12: hasEPF ? 4560 + i * 336 + idx * 80 : 0,
-        Company: companyId.toString(), // Add company ID
-        Department: departmentId.toString(), // Add department ID as string
-        CompanyName: companyNames[i % 4], // For display purposes
-        DepartmentName: departments[i % 5], // For display purposes
-        HasEPF: hasEPF,
-        ProcessDate: month,
-      }));
-
-      // The latest month is the "current" row for the main table
-      const latest = empHistory[empHistory.length - 1];
-
-      employees.push({
-        ...latest,
-        history: empHistory,
-      });
-    }
-    return employees;
-  };
-
-  const allEmployeeData = generateTempData();
-  const [employeeData, setEmployeeData] = useState(allEmployeeData);
-  const [displayedData, setDisplayedData] = useState(allEmployeeData);
-  const totalSalary = displayedData.reduce(
-    (sum, emp) => sum + emp.GrossAmount,
+  const [employeeData, setEmployeeData] = useState([]);
+  const [displayedData, setDisplayedData] = useState([]);
+  const totalSalary = (displayedData || []).reduce(
+    (sum, emp) => sum + (parseFloat(emp?.basic_salary) || 0),
     0
   );
   const employeeCount = displayedData.length;
 
-  // Locations and months for dropdowns
-  const locations = [
-    "All Locations",
-    "company 1",
-    "company 2",
-    "company 3",
-    "company 4",
-  ];
+  // Months for dropdowns
   const months = [
-    "January 2025",
-    "February 2025",
-    "March 2025",
-    "April 2025",
-    "May 2025",
-    "June 2025",
-    "July 2025",
-    "August 2025",
-    "September 2025",
-    "October 2025",
-    "November 2025",
-    "December 2025",
+    { value: "1", label: "January" },
+    { value: "2", label: "February" },
+    { value: "3", label: "March" },
+    { value: "4", label: "April" },
+    { value: "5", label: "May" },
+    { value: "6", label: "June" },
+    { value: "7", label: "July" },
+    { value: "8", label: "August" },
+    { value: "9", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
   ];
 
   // Handle salary process
@@ -189,25 +118,19 @@ const SalaryProcessPage = () => {
 
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
-      doc.text(
-        `Payslip for the Month: ${
-          emp.ProcessDate || emp.Month || emp.ProcessedDate
-        }`,
-        105,
-        28,
-        { align: "center" }
-      );
+      doc.text(`Payslip for the Month: ${month} ${year}`, 105, 28, {
+        align: "center",
+      });
 
       // Employee Info
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.text("Employee Details", 14, 40);
       doc.setFont("helvetica", "normal");
-      doc.text(`Employee No: ${emp.EMPNo}`, 14, 48);
-      doc.text(`Name: ${emp.Name}`, 14, 54);
-      doc.text(`Department: ${emp.Department}`, 14, 60);
-      doc.text(`Designation: ${emp.Designation}`, 14, 66);
-      doc.text(`Location: ${emp.Location}`, 14, 72);
+      doc.text(`Employee No: ${emp.emp_no}`, 14, 48);
+      doc.text(`Name: ${emp.full_name}`, 14, 54);
+      doc.text(`Department: ${emp.department_name}`, 14, 60);
+      doc.text(`Company: ${emp.company_name}`, 14, 66);
 
       // Salary Table
       let y = 82;
@@ -220,31 +143,10 @@ const SalaryProcessPage = () => {
       doc.setFont("helvetica", "normal");
 
       // Earnings
-      const earnings = [
-        ["Basic Salary", emp.Basic_Salary],
-        ["Budgetary Allowance 1", emp.Budgetary1],
-        ["Budgetary Allowance 2", emp.Budgetary2],
-        ["Over Time", emp.OverTime],
-        ["Double OT", emp.DoubleOTtime],
-        ["Travelling Allowance", emp.TravellingAllowance],
-        ["Special Allowance", emp.SpecialAllowance],
-        ["Attendance Allowance", emp.AttendanceAllowance],
-        ["Production Incentive", emp.ProductionIncentive],
-        ["Medical Reimbursement", emp.MedicalReimbursement],
-      ];
+      const earnings = [["Basic Salary", emp.basic_salary]];
 
       // Deductions
-      const deductions = [
-        ["No Pay", emp.NoPay],
-        ["Salary Advance", emp.SalaryAdvance],
-        ["Stamp Duty", emp.StampDuty],
-        ["Meal Deduction", emp.MealDeduction],
-        ["Other Deduction", emp.OtherDeduction],
-        ["Bond Deduction", emp.BondDeduction],
-        ["Deduct EPF 8%", emp.Deduct_epf8],
-        ["Payee Tax", emp.PayeeTax],
-        ["Loan", emp.Loan],
-      ];
+      const deductions = [["Loan", emp.total_loan_amount]];
 
       // Print earnings and deductions side by side
       const maxRows = Math.max(earnings.length, deductions.length);
@@ -252,7 +154,7 @@ const SalaryProcessPage = () => {
         if (earnings[i]) {
           doc.text(earnings[i][0], 14, y);
           doc.text(
-            earnings[i][1] ? earnings[i][1].toLocaleString() : "-",
+            earnings[i][1] ? parseFloat(earnings[i][1]).toLocaleString() : "-",
             70,
             y,
             { align: "right" }
@@ -261,7 +163,9 @@ const SalaryProcessPage = () => {
         if (deductions[i]) {
           doc.text(deductions[i][0], 120, y);
           doc.text(
-            deductions[i][1] ? deductions[i][1].toLocaleString() : "-",
+            deductions[i][1]
+              ? parseFloat(deductions[i][1]).toLocaleString()
+              : "-",
             180,
             y,
             { align: "right" }
@@ -279,14 +183,16 @@ const SalaryProcessPage = () => {
       doc.setFont("helvetica", "bold");
       doc.text("Gross Amount", 14, y);
       doc.text(
-        emp.GrossAmount ? emp.GrossAmount.toLocaleString() : "-",
+        emp.basic_salary ? parseFloat(emp.basic_salary).toLocaleString() : "-",
         70,
         y,
         { align: "right" }
       );
       doc.text("Total Deduction", 120, y);
       doc.text(
-        emp.TotalDeduction ? emp.TotalDeduction.toLocaleString() : "-",
+        emp.total_loan_amount
+          ? parseFloat(emp.total_loan_amount).toLocaleString()
+          : "-",
         180,
         y,
         { align: "right" }
@@ -295,38 +201,32 @@ const SalaryProcessPage = () => {
       y += 10;
       doc.setFontSize(13);
       doc.setTextColor(34, 197, 94); // green
+      const netSalary =
+        (parseFloat(emp.basic_salary) || 0) -
+        (parseFloat(emp.total_loan_amount) || 0);
       doc.text("Net Salary", 14, y);
-      doc.text(emp.NetSalary ? emp.NetSalary.toLocaleString() : "-", 70, y, {
+      doc.text(netSalary.toLocaleString(), 70, y, {
         align: "right",
       });
       doc.setTextColor(0, 0, 0);
 
       // Statutory
-      y += 10;
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("Statutory Contributions", 14, y);
-      doc.setFont("helvetica", "normal");
-      y += 7;
-      doc.text(
-        `EPF (8% Employee): ${
-          emp.Deduct_epf8 ? emp.Deduct_epf8.toLocaleString() : "-"
-        }`,
-        14,
-        y
-      );
-      y += 6;
-      doc.text(
-        `EPF (12% Employer): ${emp.EPF12 ? emp.EPF12.toLocaleString() : "-"}`,
-        14,
-        y
-      );
-      y += 6;
-      doc.text(
-        `ETF (3% Employer): ${emp.ETF3 ? emp.ETF3.toLocaleString() : "-"}`,
-        14,
-        y
-      );
+      if (emp.enable_epf_etf) {
+        y += 10;
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("Statutory Contributions", 14, y);
+        doc.setFont("helvetica", "normal");
+        y += 7;
+        const epf8 = (parseFloat(emp.basic_salary) || 0) * 0.08;
+        doc.text(`EPF (8% Employee): ${epf8.toLocaleString()}`, 14, y);
+        y += 6;
+        const epf12 = (parseFloat(emp.basic_salary) || 0) * 0.12;
+        doc.text(`EPF (12% Employer): ${epf12.toLocaleString()}`, 14, y);
+        y += 6;
+        const etf3 = (parseFloat(emp.basic_salary) || 0) * 0.03;
+        doc.text(`ETF (3% Employer): ${etf3.toLocaleString()}`, 14, y);
+      }
 
       // Footer
       y = 275;
@@ -346,16 +246,14 @@ const SalaryProcessPage = () => {
   // Handle EPF filter
   const handleEPFFilter = () => {
     setActiveFilter("EPF");
-    const epfEmployees = allEmployeeData.filter((emp) => emp.HasEPF);
-    setEmployeeData(epfEmployees);
+    const epfEmployees = employeeData.filter((emp) => emp.enable_epf_etf);
     setDisplayedData(epfEmployees);
   };
 
   // Handle Non EPF filter
   const handleNonEPFFilter = () => {
     setActiveFilter("NonEPF");
-    const nonEPFEmployees = allEmployeeData.filter((emp) => !emp.HasEPF);
-    setEmployeeData(nonEPFEmployees);
+    const nonEPFEmployees = employeeData.filter((emp) => !emp.enable_epf_etf);
     setDisplayedData(nonEPFEmployees);
   };
 
@@ -398,223 +296,60 @@ const SalaryProcessPage = () => {
     loadDepartments();
   }, [selectedCompany]);
 
-  // Apply filters - update to use company and department
+  // Fetch salary data when filters change
+  useEffect(() => {
+    const fetchSalaryData = async () => {
+      if (month && year && selectedCompany) {
+        setIsLoading(true);
+        try {
+          const data = await getSalaryData(
+            month,
+            year,
+            selectedCompany,
+            selectedDepartment || ""
+          );
+          setEmployeeData(data.data);
+          setDisplayedData(data.data);
+          setFilteredData(data.data);
+        } catch (error) {
+          console.error("Error fetching salary data:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchSalaryData();
+  }, [month, year, selectedCompany, selectedDepartment]);
+
+  // Apply filters
   const applyFilters = () => {
-    let filtered = allEmployeeData;
+    let filtered = employeeData;
 
     if (activeFilter === "EPF") {
-      filtered = filtered.filter((emp) => emp.HasEPF);
+      filtered = filtered.filter((emp) => emp.enable_epf_etf);
     } else if (activeFilter === "NonEPF") {
-      filtered = filtered.filter((emp) => !emp.HasEPF);
-    }
-
-    // Filter by company
-    if (selectedCompany) {
-      filtered = filtered.filter((emp) => emp.Company === selectedCompany);
-    }
-
-    // Filter by department
-    if (selectedDepartment) {
-      filtered = filtered.filter(
-        (emp) => emp.Department === selectedDepartment
-      );
-    }
-
-    if (month) {
-      filtered = filtered.filter((_, index) => index % 2 === 0);
+      filtered = filtered.filter((emp) => !emp.enable_epf_etf);
     }
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (emp) =>
-          emp.EMPNo.toLowerCase().includes(term) ||
-          emp.Name.toLowerCase().includes(term)
+          emp.emp_no.toString().includes(term) ||
+          emp.full_name.toLowerCase().includes(term)
       );
     }
 
-    // If showHistory and date range and searchTerm (for employee), show employee history rows
-    if (showHistory && fromDate && toDate && searchTerm) {
-      // Find the employee
-      const emp = allEmployeeData.find(
-        (e) =>
-          e.EMPNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          e.Name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      if (emp && emp.history) {
-        // Filter history by date range
-        const historyRows = emp.history.filter((h) => {
-          const d = new Date(h.ProcessDate || h.Month || h.ProcessedDate);
-          return d >= new Date(fromDate) && d <= new Date(toDate);
-        });
-        setEmployeeHistoryData(historyRows);
-        setShowingHistory(true);
-        setDisplayedData([]); // Hide normal data
-        setEmployeeData([]);
-        setFilteredData([]);
-        return;
-      } else {
-        setEmployeeHistoryData([]);
-        setShowingHistory(true);
-        setDisplayedData([]);
-        setEmployeeData([]);
-        setFilteredData([]);
-        return;
-      }
-    } else {
-      setEmployeeHistoryData([]);
-      setShowingHistory(false);
-    }
-
-    setEmployeeData(filtered);
     setDisplayedData(filtered);
     setFilteredData(filtered);
   };
 
-  // Effect to apply filters when search term changes
-  useEffect(() => {
-    applyFilters();
-  }, [searchTerm]);
-
-  // Handle checkbox selection
-  const handleSelectEmployee = (employee) => {
-    const empId = `${employee.EMPNo}-${
-      employee.ProcessDate || employee.Month || employee.ProcessedDate
-    }`;
-    if (selectedEmployees.includes(empId)) {
-      setSelectedEmployees(selectedEmployees.filter((id) => id !== empId));
-    } else {
-      setSelectedEmployees([...selectedEmployees, empId]);
-    }
-  };
-
-  // Handle select all checkbox
-  const handleSelectAll = () => {
-    if (selectAll) {
-      setSelectedEmployees([]);
-    } else {
-      const allEmployeeIds = (
-        showingHistory && employeeHistoryData.length > 0
-          ? employeeHistoryData
-          : displayedData
-      ).map(
-        (employee) =>
-          `${employee.EMPNo}-${
-            employee.ProcessDate || employee.Month || employee.ProcessedDate
-          }`
-      );
-      setSelectedEmployees(allEmployeeIds);
-    }
-    setSelectAll(!selectAll);
-  };
-
-  // Apply bulk action to selected employees
-  const applyBulkAction = () => {
-    if (
-      !bulkActionAmount ||
-      !bulkActionName ||
-      selectedEmployees.length === 0
-    ) {
-      alert("Please fill all fields and select at least one employee");
-      return;
-    }
-
-    // Create a copy of the data to modify
-    let updatedData = [...displayedData];
-    const updatedHistoryData = [...employeeHistoryData];
-
-    // Determine which dataset to update
-    const dataToUpdate = showingHistory ? updatedHistoryData : updatedData;
-
-    // Parse amount as number
-    const amount = parseFloat(bulkActionAmount);
-    if (isNaN(amount)) {
-      alert("Please enter a valid amount");
-      return;
-    }
-
-    // Apply the action to each selected employee
-    dataToUpdate.forEach((emp) => {
-      const empId = `${emp.EMPNo}-${
-        emp.ProcessDate || emp.Month || emp.ProcessedDate
-      }`;
-
-      if (selectedEmployees.includes(empId)) {
-        if (bulkActionType === "allowance") {
-          // Add allowance to gross amount
-          emp[bulkActionName] = (emp[bulkActionName] || 0) + amount;
-          emp.GrossAmount = (emp.GrossAmount || 0) + amount;
-          emp.NetSalary = (emp.NetSalary || 0) + amount;
-        } else {
-          // Add deduction to total deduction
-          emp[bulkActionName] = (emp[bulkActionName] || 0) + amount;
-          emp.TotalDeduction = (emp.TotalDeduction || 0) + amount;
-          emp.NetSalary = (emp.NetSalary || 0) - amount;
-        }
-      }
-    });
-
-    // Update the appropriate state
-    if (showingHistory) {
-      setEmployeeHistoryData(updatedHistoryData);
-    } else {
-      setDisplayedData(updatedData);
-    }
-
-    // Clear selection after applying
-    setSelectedEmployees([]);
-    setSelectAll(false);
-    setShowBulkActions(false);
-    setBulkActionAmount("");
-    setBulkActionName("");
-
-    alert(
-      `Successfully applied ${bulkActionType} to ${selectedEmployees.length} employee(s)`
-    );
-  };
-
-  // Effect to check if we should show the select all as checked
-  useEffect(() => {
-    const currentData =
-      showingHistory && employeeHistoryData.length > 0
-        ? employeeHistoryData
-        : displayedData;
-
-    const allSelected =
-      currentData.length > 0 && selectedEmployees.length === currentData.length;
-    setSelectAll(allSelected);
-  }, [selectedEmployees, displayedData, employeeHistoryData, showingHistory]);
-
-  // Reset selected employees when filters change
-  useEffect(() => {
-    setSelectedEmployees([]);
-    setSelectAll(false);
-  }, [searchTerm, location, month, activeFilter, showHistory]);
-
-  // Utility function to get company name by ID
-  const getCompanyName = (id) => {
-    if (!id) return "N/A";
-    const company = companies.find((c) => c.id.toString() === id.toString());
-    return company ? company.name : "Unknown";
-  };
-
-  // Utility function to get department name by ID
-  const getDepartmentName = (id) => {
-    if (!id) return "N/A";
-    const department = departments.find(
-      (d) => d.id.toString() === id.toString()
-    );
-    return department ? department.name : "Unknown";
-  };
-
-  // Add this function after the applyFilters function
-
   // Reset filter function
   const resetFilter = () => {
     setActiveFilter("All");
-    setEmployeeData(allEmployeeData);
-    setDisplayedData(allEmployeeData);
-    setFilteredData(allEmployeeData);
+    setDisplayedData(employeeData);
+    setFilteredData(employeeData);
     setSelectedCompany("");
     setSelectedDepartment("");
     setMonth("");
@@ -680,39 +415,15 @@ const SalaryProcessPage = () => {
     }
   };
 
-  // Function to map allowance name to field name
-  const mapAllowanceToField = (allowanceName) => {
-    const mappings = {
-      "Travelling Allowance": "TravellingAllowance",
-      "Special Allowance": "SpecialAllowance",
-      "Attendance Allowance": "AttendanceAllowance",
-      "Production Incentive": "ProductionIncentive",
-      "Medical Reimbursement": "MedicalReimbursement",
-    };
-    return mappings[allowanceName] || allowanceName;
-  };
-
-  // Function to map deduction name to field name
-  const mapDeductionToField = (deductionName) => {
-    const mappings = {
-      "Salary Advance": "SalaryAdvance",
-      "Meal Deduction": "MealDeduction",
-      "Other Deduction": "OtherDeduction",
-      "Bond Deduction": "BondDeduction",
-      Loan: "Loan",
-    };
-    return mappings[deductionName] || deductionName;
-  };
-
   // Handle selection of allowance or deduction and auto-fill amount
-  const handleAllowanceDeductionChange = (value) => {
-    // Set the selected action name
-    setBulkActionName(value);
+  const handleAllowanceDeductionChange = (id) => {
+    // Set the selected action ID
+    setBulkActionId(id);
 
     // Find the selected allowance or deduction to get its amount
     if (bulkActionType === "allowance") {
       const selectedAllowance = availableAllowances.find(
-        (allowance) => mapAllowanceToField(allowance.allowance_name) === value
+        (allowance) => allowance.id === id
       );
       if (selectedAllowance && selectedAllowance.amount) {
         // Convert to number and format to 2 decimal places if needed
@@ -721,7 +432,7 @@ const SalaryProcessPage = () => {
       }
     } else {
       const selectedDeduction = availableDeductions.find(
-        (deduction) => mapDeductionToField(deduction.deduction_name) === value
+        (deduction) => deduction.id === id
       );
       if (selectedDeduction && selectedDeduction.amount) {
         // Convert to number and format to 2 decimal places if needed
@@ -730,6 +441,76 @@ const SalaryProcessPage = () => {
       }
     }
   };
+
+  // Handle checkbox selection
+  const handleSelectEmployee = (employee) => {
+    const empId = `${employee.id}`;
+    if (selectedEmployees.includes(empId)) {
+      setSelectedEmployees(selectedEmployees.filter((id) => id !== empId));
+    } else {
+      setSelectedEmployees([...selectedEmployees, empId]);
+    }
+  };
+
+  // Handle select all checkbox
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedEmployees([]);
+    } else {
+      const allEmployeeIds = displayedData.map((employee) => `${employee.id}`);
+      setSelectedEmployees(allEmployeeIds);
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Apply bulk action to selected employees
+  const applyBulkAction = async () => {
+    if (!bulkActionId || selectedEmployees.length === 0) {
+      alert("Please fill all fields and select at least one employee");
+      return;
+    }
+
+    const payload = {
+      selectedEmployees: selectedEmployees,
+      bulkActionId: bulkActionId,
+      bulkActionType: bulkActionType,
+      bulkActionAmount: bulkActionAmount || null,
+    };
+
+    try {
+      const res = await UpdateAllowances(payload);
+      console.log(JSON.stringify(res));
+      alert(
+        `Successfully applied ${bulkActionType} to ${selectedEmployees.length} employee(s)`
+      );
+      setDisplayedData(displayedData);
+      // setEmployeeData(updatedData);
+
+      // Clear selection after applying
+      setSelectedEmployees([]);
+      setSelectAll(false);
+      setShowBulkActions(false);
+      setBulkActionAmount("");
+      setBulkActionName("");
+    } catch (error) {
+      console.log(error);
+      alert("Failed to apply bulk action");
+    }
+  };
+
+  // Effect to check if we should show the select all as checked
+  useEffect(() => {
+    const allSelected =
+      displayedData.length > 0 &&
+      selectedEmployees.length === displayedData.length;
+    setSelectAll(allSelected);
+  }, [selectedEmployees, displayedData]);
+
+  // Reset selected employees when filters change
+  useEffect(() => {
+    setSelectedEmployees([]);
+    setSelectAll(false);
+  }, [searchTerm, location, month, activeFilter, showHistory]);
 
   return (
     <div className="container mx-auto px-4 py-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
@@ -962,63 +743,30 @@ const SalaryProcessPage = () => {
                 >
                   <option value="">Select Month</option>
                   {months.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
+                    <option key={m.value} value={m.value}>
+                      {m.label}
                     </option>
                   ))}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
               </div>
-            </div>
 
-            {/* Date Range for History */}
-            <div className="mb-4">
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <div className="relative flex-1">
+                <label
+                  htmlFor="year"
+                  className="block text-xs font-semibold text-gray-500 mb-1"
+                >
+                  Year
+                </label>
                 <input
-                  type="checkbox"
-                  checked={showHistory}
-                  onChange={(e) => setShowHistory(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  type="number"
+                  id="year"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  className="w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                  placeholder="Enter year"
                 />
-                <span className="text-sm font-medium text-gray-700">
-                  Show historical data
-                </span>
-              </label>
-
-              {showHistory && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label
-                      htmlFor="fromDate"
-                      className="block text-xs font-semibold text-gray-500 mb-1"
-                    >
-                      From Date
-                    </label>
-                    <input
-                      type="date"
-                      id="fromDate"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="toDate"
-                      className="block text-xs font-semibold text-gray-500 mb-1"
-                    >
-                      To Date
-                    </label>
-                    <input
-                      type="date"
-                      id="toDate"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                    />
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-3">
@@ -1152,25 +900,19 @@ const SalaryProcessPage = () => {
                   : "Deduction Type"}
               </label>
               <select
-                value={bulkActionName}
+                value={bulkActionId}
                 onChange={(e) => handleAllowanceDeductionChange(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Type</option>
                 {bulkActionType === "allowance"
                   ? availableAllowances.map((allowance) => (
-                      <option
-                        key={allowance.id}
-                        value={mapAllowanceToField(allowance.allowance_name)}
-                      >
+                      <option key={allowance.id} value={allowance.id}>
                         {allowance.allowance_name}
                       </option>
                     ))
                   : availableDeductions.map((deduction) => (
-                      <option
-                        key={deduction.id}
-                        value={mapDeductionToField(deduction.deduction_name)}
-                      >
+                      <option key={deduction.id} value={deduction.id}>
                         {deduction.deduction_name}
                       </option>
                     ))}
@@ -1214,252 +956,167 @@ const SalaryProcessPage = () => {
         </div>
       )}
 
-      {/* Employee Salary Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow mb-8">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-blue-50">
-              <tr>
-                <th className="px-4 py-3 text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  EMP No
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Company
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Process Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Basic
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Budgetary1
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Budgetary2
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Basic Salary
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  NoPay Minutes
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  NoPay
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  EPF Purposes
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  OT Minutes
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Over Time
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Double OT
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Travelling Allowance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Special Allowance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Attendance Allowance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Production Incentive
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Medical Reimbursement
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Gross Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Salary Advance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Stamp Duty
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Meal Deduction
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Other Deduction
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Bond Deduction
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Deduct EPF8%
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Payee Tax
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Loan
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Total Deduction
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Net Salary
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  ETF 3%
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  EPF 12%
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {(showingHistory && employeeHistoryData.length > 0
-                ? employeeHistoryData
-                : displayedData
-              ).map((employee) => {
-                const empId = `${employee.EMPNo}-${
-                  employee.ProcessDate ||
-                  employee.Month ||
-                  employee.ProcessedDate
-                }`;
-                return (
-                  <tr
-                    key={empId}
-                    className="hover:bg-blue-50 transition-colors"
-                  >
-                    <td className="px-4 py-4 whitespace-nowrap text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedEmployees.includes(empId)}
-                        onChange={() => handleSelectEmployee(employee)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {employee.EMPNo}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {getCompanyName(employee.Company)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {getDepartmentName(employee.Department)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.ProcessDate ||
-                        employee.Month ||
-                        employee.ProcessedDate}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Basic?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Budgetary1?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Budgetary2?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Basic_Salary?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.NoPayMinutes}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.NoPay?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Epf_Purposes?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.OTMinutes}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.OverTime?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.DoubleOTtime}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.TravellingAllowance?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.SpecialAllowance?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.AttendanceAllowance?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.ProductionIncentive?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.MedicalReimbursement?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-700">
-                      {employee.GrossAmount?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.SalaryAdvance?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.StampDuty?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.MealDeduction?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.OtherDeduction?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.BondDeduction?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Deduct_epf8?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.PayeeTax?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.Loan?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                      {employee.TotalDeduction?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
-                      {employee.NetSalary?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.ETF3?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.EPF12?.toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      </div>
+      )}
+
+      {/* Employee Salary Table */}
+      {!isLoading && (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow mb-8">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th className="px-4 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    EMP No
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Department
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Basic Salary
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    EPF/ETF
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Allowances
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Deductions
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Net Salary
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {displayedData.map((employee) => {
+                  const empId = `${employee.id}`;
+
+                  // Calculate total allowances
+                  const totalAllowances =
+                    employee.allowances?.reduce(
+                      (sum, allowance) =>
+                        sum + (parseFloat(allowance.amount) || 0),
+                      0
+                    ) || 0;
+
+                  // Calculate total deductions
+                  const totalDeductions =
+                    employee.deductions?.reduce(
+                      (sum, deduction) =>
+                        sum + (parseFloat(deduction.amount) || 0),
+                      0
+                    ) || 0;
+
+                  // Calculate net salary
+                  const netSalary =
+                    (parseFloat(employee.basic_salary) || 0) +
+                    totalAllowances -
+                    totalDeductions;
+
+                  return (
+                    <tr
+                      key={employee.id}
+                      className="hover:bg-blue-50 transition-colors"
+                    >
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmployees.includes(empId)}
+                          onChange={() => handleSelectEmployee(employee)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {employee.emp_no}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.full_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.company_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.department_name}
+                        {employee.sub_department_name &&
+                          ` (${employee.sub_department_name})`}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.basic_salary
+                          ? parseFloat(employee.basic_salary).toLocaleString()
+                          : "0.00"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.enable_epf_etf ? "Yes" : "No"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col space-y-1">
+                          {employee.allowances?.map((allowance, index) => (
+                            <div key={index} className="flex justify-between">
+                              <span>{allowance.allowance_name || "N/A"}:</span>
+                              <span>
+                                {allowance.amount
+                                  ? parseFloat(
+                                      allowance.amount
+                                    ).toLocaleString()
+                                  : "0.00"}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="font-semibold border-t mt-1 pt-1">
+                            Total: {totalAllowances.toLocaleString()}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col space-y-1">
+                          {employee.deductions?.map((deduction, index) => (
+                            <div key={index} className="flex justify-between">
+                              <span>{deduction.deduction_name || "N/A"}:</span>
+                              <span>
+                                {deduction.amount
+                                  ? parseFloat(
+                                      deduction.amount
+                                    ).toLocaleString()
+                                  : "0.00"}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="font-semibold border-t mt-1 pt-1">
+                            Total: {totalDeductions.toLocaleString()}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
+                        {netSalary.toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       <div className="flex items-center justify-between bg-white px-8 py-4 rounded-2xl border border-gray-200 shadow">

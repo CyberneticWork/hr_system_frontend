@@ -39,6 +39,9 @@ const RosterManagementSystem = () => {
   const [selectedEmployees, setSelectedEmployees] = useState(new Set());
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false); // Add this state for the summary modal
+  const [showAllRostersModal, setShowAllRostersModal] = useState(false);
+  const [allRosters, setAllRosters] = useState([]);
+  const [loadingAllRosters, setLoadingAllRosters] = useState(false);
 
   // Data states
   const [companies, setCompanies] = useState([]);
@@ -494,6 +497,26 @@ const RosterManagementSystem = () => {
     setShowSummaryModal(true);
   };
 
+  const handleViewAllRosters = async () => {
+    setShowAllRostersModal(true);
+    setLoadingAllRosters(true);
+    try {
+      const data = await RosterService.getAllRosters();
+      console.log("Roster API response:", data);
+      setAllRosters(Array.isArray(data) ? data : []);
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load rosters",
+        confirmButtonColor: "#3085d6",
+      });
+      setAllRosters([]); // Ensure it's always an array
+    } finally {
+      setLoadingAllRosters(false);
+    }
+  };
+
   return (
     <div className=" bg-gray-100 flex flex-col">
       {/* Top Header */}
@@ -503,6 +526,12 @@ const RosterManagementSystem = () => {
           <span className="text-sm bg-blue-700 px-3 py-1 rounded-full">
             Filtering Options
           </span>
+          <button
+            className="bg-white text-blue-700 px-4 py-2 rounded shadow hover:bg-blue-100 font-semibold"
+            onClick={handleViewAllRosters}
+          >
+            View All Rosters
+          </button>
         </div>
       </div>
 
@@ -1196,6 +1225,77 @@ const RosterManagementSystem = () => {
               <button
                 className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700"
                 onClick={() => setShowSummaryModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All Rosters Modal */}
+      {showAllRostersModal && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowAllRostersModal(false)}
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-lg font-bold mb-4">All Rosters</h2>
+            <div className="overflow-x-auto max-h-[70vh]">
+              {loadingAllRosters ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading rosters...</p>
+                </div>
+              ) : (
+                <table className="min-w-full text-sm border">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 border">Roster ID</th>
+                      <th className="px-4 py-2 border">Shift Code</th>
+                      <th className="px-4 py-2 border">Company</th>
+                      <th className="px-4 py-2 border">Department</th>
+                      <th className="px-4 py-2 border">Sub Dept</th>
+                      <th className="px-4 py-2 border">Employee</th>
+                      <th className="px-4 py-2 border">Date From</th>
+                      <th className="px-4 py-2 border">Date To</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allRosters.map((r, idx) => (
+                      <tr
+                        key={r.id}
+                        className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        <td className="px-4 py-2 border">{r.roster_id}</td>
+                        <td className="px-4 py-2 border">{r.shift_code}</td>
+                        <td className="px-4 py-2 border">
+                          {getCompanyName(r.company_id?.toString())}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {getDepartmentName(r.department_id?.toString())}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {getSubDepartmentName(
+                            r.sub_department_id?.toString()
+                          )}
+                        </td>
+                        <td className="px-4 py-2 border">{r.employee_id}</td>
+                        <td className="px-4 py-2 border">{r.date_from}</td>
+                        <td className="px-4 py-2 border">{r.date_to}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700"
+                onClick={() => setShowAllRostersModal(false)}
               >
                 Close
               </button>

@@ -33,6 +33,19 @@ const timeCardService = {
     const res = await axios.get(`/time-cards/search-employee?q=${encodeURIComponent(search)}`);
     return res.data;
   },
+
+  async importExcel(formData) {
+    const response = await axios.post('/attendance/import-excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  async fetchCompanies() {
+    const res = await axios.get('/companies');
+    return res.data;
+  },
+
 };
 
 export default timeCardService;

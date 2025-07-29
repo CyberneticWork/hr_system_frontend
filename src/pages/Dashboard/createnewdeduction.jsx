@@ -10,6 +10,8 @@ import {
   Filter,
   Building2,
   Layers,
+  Download,
+  Upload,
 } from "lucide-react";
 import {
   fetchDeductions,
@@ -18,6 +20,8 @@ import {
   deleteDeduction,
   fetchCompanies,
   getDepartments,
+  downloadTemplate,
+  importDeductions,
 } from "@services/DeductionService";
 import Swal from "sweetalert2";
 
@@ -28,6 +32,7 @@ const CreateNewDeduction = () => {
   const [companies, setCompanies] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -99,6 +104,57 @@ const CreateNewDeduction = () => {
 
     loadDepartments();
   }, [formData.company_id]);
+
+  // Handle file import
+  const handleFileImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const result = await importDeductions(file);
+      Swal.fire({
+        icon: "success",
+        title: "Import Successful",
+        text: result.message || "Deductions imported successfully",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+      // Refresh deductions list
+      const deductionsData = await fetchDeductions();
+      setDeductions(deductionsData);
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Import Failed",
+        text: err.message || "Failed to import deductions",
+      });
+    } finally {
+      setIsImporting(false);
+      e.target.value = ""; // Reset file input
+    }
+  };
+
+  // Handle template download
+  const handleTemplateDownload = async () => {
+    try {
+      const response = await downloadTemplate();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "deductions_template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      console.error("Error downloading template:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Download Failed",
+        text: "Failed to download template. Please try again.",
+      });
+    }
+  };
 
   // Filter deductions based on search term and selected filter
   const filteredDeductions = deductions.filter((deduction) => {
@@ -440,23 +496,6 @@ const CreateNewDeduction = () => {
     }
   };
 
-  // Get department name by ID
-  // const getDepartmentName = (id) => {
-  //   const department = departments.find((dept) => dept.id === parseInt(id));
-
-  //   if (department) return department.name;
-
-  //   // If department isn't found in current departments list, look through all companies
-  //   for (const company of companies) {
-  //     if (company.departments) {
-  //       const dept = company.departments.find((d) => d.id === parseInt(id));
-  //       if (dept) return dept.name;
-  //     }
-  //   }
-
-  //   return "Unknown";
-  // };
-
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -474,16 +513,41 @@ const CreateNewDeduction = () => {
             Deductions Management
           </h2>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 shadow-md"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Deduction</span>
-        </button>
+        <div className="flex gap-3">
+          {/* Import Button */}
+          <label className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 flex items-center gap-2 shadow-md cursor-pointer">
+            <Upload className="w-4 h-4" />
+            <span>Import</span>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileImport}
+              className="hidden"
+              disabled={isImporting}
+            />
+          </label>
+          
+          {/* Export Template Button */}
+          <button
+            onClick={handleTemplateDownload}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 flex items-center gap-2 shadow-md"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export Template</span>
+          </button>
+          
+          {/* Add New Button */}
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Section */}
@@ -582,7 +646,6 @@ const CreateNewDeduction = () => {
                         {deduction.description || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {/* {getDepartmentName(deduction.department_id)} */}
                         {deduction.department.name || "Unknown"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -729,7 +792,7 @@ const CreateNewDeduction = () => {
             {/* Form Section */}
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Company Field - New */}
+                {/* Company Field */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
                     Company <span className="text-red-500">*</span>
@@ -761,7 +824,7 @@ const CreateNewDeduction = () => {
                   </div>
                 </div>
 
-                {/* Department Field - Updated */}
+                {/* Department Field */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
                     Department <span className="text-red-500">*</span>
