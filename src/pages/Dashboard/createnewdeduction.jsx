@@ -502,6 +502,86 @@ const CreateNewDeduction = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Add this new function after handleSubmit in createnewdeduction.jsx
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setValidationErrors({});
+    setDateError("");
+
+    const errors = validateForm();
+    // Remove deduction_code validation for edit mode
+    delete errors.deduction_code;
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Prepare data for API
+      const deductionData = {
+        company_id: parseInt(formData.company_id),
+        department_id: parseInt(formData.department_id),
+        deduction_name: formData.deduction_name,
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        status: formData.status,
+        category: formData.category,
+        deduction_type: formData.deduction_type,
+        startDate: formData.startDate,
+        endDate:
+          formData.deduction_type === "variable" ? formData.endDate : null,
+      };
+
+      // PUT to /api/deductions/{id}
+      const result = await updateDeduction(formData.id, deductionData);
+
+      // Update deduction in the list
+      setDeductions((prev) =>
+        prev.map((item) =>
+          item.id === formData.id
+            ? {
+                ...result,
+                company: {
+                  id: parseInt(formData.company_id),
+                  name: companies.find((c) => c.id == formData.company_id)?.name,
+                },
+                department: {
+                  id: parseInt(formData.department_id),
+                  name: departments.find((d) => d.id == formData.department_id)?.name,
+                },
+                updated_at: new Date().toISOString(),
+              }
+            : item
+        )
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Deduction updated successfully!",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      setShowEditModal(false);
+    } catch (err) {
+      // Laravel validation errors (422)
+      if (err.response && err.response.status === 422 && err.response.data.errors) {
+        setValidationErrors(err.response.data.errors);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to update deduction. Please try again.",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-6 bg-white rounded-2xl shadow-xl">
       <div className="flex items-center justify-between gap-3 mb-6">
@@ -526,7 +606,7 @@ const CreateNewDeduction = () => {
               disabled={isImporting}
             />
           </label>
-          
+
           {/* Export Template Button */}
           <button
             onClick={handleTemplateDownload}
@@ -535,7 +615,7 @@ const CreateNewDeduction = () => {
             <Download className="w-4 h-4" />
             <span>Export Template</span>
           </button>
-          
+
           {/* Add New Button */}
           <button
             onClick={() => {
@@ -790,7 +870,7 @@ const CreateNewDeduction = () => {
             </div>
 
             {/* Form Section */}
-            <form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={showEditModal ? handleUpdate : handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Company Field */}
                 <div className="space-y-2">
@@ -868,17 +948,23 @@ const CreateNewDeduction = () => {
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Deduction Code <span className="text-red-500">*</span>
+                    Deduction Code {!showEditModal && <span className="text-red-500">*</span>}
                   </label>
-                  <input
-                    name="deduction_code"
-                    value={formData.deduction_code}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="e.g., D001, EPF"
-                  />
-                  {validationErrors.deduction_code && (
+                  {showEditModal ? (
+                    <div className="w-full px-3 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
+                      {formData.deduction_code}
+                    </div>
+                  ) : (
+                    <input
+                      name="deduction_code"
+                      value={formData.deduction_code}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="e.g., D001, EPF"
+                    />
+                  )}
+                  {!showEditModal && validationErrors.deduction_code && (
                     <div className="text-red-500 text-xs mt-1">
                       {validationErrors.deduction_code}
                     </div>
