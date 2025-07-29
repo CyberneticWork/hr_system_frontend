@@ -71,6 +71,18 @@ const RosterManagementSystem = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
+  // New state variables for roster search
+  const [rosterSearchParams, setRosterSearchParams] = useState({
+    date_from: "",
+    date_to: "",
+    company_id: "",
+    department_id: "",
+    sub_department_id: "",
+    employee_id: "",
+  });
+  const [searchedRosters, setSearchedRosters] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   // Set default dates on component mount
   useEffect(() => {
     const today = new Date();
@@ -515,6 +527,65 @@ const RosterManagementSystem = () => {
     } finally {
       setLoadingAllRosters(false);
     }
+  };
+
+  // Add this function to handle roster search
+  const handleRosterSearch = async (e) => {
+    e.preventDefault();
+    setIsSearching(true);
+
+    try {
+      // Clean up empty fields to avoid sending them as empty strings
+      const cleanParams = {};
+      Object.keys(rosterSearchParams).forEach((key) => {
+        if (rosterSearchParams[key]) {
+          cleanParams[key] = rosterSearchParams[key];
+        }
+      });
+
+      const data = await RosterService.searchRosters(cleanParams);
+
+      // Extract the roster data from the nested structure returned by the API
+      const flattenedRosters = data.map((item) => ({
+        id: item.roster_details.id,
+        roster_id: item.roster_details.roster_id,
+        shift_code: item.roster_details.shift_code,
+        company_id: item.organization_details.company?.id,
+        company_name: item.organization_details.company?.name,
+        department_id: item.organization_details.department?.id,
+        department_name: item.organization_details.department?.name,
+        sub_department_id: item.organization_details.sub_department?.id,
+        sub_department_name: item.organization_details.sub_department?.name,
+        employee_id: item.employee_details?.id,
+        employee_name: item.employee_details?.full_name,
+        date_from: item.roster_details.date_from,
+        date_to: item.roster_details.date_to,
+      }));
+
+      setSearchedRosters(flattenedRosters);
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to search rosters",
+        confirmButtonColor: "#3085d6",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Add this to reset search
+  const resetRosterSearch = () => {
+    setRosterSearchParams({
+      date_from: "",
+      date_to: "",
+      company_id: "",
+      department_id: "",
+      sub_department_id: "",
+      employee_id: "",
+    });
+    setSearchedRosters([]);
   };
 
   return (
@@ -1233,10 +1304,10 @@ const RosterManagementSystem = () => {
         </div>
       )}
 
-      {/* All Rosters Modal */}
+      {/* All Rosters Modal - Updated with Search */}
       {showAllRostersModal && (
         <div className="fixed inset-0 backdrop-blur-sm bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 relative">
+          <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full p-6 relative">
             <button
               className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
               onClick={() => setShowAllRostersModal(false)}
@@ -1244,7 +1315,163 @@ const RosterManagementSystem = () => {
               <X className="w-6 h-6" />
             </button>
             <h2 className="text-lg font-bold mb-4">All Rosters</h2>
-            <div className="overflow-x-auto max-h-[70vh]">
+
+            {/* Search Form */}
+            <div className="mb-6 border rounded-lg p-4 bg-gray-50">
+              <h3 className="text-md font-semibold mb-3">Search Rosters</h3>
+              <form
+                onSubmit={handleRosterSearch}
+                className="grid grid-cols-3 gap-4"
+              >
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Date From
+                  </label>
+                  <input
+                    type="date"
+                    value={rosterSearchParams.date_from}
+                    onChange={(e) =>
+                      setRosterSearchParams({
+                        ...rosterSearchParams,
+                        date_from: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Date To
+                  </label>
+                  <input
+                    type="date"
+                    value={rosterSearchParams.date_to}
+                    onChange={(e) =>
+                      setRosterSearchParams({
+                        ...rosterSearchParams,
+                        date_to: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Company
+                  </label>
+                  <select
+                    value={rosterSearchParams.company_id}
+                    onChange={(e) =>
+                      setRosterSearchParams({
+                        ...rosterSearchParams,
+                        company_id: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={rosterSearchParams.department_id}
+                    onChange={(e) =>
+                      setRosterSearchParams({
+                        ...rosterSearchParams,
+                        department_id: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((dep) => (
+                      <option key={dep.id} value={dep.id}>
+                        {dep.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Sub Department
+                  </label>
+                  <select
+                    value={rosterSearchParams.sub_department_id}
+                    onChange={(e) =>
+                      setRosterSearchParams({
+                        ...rosterSearchParams,
+                        sub_department_id: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Sub Department</option>
+                    {subDepartments.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Employee ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter employee ID"
+                    value={rosterSearchParams.employee_id}
+                    onChange={(e) =>
+                      setRosterSearchParams({
+                        ...rosterSearchParams,
+                        employee_id: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="col-span-3 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={resetRosterSearch}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    disabled={isSearching}
+                  >
+                    {isSearching ? (
+                      <>
+                        <div className="inline-block h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Searching...
+                      </>
+                    ) : (
+                      "Search"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Results Table */}
+            <div className="overflow-x-auto max-h-[55vh]">
               {loadingAllRosters ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
@@ -1265,34 +1492,61 @@ const RosterManagementSystem = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allRosters.map((r, idx) => (
+                    {(searchedRosters.length > 0
+                      ? searchedRosters
+                      : allRosters
+                    ).map((r, idx) => (
                       <tr
-                        key={r.id}
+                        key={r.id || idx}
                         className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-4 py-2 border">{r.roster_id}</td>
                         <td className="px-4 py-2 border">{r.shift_code}</td>
                         <td className="px-4 py-2 border">
-                          {getCompanyName(r.company_id?.toString())}
+                          {r.company_name ||
+                            getCompanyName(r.company_id?.toString())}
                         </td>
                         <td className="px-4 py-2 border">
-                          {getDepartmentName(r.department_id?.toString())}
+                          {r.department_name ||
+                            getDepartmentName(r.department_id?.toString())}
                         </td>
                         <td className="px-4 py-2 border">
-                          {getSubDepartmentName(
-                            r.sub_department_id?.toString()
-                          )}
+                          {r.sub_department_name ||
+                            getSubDepartmentName(
+                              r.sub_department_id?.toString()
+                            )}
                         </td>
-                        <td className="px-4 py-2 border">{r.employee_id}</td>
+                        <td className="px-4 py-2 border">
+                          {r.employee_name || r.employee_id}
+                        </td>
                         <td className="px-4 py-2 border">{r.date_from}</td>
                         <td className="px-4 py-2 border">{r.date_to}</td>
                       </tr>
                     ))}
+                    {searchedRosters.length === 0 &&
+                      allRosters.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan="8"
+                            className="px-4 py-6 border text-center text-gray-500"
+                          >
+                            No roster data found
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                 </table>
               )}
             </div>
-            <div className="flex justify-end mt-4">
+
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-gray-500">
+                {searchedRosters.length > 0
+                  ? `Showing ${searchedRosters.length} search results`
+                  : allRosters.length > 0
+                  ? `Showing ${allRosters.length} total rosters`
+                  : ""}
+              </div>
               <button
                 className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700"
                 onClick={() => setShowAllRostersModal(false)}

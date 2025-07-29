@@ -46,6 +46,13 @@ const timeCardService = {
     return res.data;
   },
 
+  async fetchAbsentees({ date, search = "" }) {
+    const response = await axios.get('/attendance/absentees', {
+      params: { date, search }
+    });
+    return response.data;
+  },
+
 };
 
 export default timeCardService;

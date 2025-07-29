@@ -39,9 +39,22 @@ const deleteRoster = async (id) => {
   }
 };
 
+const searchRosters = async (searchParams) => {
+  try {
+    const response = await axios.get("/roster/search", {
+      params: searchParams,
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Error searching rosters:", error);
+    throw error;
+  }
+};
+
 export default {
   getAllRosters,
   createRoster,
   updateRoster,
+  searchRosters,
   deleteRoster,
 };

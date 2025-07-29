@@ -483,7 +483,8 @@ const SalaryProcessPage = () => {
       alert(
         `Successfully applied ${bulkActionType} to ${selectedEmployees.length} employee(s)`
       );
-      setDisplayedData(displayedData);
+      // setDisplayedData(displayedData);
+      fetchSalaryData();
       // setEmployeeData(updatedData);
 
       // Clear selection after applying
@@ -494,7 +495,7 @@ const SalaryProcessPage = () => {
       setBulkActionName("");
     } catch (error) {
       console.log(error);
-      alert("Failed to apply bulk action");
+      alert(`Error - ${error.response.data.message}`);
     }
   };
 
