@@ -54,10 +54,41 @@ const getAllowancesByCompanyOrDepartment = async (companyId, departmentId) => {
   }
 };
 
+const downloadTemplate = async () => {
+  try {
+    const response = await axios.get(`/allowances/template/download`, {
+      responseType: 'blob'
+    });
+    return response;
+  } catch (error) {
+    console.error("Error downloading template:", error);
+    throw error;
+  }
+};
+
+const importAllowances = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post(`/allowances/import`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error importing allowances:", error);
+    throw error.response?.data || error.message;
+  }
+};
+
 export default {
   getAllAllowances,
   createAllowance,
   updateAllowance,
   deleteAllowance,
   getAllowancesByCompanyOrDepartment,
+  downloadTemplate,
+  importAllowances
 };

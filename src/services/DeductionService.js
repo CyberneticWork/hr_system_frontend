@@ -74,4 +74,35 @@ export const deleteDeduction = async (id) => {
     console.error("Error deleting deduction:", error);
     throw error;
   }
+  
+};
+// Download template
+export const downloadTemplate = async () => {
+  try {
+    const response = await axios.get(`/deductions/template/download`, {
+      responseType: 'blob'
+    });
+    return response;
+  } catch (error) {
+    console.error("Error downloading template:", error);
+    throw error;
+  }
+};
+
+// Import deductions
+export const importDeductions = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post(`/deductions/import`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error importing deductions:", error);
+    throw error.response?.data || error.message;
+  }
 };

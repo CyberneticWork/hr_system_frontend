@@ -14,6 +14,8 @@ import {
   Clipboard,
   DollarSign,
   Loader2,
+  Download,
+  Upload,
 } from "lucide-react";
 import AllowancesService from "../../services/AllowancesService";
 import { fetchCompanies, fetchDepartments } from "@services/ApiDataService";
@@ -32,9 +34,13 @@ const CreateNewAllowance = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAllowance, setSelectedAllowance] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importErrors, setImportErrors] = useState([]);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
 
   // Form states
   const [editAllowance, setEditAllowance] = useState({
@@ -226,6 +232,73 @@ const CreateNewAllowance = () => {
 
     return matchesCompany && matchesCategory && matchesSearch;
   });
+
+  // Excel Import/Export Functions
+  const handleDownloadTemplate = async () => {
+    setIsDownloadingTemplate(true);
+    try {
+      const response = await AllowancesService.downloadTemplate();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'allowances_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      showSuccessAlert("Template downloaded successfully!");
+    } catch (error) {
+      showErrorAlert(error.message || "Failed to download template");
+    } finally {
+      setIsDownloadingTemplate(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    setImportFile(e.target.files[0]);
+    setImportErrors([]);
+  };
+
+const handleImportSubmit = async () => {
+  if (!importFile) {
+    showErrorAlert("Please select a file to import");
+    return;
+  }
+
+  setIsProcessing(true);
+  setImportErrors([]);
+  
+  try {
+    const response = await AllowancesService.importAllowances(importFile);
+    showSuccessAlert(response.message || "Allowances imported successfully!");
+    setIsImportModalOpen(false);
+    setImportFile(null);
+    fetchData();
+  } catch (error) {
+    console.error("Import error:", error);
+    
+    let errorMessage = "There were errors in your import file:";
+    let errorsToDisplay = [];
+    
+    if (error.message.includes("Row")) {
+      // Format multiple row errors
+      const rowErrors = error.message.split("\n");
+      errorsToDisplay = rowErrors;
+      errorMessage += "\n\n" + rowErrors.map(e => `• ${e}`).join("\n");
+    } else {
+      // Single error
+      errorsToDisplay = [error.message];
+      errorMessage += `\n\n• ${error.message}`;
+    }
+    
+    setImportErrors(errorsToDisplay);
+    showErrorAlert(errorMessage);
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   // Handlers for CRUD operations
   const handleAddAllowance = async () => {
@@ -585,6 +658,30 @@ const CreateNewAllowance = () => {
               >
                 <Plus size={20} />
                 <span className="font-medium">Add New Allowance</span>
+              </button>
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Upload size={20} />
+                <span className="font-medium">Import Allowances</span>
+              </button>
+              <button
+                onClick={handleDownloadTemplate}
+                disabled={isDownloadingTemplate}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 disabled:from-gray-300 disabled:to-gray-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                {isDownloadingTemplate ? (
+                  <>
+                    <Loader2 className="animate-spin h-5 w-5" />
+                    <span className="font-medium">Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={20} />
+                    <span className="font-medium">Download Template</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1303,6 +1400,7 @@ const CreateNewAllowance = () => {
                   }
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
+
                   {allowanceTypes.map((type) => (
                     <option key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -1544,6 +1642,107 @@ const CreateNewAllowance = () => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Import Allowances</h2>
+                <p className="text-gray-600 text-sm mt-1">
+                  Upload an Excel file to import multiple allowances
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                  setImportErrors([]);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                <Upload className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-600 mb-3">
+                  {importFile
+                    ? importFile.name
+                    : "Drag and drop your Excel file here or click to browse"}
+                </p>
+                <input
+                  type="file"
+                  id="file-upload"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 cursor-pointer transition-colors"
+                >
+                  Browse Files
+                </label>
+                <p className="text-xs text-gray-500 mt-3">
+                  Only Excel files (.xlsx, .xls) are accepted
+                </p>
+              </div>
+
+              {importErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="font-medium text-red-700 mb-2">Import Errors:</h4>
+                  <ul className="text-sm text-red-600 list-disc pl-5 space-y-1">
+                    {importErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <Download className="w-4 h-4" />
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Download template file
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                  setImportErrors([]);
+                }}
+                className="px-6 py-3 text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImportSubmit}
+                disabled={!importFile || isProcessing}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all font-medium shadow-lg disabled:shadow-none flex items-center gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin h-4 w-4" />
+                    Importing...
+                  </>
+                ) : (
+                  "Import Allowances"
+                )}
+              </button>
             </div>
           </div>
         </div>
