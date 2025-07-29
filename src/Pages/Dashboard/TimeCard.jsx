@@ -33,6 +33,41 @@ const TimeCard = () => {
   const [editEntry, setEditEntry] = useState('');
   const [editStatus, setEditStatus] = useState('');
 
+  const [showAbsentModal, setShowAbsentModal] = useState(false);
+  const [absentees, setAbsentees] = useState([]);
+  const [absentSearch, setAbsentSearch] = useState('');
+  const [absentLoading, setAbsentLoading] = useState(false);
+  const [absentDate, setAbsentDate] = useState('');
+
+  // Handler to open modal and fetch absentees
+  const handleShowAbsentees = async () => {
+    const date = absentDate || new Date().toISOString().slice(0, 10);
+    setAbsentDate(date);
+    setShowAbsentModal(true);
+    setAbsentLoading(true);
+    try {
+      const data = await timeCardService.fetchAbsentees({ date, search: '' });
+      setAbsentees(data);
+    } catch (e) {
+      setAbsentees([]);
+    }
+    setAbsentLoading(false);
+  };
+
+  const handleAbsentSearch = async (e) => {
+    const value = e.target.value;
+    setAbsentSearch(value);
+    setAbsentLoading(true);
+    try {
+      const data = await timeCardService.fetchAbsentees({ date: absentDate || dateFrom || selectedDate || new Date().toISOString().slice(0, 10), search: value });
+      setAbsentees(data);
+    } catch (e) {
+      setAbsentees([]);
+    }
+    setAbsentLoading(false);
+  };
+
+
   // Add new record modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRecord, setNewRecord] = useState({
@@ -587,24 +622,7 @@ const TimeCard = () => {
               </button> */}
               <button
                 className="px-4 sm:px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
-                onClick={async () => {
-                  setIsLoading(true);
-                  try {
-                    const { data } = await axios.post('/attendance/mark-absentees', { date: dateFrom || new Date().toISOString().slice(0, 10) });
-                    // If absentees are returned, show them immediately
-                    if (data.absentees && data.absentees.length > 0) {
-                      setAttendanceData(data.absentees);
-                      setFilteredData(data.absentees);
-                    } else {
-                      const updated = await fetchTimeCards();
-                      setAttendanceData(updated);
-                      setFilteredData(updated);
-                    }
-                  } catch (e) {
-                    // Optionally show an error message
-                  }
-                  setIsLoading(false);
-                }}
+                onClick={handleShowAbsentees}
               >
                 Mark Absentees
               </button>
@@ -972,6 +990,85 @@ const TimeCard = () => {
               >
                 Add Record
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Absentees Modal */}
+      {showAbsentModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl relative animate-fade-in">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition"
+              onClick={() => setShowAbsentModal(false)}
+              title="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Absentees List
+            </h2>
+            <div className="mb-4 flex gap-3">
+              <input
+                type="date"
+                className="border border-gray-300 rounded-lg px-3 py-2"
+                value={absentDate}
+                onChange={async (e) => {
+                  const newDate = e.target.value;
+                  setAbsentDate(newDate);
+                  setAbsentLoading(true);
+                  try {
+                    const data = await timeCardService.fetchAbsentees({ date: newDate, search: absentSearch });
+                    setAbsentees(data);
+                  } catch {
+                    setAbsentees([]);
+                  }
+                  setAbsentLoading(false);
+                }}
+              />
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                placeholder="Filter by NIC or EPF"
+                value={absentSearch}
+                onChange={handleAbsentSearch}
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-slate-100 border-b-2 border-gray-200">
+                    <th className="py-3 px-4 text-left font-bold text-slate-800 text-sm">Employee Name</th>
+                    <th className="py-3 px-4 text-left font-bold text-slate-800 text-sm">Absent Date</th>
+                    <th className="py-3 px-4 text-left font-bold text-slate-800 text-sm">Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {absentLoading ? (
+                    <tr>
+                      <td colSpan="3" className="py-8 text-center text-slate-500">Loading...</td>
+                    </tr>
+                  ) : absentees.length > 0 ? (
+                    absentees.map((abs, idx) => (
+                      <tr key={abs.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="py-3 px-4">{abs.employee_name || abs.name}</td>
+                        <td className="py-3 px-4">{abs.date}</td>
+                        <td className="py-3 px-4">{abs.reason || '-'}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="3" className="py-8 text-center text-slate-500">No absentees found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
