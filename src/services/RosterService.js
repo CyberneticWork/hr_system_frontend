@@ -3,7 +3,7 @@ import axios from "@utils/axios";
 const getAllRosters = async () => {
   try {
     const response = await axios.get(`/rosters`);
-    return response.data.data;
+    return response.data;
   } catch (error) {
     console.error("Error fetching rosters:", error);
     throw error;
