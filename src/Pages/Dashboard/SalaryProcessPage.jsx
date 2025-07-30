@@ -1105,8 +1105,7 @@ const SalaryProcessPage = () => {
                         <div className="flex justify-between">
                           <span className="text-xs">EPF Cut:</span>
                           <span className="text-red-600">
-                            {employee.salary_breakdown
-                              .epf_employee_deduction || "0"}
+                            {(employee.salary_breakdown?.epf_employee_deduction?.toFixed(2)) || "0.00"}
                           </span>
                         </div>
                         <div className="flex justify-between">
