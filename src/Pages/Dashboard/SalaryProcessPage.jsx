@@ -59,7 +59,7 @@ const SalaryProcessPage = () => {
   const [bulkActionType, setBulkActionType] = useState("allowance");
   const [bulkActionAmount, setBulkActionAmount] = useState("");
   const [bulkActionName, setBulkActionName] = useState("");
-  const [bulkActionId, setBulkActionId] = useState(""); // Replace bulkActionName
+  const [bulkActionId, setBulkActionId] = useState("");
 
   // Status information
   const statusInfo = {
@@ -296,34 +296,36 @@ const SalaryProcessPage = () => {
     loadDepartments();
   }, [selectedCompany]);
 
-  // Fetch salary data when filters change
-  useEffect(() => {
-    const fetchSalaryData = async () => {
-      if (month && year && selectedCompany) {
-        setIsLoading(true);
-        try {
-          const data = await getSalaryData(
-            month,
-            year,
-            selectedCompany,
-            selectedDepartment || ""
-          );
-          setEmployeeData(data.data);
-          setDisplayedData(data.data);
-          setFilteredData(data.data);
-        } catch (error) {
-          console.error("Error fetching salary data:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
+  // Fetch salary data when Apply Filters is clicked
+  const fetchSalaryData = async () => {
+    if (!month || !year || !selectedCompany) {
+      alert("Please select company, month, and year before applying filters");
+      return;
+    }
 
-    fetchSalaryData();
-  }, [month, year, selectedCompany, selectedDepartment]);
+    setIsLoading(true);
+    try {
+      const data = await getSalaryData(
+        month,
+        year,
+        selectedCompany,
+        selectedDepartment || ""
+      );
+      setEmployeeData(data.data);
+      setDisplayedData(data.data);
+      setFilteredData(data.data);
+    } catch (error) {
+      console.error("Error fetching salary data:", error);
+      alert("Error fetching salary data. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Apply filters
-  const applyFilters = () => {
+  const applyFilters = async () => {
+    await fetchSalaryData();
+
     let filtered = employeeData;
 
     if (activeFilter === "EPF") {
@@ -348,8 +350,9 @@ const SalaryProcessPage = () => {
   // Reset filter function
   const resetFilter = () => {
     setActiveFilter("All");
-    setDisplayedData(employeeData);
-    setFilteredData(employeeData);
+    setEmployeeData([]);
+    setDisplayedData([]);
+    setFilteredData([]);
     setSelectedCompany("");
     setSelectedDepartment("");
     setMonth("");
@@ -484,9 +487,8 @@ const SalaryProcessPage = () => {
       alert(
         `Successfully applied ${bulkActionType} to ${selectedEmployees.length} employee(s)`
       );
-      // setDisplayedData(displayedData);
-      fetchSalaryData();
-      // setEmployeeData(updatedData);
+      // Refresh data after bulk action
+      await fetchSalaryData();
 
       // Clear selection after applying
       setSelectedEmployees([]);
@@ -496,7 +498,7 @@ const SalaryProcessPage = () => {
       setBulkActionName("");
     } catch (error) {
       console.log(error);
-      alert(`Error - ${error.response.data.message}`);
+      alert(`Error - ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -885,8 +887,8 @@ const SalaryProcessPage = () => {
                 value={bulkActionType}
                 onChange={(e) => {
                   setBulkActionType(e.target.value);
-                  setBulkActionName(""); // Reset selection
-                  setBulkActionAmount(""); // Reset amount
+                  setBulkActionName("");
+                  setBulkActionAmount("");
                 }}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
@@ -966,7 +968,7 @@ const SalaryProcessPage = () => {
       )}
 
       {/* Employee Salary Table */}
-      {!isLoading && (
+      {!isLoading && displayedData.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow mb-8">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -987,13 +989,10 @@ const SalaryProcessPage = () => {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Company
+                    Company/Dept
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Basic Salary
+                    Salary Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                     EPF/ETF
@@ -1005,6 +1004,9 @@ const SalaryProcessPage = () => {
                     Deductions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Salary Breakdown
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                     Net Salary
                   </th>
                 </tr>
@@ -1013,7 +1015,7 @@ const SalaryProcessPage = () => {
                 {displayedData.map((employee) => {
                   const empId = `${employee.id}`;
 
-                  // Calculate total allowances
+                  // Calculate totals
                   const totalAllowances =
                     employee.allowances?.reduce(
                       (sum, allowance) =>
@@ -1021,7 +1023,6 @@ const SalaryProcessPage = () => {
                       0
                     ) || 0;
 
-                  // Calculate total deductions
                   const totalDeductions =
                     employee.deductions?.reduce(
                       (sum, deduction) =>
@@ -1029,11 +1030,11 @@ const SalaryProcessPage = () => {
                       0
                     ) || 0;
 
-                  // Calculate net salary
                   const netSalary =
+                    employee.salary_breakdown?.net_salary ||
                     (parseFloat(employee.basic_salary) || 0) +
-                    totalAllowances -
-                    totalDeductions;
+                      totalAllowances -
+                      totalDeductions;
 
                   return (
                     <tr
@@ -1052,35 +1053,67 @@ const SalaryProcessPage = () => {
                         {employee.emp_no}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.full_name}
+                        <div className="font-medium">{employee.full_name}</div>
+                        <div className="text-xs text-gray-500">
+                          ID: {employee.id} | BR: {employee.br_status}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.company_name}
+                        <div className="font-medium">
+                          {employee.company_name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {employee.department_name}
+                          {employee.sub_department_name &&
+                            ` (${employee.sub_department_name})`}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.department_name}
-                        {employee.sub_department_name &&
-                          ` (${employee.sub_department_name})`}
+                        <div>
+                          Basic:{" "}
+                          {parseFloat(
+                            employee.basic_salary || 0
+                          ).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {employee.increment_active ? (
+                            <>
+                              Incr: {employee.increment_value} (eff.{" "}
+                              {employee.increment_effected_date})
+                            </>
+                          ) : (
+                            "No active increment"
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          OT: {employee.ot_morning ? "Morning" : ""}{" "}
+                          {employee.ot_evening ? "Evening" : ""}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.basic_salary
-                          ? parseFloat(employee.basic_salary).toLocaleString()
-                          : "0.00"}
+                        <div>{employee.enable_epf_etf ? "Yes" : "No"}</div>
+                        {employee.enable_epf_etf && (
+                          <div className="text-xs text-gray-500">
+                            EPF:{" "}
+                            {employee.salary_breakdown?.epf_deduction?.toLocaleString() ||
+                              "0"}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.enable_epf_etf ? "Yes" : "No"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="flex flex-col space-y-1">
-                          {employee.allowances?.map((allowance, index) => (
-                            <div key={index} className="flex justify-between">
-                              <span>{allowance.name || "N/A"}:</span>
-                              <span>
-                                {allowance.amount
-                                  ? parseFloat(
-                                      allowance.amount
-                                    ).toLocaleString()
-                                  : "0.00"}
+                          {employee.allowances?.map((allowance) => (
+                            <div
+                              key={allowance.id}
+                              className="flex justify-between"
+                            >
+                              <span className="text-xs">
+                                {allowance.name} ({allowance.code})
+                              </span>
+                              <span className="font-medium">
+                                {parseFloat(
+                                  allowance.amount || 0
+                                ).toLocaleString()}
                               </span>
                             </div>
                           ))}
@@ -1089,17 +1122,20 @@ const SalaryProcessPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="flex flex-col space-y-1">
-                          {employee.deductions?.map((deduction, index) => (
-                            <div key={index} className="flex justify-between">
-                              <span>{deduction.name || "N/A"}:</span>
-                              <span>
-                                {deduction.amount
-                                  ? parseFloat(
-                                      deduction.amount
-                                    ).toLocaleString()
-                                  : "0.00"}
+                          {employee.deductions?.map((deduction) => (
+                            <div
+                              key={deduction.id}
+                              className="flex justify-between"
+                            >
+                              <span className="text-xs">
+                                {deduction.name} ({deduction.code})
+                              </span>
+                              <span className="font-medium">
+                                {parseFloat(
+                                  deduction.amount || 0
+                                ).toLocaleString()}
                               </span>
                             </div>
                           ))}
@@ -1108,8 +1144,51 @@ const SalaryProcessPage = () => {
                           </div>
                         </div>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {employee.salary_breakdown && (
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs">Gross:</span>
+                              <span>
+                                {employee.salary_breakdown.gross_salary?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">Adj. Basic:</span>
+                              <span>
+                                {employee.salary_breakdown.adjusted_basic?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">Per Day:</span>
+                              <span>
+                                {employee.salary_breakdown.per_day_salary?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">Loan:</span>
+                              <span>
+                                {employee.salary_breakdown.loan_installment?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">No Pay Days:</span>
+                              <span>
+                                {employee.salary_breakdown.no_pay_deduction ||
+                                  "0"}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
-                        {netSalary.toLocaleString()}
+                        <div>{netSalary.toLocaleString()}</div>
+                        {employee.salary_breakdown && (
+                          <div className="text-xs font-normal text-gray-500">
+                            Deductions:{" "}
+                            {employee.salary_breakdown.total_deductions?.toLocaleString()}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1120,53 +1199,79 @@ const SalaryProcessPage = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between bg-white px-8 py-4 rounded-2xl border border-gray-200 shadow">
-        <div className="flex-1 flex justify-between sm:hidden">
-          <button className="relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
-            Previous
-          </button>
-          <button className="ml-3 relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
-            Next
-          </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-base text-gray-700">
-              Showing <span className="font-bold">1</span> to{" "}
-              <span className="font-bold">{Math.min(10, employeeCount)}</span>{" "}
-              of <span className="font-bold">{employeeCount}</span> results
+      {/* Empty State */}
+      {!isLoading && displayedData.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow text-center">
+          <div className="mx-auto max-w-md">
+            <Users className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">
+              No employees found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try adjusting your search or filter criteria
             </p>
-          </div>
-          <div>
-            <nav
-              className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px"
-              aria-label="Pagination"
-            >
-              <button className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
-                <span className="sr-only">Previous</span>
-                &larr;
-              </button>
+            <div className="mt-6">
               <button
-                aria-current="page"
-                className="z-10 bg-blue-100 border-blue-500 text-blue-700 relative inline-flex items-center px-5 py-2 border text-base font-bold"
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={resetFilter}
               >
-                1
+                Reset Filters
               </button>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
-                2
-              </button>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
-                3
-              </button>
-              <button className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
-                <span className="sr-only">Next</span>
-                &rarr;
-              </button>
-            </nav>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Pagination */}
+      {displayedData.length > 0 && (
+        <div className="flex items-center justify-between bg-white px-8 py-4 rounded-2xl border border-gray-200 shadow">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button className="relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
+              Previous
+            </button>
+            <button className="ml-3 relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base text-gray-700">
+                Showing <span className="font-bold">1</span> to{" "}
+                <span className="font-bold">{Math.min(10, employeeCount)}</span>{" "}
+                of <span className="font-bold">{employeeCount}</span> results
+              </p>
+            </div>
+            <div>
+              <nav
+                className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px"
+                aria-label="Pagination"
+              >
+                <button className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
+                  <span className="sr-only">Previous</span>
+                  &larr;
+                </button>
+                <button
+                  aria-current="page"
+                  className="z-10 bg-blue-100 border-blue-500 text-blue-700 relative inline-flex items-center px-5 py-2 border text-base font-bold"
+                >
+                  1
+                </button>
+                <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
+                  2
+                </button>
+                <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
+                  3
+                </button>
+                <button className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
+                  <span className="sr-only">Next</span>
+                  &rarr;
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
