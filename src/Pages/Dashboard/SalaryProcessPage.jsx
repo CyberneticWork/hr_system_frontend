@@ -388,7 +388,8 @@ const SalaryProcessPage = () => {
         setAvailableAllowances(allowances || []);
 
         // Get all deductions
-        const deductions = await DeductionService.fetchDeductions();
+        const deductions =
+          await DeductionService.fetchDeductionsByCompanyOrDepartment();
         setAvailableDeductions(deductions || []);
       } catch (error) {
         console.error("Error loading allowances and deductions:", error);

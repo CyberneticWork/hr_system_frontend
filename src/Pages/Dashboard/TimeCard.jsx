@@ -2,8 +2,65 @@ import React, { useState, useEffect } from 'react';
 import { addTimeCard, fetchTimeCards } from '../../services/ApiDataService';
 import employeeService from '../../services/EmployeeDataService';
 import timeCardService from '../../services/timeCardService';
-import Swal from 'sweetalert2'; // Make sure sweetalert2 is installed
+import Swal from 'sweetalert2';
 import axios from 'axios';
+
+// Pagination component for better UI/UX
+const Pagination = ({ page, totalPages, onPageChange }) => {
+  if (totalPages <= 1) return null;
+  let start = Math.max(1, page - 2);
+  let end = Math.min(totalPages, page + 2);
+  if (page <= 3) end = Math.min(5, totalPages);
+  if (page >= totalPages - 2) start = Math.max(1, totalPages - 4);
+  const pages = [];
+  for (let i = start; i <= end; i++) pages.push(i);
+
+  return (
+    <div className="flex justify-center items-center gap-1 mt-4 select-none">
+      <button
+        className={`px-3 py-1 rounded-lg font-semibold transition-all duration-150 ${
+          page === 1
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+        }`}
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+        aria-label="Previous page"
+      >
+        &larr; Prev
+      </button>
+      {start > 1 && <span className="px-2 text-gray-400">...</span>}
+      {pages.map((p) => (
+        <button
+          key={p}
+          className={`px-3 py-1 rounded-lg font-semibold transition-all duration-150 ${
+            p === page
+              ? 'bg-blue-600 text-white shadow'
+              : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+          }`}
+          onClick={() => onPageChange(p)}
+          disabled={p === page}
+          aria-current={p === page ? 'page' : undefined}
+        >
+          {p}
+        </button>
+      ))}
+      {end < totalPages && <span className="px-2 text-gray-400">...</span>}
+      <button
+        className={`px-3 py-1 rounded-lg font-semibold transition-all duration-150 ${
+          page === totalPages
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+        }`}
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+        aria-label="Next page"
+      >
+        Next &rarr;
+      </button>
+    </div>
+  );
+};
 
 const TimeCard = () => {
   // Form state
@@ -18,6 +75,7 @@ const TimeCard = () => {
   const [nic, setNic] = useState('');
   const [nicError, setNicError] = useState('');
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const [filterDate, setFilterDate] = useState(''); // <-- Add this for date filter
 
   // Table data state
   const [attendanceData, setAttendanceData] = useState([]);
@@ -39,14 +97,38 @@ const TimeCard = () => {
   const [absentLoading, setAbsentLoading] = useState(false);
   const [absentDate, setAbsentDate] = useState('');
 
-  // Handler to open modal and fetch absentees
+  // Pagination state for absentees modal
+  const [absentPage, setAbsentPage] = useState(1);
+  const rowsPerPage = 6;
+  const paginatedAbsentees = absentees.slice(
+    (absentPage - 1) * rowsPerPage,
+    absentPage * rowsPerPage
+  );
+  const totalAbsentPages = Math.ceil(absentees.length / rowsPerPage);
+
+  // Attendance table pagination state
+  const [attendancePage, setAttendancePage] = useState(1);
+  const attendanceRowsPerPage = 8;
+  const paginatedAttendance = filteredData.slice(
+    (attendancePage - 1) * attendanceRowsPerPage,
+    attendancePage * attendanceRowsPerPage
+  );
+  const totalAttendancePages = Math.ceil(filteredData.length / attendanceRowsPerPage);
+
+  useEffect(() => {
+    setAbsentPage(1);
+  }, [absentees]);
+
+  useEffect(() => {
+    setAttendancePage(1);
+  }, [filteredData]);
+
+  // Handler to open modal and fetch all absentees (with date filter)
   const handleShowAbsentees = async () => {
-    const date = absentDate || new Date().toISOString().slice(0, 10);
-    setAbsentDate(date);
     setShowAbsentModal(true);
     setAbsentLoading(true);
     try {
-      const data = await timeCardService.fetchAbsentees({ date, search: '' });
+      const data = await timeCardService.fetchAbsentees({ date: absentDate, search: absentSearch });
       setAbsentees(data);
     } catch (e) {
       setAbsentees([]);
@@ -54,14 +136,29 @@ const TimeCard = () => {
     setAbsentLoading(false);
   };
 
+  // Handler for date change
+  const handleAbsentDateChange = async (e) => {
+    const newDate = e.target.value;
+    setAbsentDate(newDate);
+    setAbsentLoading(true);
+    try {
+      const data = await timeCardService.fetchAbsentees({ date: newDate, search: absentSearch });
+      setAbsentees(data);
+    } catch {
+      setAbsentees([]);
+    }
+    setAbsentLoading(false);
+  };
+
+  // Handler for search
   const handleAbsentSearch = async (e) => {
     const value = e.target.value;
     setAbsentSearch(value);
     setAbsentLoading(true);
     try {
-      const data = await timeCardService.fetchAbsentees({ date: absentDate || dateFrom || selectedDate || new Date().toISOString().slice(0, 10), search: value });
+      const data = await timeCardService.fetchAbsentees({ date: absentDate, search: value });
       setAbsentees(data);
-    } catch (e) {
+    } catch {
       setAbsentees([]);
     }
     setAbsentLoading(false);
@@ -124,6 +221,9 @@ const TimeCard = () => {
     if (filterOption === 'department' && department) {
       filtered = filtered.filter((rec) => rec.department === department);
     }
+    if (filterDate) {
+      filtered = filtered.filter((rec) => rec.date === filterDate);
+    }
     if (dateFrom) {
       filtered = filtered.filter((rec) => rec.date >= dateFrom);
     }
@@ -159,6 +259,7 @@ const TimeCard = () => {
     setSelectedMonth('');
     setEmployeeName('');
     setDepartment('');
+    setFilterDate(''); // <-- Reset date filter
     setFilteredData(attendanceData);
   };
 
@@ -425,6 +526,15 @@ const TimeCard = () => {
     }
   };
 
+  // --- Export Template Button Handler ---
+  const handleDownloadTemplate = async () => {
+    try {
+      await timeCardService.downloadTemplate();
+    } catch (error) {
+      alert(error.message); // Or use Swal.fire({ icon: 'error', text: error.message })
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 py-4 sm:py-8">
       <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
@@ -437,94 +547,107 @@ const TimeCard = () => {
               Employee Attendance & Time Tracking System
             </p>
           </div>
-          
           <div className="p-4 sm:p-6 lg:p-8">
             {/* Import Section - Collapsible */}
-            <div className="mb-6 sm:mb-8">
-              <button
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold shadow transition-all duration-200 ${
-                  showImport
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-blue-700 hover:bg-blue-100'
-                }`}
-                onClick={() => setShowImport((v) => !v)}
-                aria-expanded={showImport}
-              >
-                <svg
-                  className={`w-5 h-5 transition-transform duration-200 ${showImport ? 'rotate-0' : 'rotate-180'}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <button
+                  className={`flex items-center gap-2 px-2.5 py-2 rounded-md font-semibold shadow transition-all duration-200 ${
+                    showImport
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-200 text-blue-700 hover:bg-blue-100'
+                  }`}
+                  onClick={() => setShowImport((v) => !v)}
+                  aria-expanded={showImport}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                {showImport ? 'Hide Import Data' : 'Show Import Data'}
-              </button>
-              {showImport && (
-                <div className="mt-4 p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl shadow-sm">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-700">Company</label>
-                      <select
-                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                        value={selectedCompany}
-                        onChange={e => setSelectedCompany(e.target.value)}
-                      >
-                        <option value="">Select Company</option>
-                        {companies.map((company) => (
-                          <option key={company.id} value={company.id}>{company.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-700">Date</label>
-                      <input
-                        type="date"
-                        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
-                        value={selectedDate}
-                        onChange={e => setSelectedDate(e.target.value)}
-                      />
-                    </div>
+                  <svg
+                    className={`w-5 h-5 transition-transform duration-200 ${showImport ? 'rotate-0' : 'rotate-180'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {showImport ? 'Hide Import Data' : 'Show Import Data'}
+                </button>
+              </div>
+              <div>
+                <button
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-md font-semibold shadow transition-all duration-200 bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleDownloadTemplate}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                  </svg>
+                  Export Template
+                </button>
+              </div>
+            </div>
+            {showImport && (
+              <div className="mt-6 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700">Company</label>
+                    <select
+                      className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                      value={selectedCompany}
+                      onChange={e => setSelectedCompany(e.target.value)}
+                    >
+                      <option value="">Select Company</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.id}>{company.name}</option>
+                      ))}
+                    </select>
                   </div>
-                  
-                  <div className="mt-6">
-                    <label className="block text-sm font-semibold text-slate-700 mb-4">Import Method</label>
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-                      {/* Remove the fingerprint radio button */}
-                      <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
-                        <input
-                          type="radio"
-                          className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                          checked={importMethod === 'excel'}
-                          onChange={() => setImportMethod('excel')}
-                        />
-                        <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Excel Sheet</span>
-                      </label>
-                    </div>
-                    {importMethod === 'excel' && (
-                      <div className="mt-4">
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Excel File</label>
-                        <input
-                          type="file"
-                          accept=".xlsx,.xls"
-                          className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
-                          onChange={handleExcelUpload}
-                        />
-                        <button
-                          className="mt-3 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg"
-                          onClick={handleImportExcel}
-                        >
-                          Import Excel
-                        </button>
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700">Date</label>
+                    <input
+                      type="date"
+                      className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                      value={selectedDate}
+                      onChange={e => setSelectedDate(e.target.value)}
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-
+                
+                <div className="mt-6">
+                  <label className="block text-sm font-semibold text-slate-700 mb-4">Import Method</label>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+                    {/* Remove the fingerprint radio button */}
+                    <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
+                      <input
+                        type="radio"
+                        className="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                        checked={importMethod === 'excel'}
+                        onChange={() => setImportMethod('excel')}
+                      />
+                      <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Import from Excel Sheet</span>
+                    </label>
+                  </div>
+                  {importMethod === 'excel' && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Excel File</label>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
+                        onChange={handleExcelUpload}
+                      />
+                      <button
+                        className="mt-3 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg"
+                        onClick={handleImportExcel}
+                      >
+                        Import Excel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Add extra margin here */}
+            <div className="mb-8"></div>
             {/* Filter Section */}
-            <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-l-4 border-emerald-500 rounded-xl shadow-sm">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-l-4 border-emerald-500 rounded-lg shadow-sm">
               <div className="flex items-center mb-4 sm:mb-6">
                 <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center mr-3 shadow-md">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -555,7 +678,7 @@ const TimeCard = () => {
                     />
                     <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Filter by Employee</span>
                   </label>
-                  <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-emerald-100 transition-colors duration-200">
+                  {/* <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-emerald-100 transition-colors duration-200">
                     <input
                       type="radio"
                       className="form-radio h-5 w-5 text-emerald-600 focus:ring-emerald-500 focus:ring-2"
@@ -563,7 +686,7 @@ const TimeCard = () => {
                       onChange={() => setFilterOption('department')}
                     />
                     <span className="ml-3 text-slate-700 font-medium text-sm sm:text-base">Filter by Department</span>
-                  </label>
+                  </label> */}
                 </div>
               </div>
               
@@ -581,7 +704,7 @@ const TimeCard = () => {
                   </div>
                 )}
                 
-                {filterOption === 'department' && (
+                {/* {filterOption === 'department' && (
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-slate-700">Department</label>
                     <select
@@ -595,7 +718,17 @@ const TimeCard = () => {
                       ))}
                     </select>
                   </div>
-                )}
+                )} */}
+                {/* Date filter always visible */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Date</label>
+                  <input
+                    type="date"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                    value={filterDate}
+                    onChange={e => setFilterDate(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -654,7 +787,6 @@ const TimeCard = () => {
                   </button>
                 </div>
               </div>
-              
               {isLoading ? (
                 <div className="p-8 sm:p-12 text-center">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto"></div>
@@ -676,8 +808,8 @@ const TimeCard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredData.length > 0 ? (
-                        filteredData.map((record, index) => (
+                      {paginatedAttendance.length > 0 ? (
+                        paginatedAttendance.map((record, index) => (
                           <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-blue-50/50 transition-colors duration-200 border-b border-gray-100`}>
                             <td className="py-4 px-3 sm:px-6 font-semibold text-slate-700 text-xs sm:text-sm lg:text-base">{record.empNo}</td>
                             <td className="py-4 px-3 sm:px-6 font-medium text-slate-800 text-xs sm:text-sm lg:text-base">{record.name}</td>
@@ -726,7 +858,7 @@ const TimeCard = () => {
                         <tr>
                           <td colSpan="8" className="py-16 text-center text-slate-500">
                             <div className="flex flex-col items-center space-y-3">
-                              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6a2 2 0 012-2h2v6z" />
                               </svg>
                               <div>
@@ -739,6 +871,12 @@ const TimeCard = () => {
                       )}
                     </tbody>
                   </table>
+                  {/* Improved Pagination Controls */}
+                  <Pagination
+                    page={attendancePage}
+                    totalPages={totalAttendancePages}
+                    onPageChange={setAttendancePage}
+                  />
                 </div>
               )}
             </div>
@@ -1019,18 +1157,7 @@ const TimeCard = () => {
                 type="date"
                 className="border border-gray-300 rounded-lg px-3 py-2"
                 value={absentDate}
-                onChange={async (e) => {
-                  const newDate = e.target.value;
-                  setAbsentDate(newDate);
-                  setAbsentLoading(true);
-                  try {
-                    const data = await timeCardService.fetchAbsentees({ date: newDate, search: absentSearch });
-                    setAbsentees(data);
-                  } catch {
-                    setAbsentees([]);
-                  }
-                  setAbsentLoading(false);
-                }}
+                onChange={handleAbsentDateChange}
               />
               <input
                 type="text"
@@ -1054,8 +1181,8 @@ const TimeCard = () => {
                     <tr>
                       <td colSpan="3" className="py-8 text-center text-slate-500">Loading...</td>
                     </tr>
-                  ) : absentees.length > 0 ? (
-                    absentees.map((abs, idx) => (
+                  ) : paginatedAbsentees.length > 0 ? (
+                    paginatedAbsentees.map((abs, idx) => (
                       <tr key={abs.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="py-3 px-4">{abs.employee_name || abs.name}</td>
                         <td className="py-3 px-4">{abs.date}</td>
@@ -1069,6 +1196,12 @@ const TimeCard = () => {
                   )}
                 </tbody>
               </table>
+              {/* Improved Pagination Controls */}
+              <Pagination
+                page={absentPage}
+                totalPages={totalAbsentPages}
+                onPageChange={setAbsentPage}
+              />
             </div>
           </div>
         </div>

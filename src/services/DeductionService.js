@@ -32,6 +32,16 @@ export const fetchDeductions = async () => {
   }
 };
 
+export const fetchDeductionsByCompanyOrDepartment = async () => {
+  try {
+    const response = await axios.get(`/deduction/by-company-or-department`);
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching deductions:", error);
+    return [];
+  }
+};
+
 // Create a new deduction
 export const createDeduction = async (data) => {
   try {
