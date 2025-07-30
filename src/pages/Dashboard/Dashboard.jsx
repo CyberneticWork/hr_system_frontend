@@ -43,6 +43,7 @@ import HRLeaveApproval from "@dashboard/HRLeaveApproval";
 import Resignation from "@dashboard/Resignation";
 import Termination from "@dashboard/Termination";
 import ViewLoans from "@dashboard/ViewLoans";
+import SalaryPage from "@dashboard/SalaryPage";
 
 ChartJS.register(
   CategoryScale,
@@ -563,6 +564,8 @@ const Dashboard = ({ user, onLogout }) => {
               <SalaryProcessPage />
             ) : activeItem === "termination" ? (
               <Termination />
+            ) : activeItem === "SalaryPage" ? (
+              <SalaryPage />
             ) : activeItem === "resignation" ? (
               <Resignation />
             ) : (
