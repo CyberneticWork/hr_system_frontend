@@ -804,7 +804,7 @@ const TimeCard = () => {
                         <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Date</th>
                         <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Entry</th>
                         <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Status</th>
-                        <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Action</th>
+                        {/* <th className="py-4 px-3 sm:px-6 text-left font-bold text-slate-800 text-xs sm:text-sm lg:text-base">Action</th> */}
                       </tr>
                     </thead>
                     <tbody>
@@ -830,7 +830,7 @@ const TimeCard = () => {
                                 {record.status === 'Present' ? record.inOut : record.status}
                               </span>
                             </td>
-                            <td className="py-4 px-3 sm:px-6 flex gap-2">
+                            {/* <td className="py-4 px-3 sm:px-6 flex gap-2">
                               <button
                                 className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-150 text-xs sm:text-sm font-semibold shadow-sm"
                                 onClick={() => handleEdit(record, index)}
@@ -851,7 +851,7 @@ const TimeCard = () => {
                                 </svg>
                                 Delete
                               </button>
-                            </td>
+                            </td> */}
                           </tr>
                         ))
                       ) : (
