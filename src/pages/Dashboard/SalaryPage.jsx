@@ -35,13 +35,13 @@ const Modal = ({ isOpen, onClose, children }) => {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 overflow-y-auto"
       onClick={handleBackdropClick}
     >
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
-        <div 
+        <div
           className="fixed inset-0  bg-opacity-75 transition-opacity"
           aria-hidden="true"
         ></div>
@@ -85,16 +85,12 @@ const SalaryPage = () => {
   // Fetch salary data
   const fetchSalaryData = async () => {
     setIsLoading(true);
-    try {
-      const response = await fetchSalaryDataAPI();
-      setSalaryData(response);
-      setFilteredData(response);
-    } catch (error) {
-      console.error("Error fetching salary data:", error);
-      alert("Failed to fetch salary data");
-    } finally {
-      setIsLoading(false);
-    }
+
+    const response = await fetchSalaryDataAPI();
+    setSalaryData(response);
+    setFilteredData(response);
+
+    setIsLoading(false);
   };
 
   // Update salary record

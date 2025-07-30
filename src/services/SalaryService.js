@@ -10,36 +10,22 @@ export const fetchSalaryDataAPI = async () => {
   }
 };
 
-export const updateSalary = async (id, status) => {
+export const updateSalary = async (id, data) => {
   try {
-    const response = await fetch(`/api/salary-records/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status }),
-    });
-    if (!response.ok) {
-      throw new Error("Failed to update salary status");
-    }
-    return await response.json();
+    const response = await axios.put(`/salary/${id}`, data);
+    return response.data;
   } catch (error) {
-    console.error("Error updating salary status:", error);
+    console.error("Error fetching salary data:", error);
     throw error;
   }
 };
 
 export const deleteSalaryRecord = async (id) => {
   try {
-    const response = await fetch(`/api/salary-records/${id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) {
-      throw new Error("Failed to delete salary record");
-    }
-    return await response.json();
+    const response = await axios.delete(`/salary/${id}`);
+    return response.data;
   } catch (error) {
-    console.error("Error deleting salary record:", error);
+    console.error("Error fetching salary data:", error);
     throw error;
   }
 };
