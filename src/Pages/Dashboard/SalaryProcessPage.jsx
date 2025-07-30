@@ -298,54 +298,57 @@ const SalaryProcessPage = () => {
 
   // Fetch salary data when Apply Filters is clicked
   const fetchSalaryData = async () => {
-    if (!month || !year || !selectedCompany) {
-      alert("Please select company, month, and year before applying filters");
-      return;
-    }
+  if (!month || !year || !selectedCompany) {
+    alert("Please select company, month, and year before applying filters");
+    return null;
+  }
 
-    setIsLoading(true);
-    try {
-      const data = await getSalaryData(
-        month,
-        year,
-        selectedCompany,
-        selectedDepartment || ""
-      );
-      setEmployeeData(data.data);
-      setDisplayedData(data.data);
-      setFilteredData(data.data);
-    } catch (error) {
-      console.error("Error fetching salary data:", error);
-      alert("Error fetching salary data. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  setIsLoading(true);
+  try {
+    const data = await getSalaryData(
+      month,
+      year,
+      selectedCompany,
+      selectedDepartment || ""
+    );
+    setEmployeeData(data.data);
+    setDisplayedData(data.data);
+    setFilteredData(data.data);
+    return data.data; // Return the data
+  } catch (error) {
+    console.error("Error fetching salary data:", error);
+    alert("Error fetching salary data. Please try again.");
+    return null;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Apply filters
   const applyFilters = async () => {
-    await fetchSalaryData();
+  const newData = await fetchSalaryData(); // Get the new data directly
+  if (!newData) return; // Handle error case
 
-    let filtered = employeeData;
+  let filtered = newData; // Use the newly returned data instead of employeeData
 
-    if (activeFilter === "EPF") {
-      filtered = filtered.filter((emp) => emp.enable_epf_etf);
-    } else if (activeFilter === "NonEPF") {
-      filtered = filtered.filter((emp) => !emp.enable_epf_etf);
-    }
+  if (activeFilter === "EPF") {
+    filtered = filtered.filter((emp) => emp.enable_epf_etf);
+  } else if (activeFilter === "NonEPF") {
+    filtered = filtered.filter((emp) => !emp.enable_epf_etf);
+  }
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (emp) =>
-          emp.emp_no.toString().includes(term) ||
-          emp.full_name.toLowerCase().includes(term)
-      );
-    }
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(
+      (emp) =>
+        emp.emp_no.toString().includes(term) ||
+        emp.full_name.toLowerCase().includes(term)
+    );
+  }
 
-    setDisplayedData(filtered);
-    setFilteredData(filtered);
-  };
+  setDisplayedData(filtered);
+  setFilteredData(filtered);
+};
 
   // Reset filter function
   const resetFilter = () => {
