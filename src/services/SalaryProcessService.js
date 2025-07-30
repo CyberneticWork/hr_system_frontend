@@ -21,3 +21,13 @@ export const UpdateAllowances = async (allowances) => {
     throw error;
   }
 };
+
+export const saveSalaryData = async (data) => {
+  // console.log(JSON.stringify({data}))
+  try {
+    const response = await axios.post('/salary/process/save',  {data} );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

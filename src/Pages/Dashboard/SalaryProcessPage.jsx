@@ -19,6 +19,7 @@ import { fetchCompanies, fetchDepartmentsById } from "@services/ApiDataService";
 import {
   getSalaryData,
   UpdateAllowances,
+  saveSalaryData,
 } from "@services/SalaryProcessService";
 import AllowancesService from "@services/AllowancesService";
 import * as DeductionService from "@services/DeductionService";
@@ -298,57 +299,57 @@ const SalaryProcessPage = () => {
 
   // Fetch salary data when Apply Filters is clicked
   const fetchSalaryData = async () => {
-  if (!month || !year || !selectedCompany) {
-    alert("Please select company, month, and year before applying filters");
-    return null;
-  }
+    if (!month || !year || !selectedCompany) {
+      alert("Please select company, month, and year before applying filters");
+      return null;
+    }
 
-  setIsLoading(true);
-  try {
-    const data = await getSalaryData(
-      month,
-      year,
-      selectedCompany,
-      selectedDepartment || ""
-    );
-    setEmployeeData(data.data);
-    setDisplayedData(data.data);
-    setFilteredData(data.data);
-    return data.data; // Return the data
-  } catch (error) {
-    console.error("Error fetching salary data:", error);
-    alert("Error fetching salary data. Please try again.");
-    return null;
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
+    try {
+      const data = await getSalaryData(
+        month,
+        year,
+        selectedCompany,
+        selectedDepartment || ""
+      );
+      setEmployeeData(data.data);
+      setDisplayedData(data.data);
+      setFilteredData(data.data);
+      return data.data; // Return the data
+    } catch (error) {
+      console.error("Error fetching salary data:", error);
+      alert("Error fetching salary data. Please try again.");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Apply filters
   const applyFilters = async () => {
-  const newData = await fetchSalaryData(); // Get the new data directly
-  if (!newData) return; // Handle error case
+    const newData = await fetchSalaryData(); // Get the new data directly
+    if (!newData) return; // Handle error case
 
-  let filtered = newData; // Use the newly returned data instead of employeeData
+    let filtered = newData; // Use the newly returned data instead of employeeData
 
-  if (activeFilter === "EPF") {
-    filtered = filtered.filter((emp) => emp.enable_epf_etf);
-  } else if (activeFilter === "NonEPF") {
-    filtered = filtered.filter((emp) => !emp.enable_epf_etf);
-  }
+    if (activeFilter === "EPF") {
+      filtered = filtered.filter((emp) => emp.enable_epf_etf);
+    } else if (activeFilter === "NonEPF") {
+      filtered = filtered.filter((emp) => !emp.enable_epf_etf);
+    }
 
-  if (searchTerm) {
-    const term = searchTerm.toLowerCase();
-    filtered = filtered.filter(
-      (emp) =>
-        emp.emp_no.toString().includes(term) ||
-        emp.full_name.toLowerCase().includes(term)
-    );
-  }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (emp) =>
+          emp.emp_no.toString().includes(term) ||
+          emp.full_name.toLowerCase().includes(term)
+      );
+    }
 
-  setDisplayedData(filtered);
-  setFilteredData(filtered);
-};
+    setDisplayedData(filtered);
+    setFilteredData(filtered);
+  };
 
   // Reset filter function
   const resetFilter = () => {
@@ -786,6 +787,28 @@ const SalaryProcessPage = () => {
                 Apply Filters
               </button>
               <button
+                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg text-base font-semibold hover:bg-green-700 transition-colors shadow"
+                onClick={async () => {
+                  if (filteredData.length === 0) {
+                    alert("No data to save. Please apply filters first.");
+                    return;
+                  }
+                  try {
+                    const savedData = await saveSalaryData(filteredData);
+                    // console.log(JSON.stringify(savedData));
+                    alert("Salary data saved successfully!");
+                  } catch (error) {
+                    console.error("Error saving salary data:", error);
+                    alert(error);
+                  }
+                }}
+                type="button"
+                disabled={filteredData.length === 0}
+              >
+                <FileText size={18} strokeWidth={2} />
+                Save Data
+              </button>
+              <button
                 className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-300 transition-colors shadow"
                 onClick={resetFilter}
                 type="button"
@@ -1105,7 +1128,9 @@ const SalaryProcessPage = () => {
                         <div className="flex justify-between">
                           <span className="text-xs">EPF Cut:</span>
                           <span className="text-red-600">
-                            {(employee.salary_breakdown?.epf_employee_deduction?.toFixed(2)) || "0.00"}
+                            {employee.salary_breakdown?.epf_employee_deduction?.toFixed(
+                              2
+                            ) || "0.00"}
                           </span>
                         </div>
                         <div className="flex justify-between">
