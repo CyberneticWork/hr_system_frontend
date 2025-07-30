@@ -53,6 +53,31 @@ const timeCardService = {
     return response.data;
   },
 
+
+  downloadTemplate: async () => {
+    const url = '/attendance-template';
+    try {
+      const response = await axios.get(url, { responseType: 'blob' });
+      if (response.status !== 200 || !response.data) {
+        throw new Error('Download failed');
+      }
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.setAttribute('download', 'attendance_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      // Rethrow for the UI to handle
+      throw new Error(
+        error.response && error.response.status === 404
+          ? 'Template not found (404)'
+          : 'Download failed'
+      );
+    }
+  },
+
 };
 
 export default timeCardService;
