@@ -1074,7 +1074,7 @@ const SalaryProcessPage = () => {
                         <div className="flex flex-col space-y-1">
                           {employee.allowances?.map((allowance, index) => (
                             <div key={index} className="flex justify-between">
-                              <span>{allowance.allowance_name || "N/A"}:</span>
+                              <span>{allowance.name || "N/A"}:</span>
                               <span>
                                 {allowance.amount
                                   ? parseFloat(
@@ -1093,7 +1093,7 @@ const SalaryProcessPage = () => {
                         <div className="flex flex-col space-y-1">
                           {employee.deductions?.map((deduction, index) => (
                             <div key={index} className="flex justify-between">
-                              <span>{deduction.deduction_name || "N/A"}:</span>
+                              <span>{deduction.name || "N/A"}:</span>
                               <span>
                                 {deduction.amount
                                   ? parseFloat(
