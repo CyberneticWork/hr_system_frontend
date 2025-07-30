@@ -1081,7 +1081,7 @@ const TimeCard = () => {
                   let entry = '';
                   if (status === 'IN') entry = '1';
                   else if (status === 'OUT') entry = '2';
-                  else if (status === 'Absent') entry = '0';
+                  else if (status === 'Leave') entry = '0';
                   setNewRecord(prev => ({
                     ...prev,
                     status,
@@ -1092,7 +1092,7 @@ const TimeCard = () => {
                 <option value="">Select Status</option>
                 <option value="IN">IN</option>
                 <option value="OUT">OUT</option>
-                <option value="Absent">Absent</option>
+                {/* <option value="Absent">Absent</option> */}
                 <option value="Leave">Leave</option>
               </select>
             </div>
