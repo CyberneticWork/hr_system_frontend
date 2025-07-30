@@ -1099,6 +1099,27 @@ const SalaryProcessPage = () => {
                               "0"}
                           </div>
                         )}
+                        <div className="flex justify-between">
+                          <span className="text-xs">EPF Cut:</span>
+                          <span className="text-red-600">
+                            {employee.salary_breakdown
+                              .epf_employee_deduction || "0"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs">EPF:</span>
+                          <span className="text-yellow-600">
+                            {employee.salary_breakdown
+                              .epf_employer_contribution || "0"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs">ETF:</span>
+                          <span className="text-yellow-600">
+                            {employee.salary_breakdown
+                              .etf_employer_contribution || "0"}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="flex flex-col space-y-1">
