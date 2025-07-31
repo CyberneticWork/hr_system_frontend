@@ -10,7 +10,7 @@ export const fetchSalaryDataAPI = async () => {
   }
 };
 
-export const updateSalary = async (id, data) => {
+export const updateSalaryAPI = async (id, data) => {
   try {
     const response = await axios.put(`/salary/${id}`, data);
     return response.data;
@@ -20,7 +20,7 @@ export const updateSalary = async (id, data) => {
   }
 };
 
-export const deleteSalaryRecord = async (id) => {
+export const deleteSalaryRecordAPI = async (id) => {
   try {
     const response = await axios.delete(`/salary/${id}`);
     return response.data;

@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import {
   fetchSalaryDataAPI,
-  updateSalary,
-  deleteSalaryRecord,
+  updateSalaryAPI,
+  deleteSalaryRecordAPI,
 } from "@services/SalaryService";
 
 // Modal Component
@@ -86,17 +86,22 @@ const SalaryPage = () => {
   const fetchSalaryData = async () => {
     setIsLoading(true);
 
-    const response = await fetchSalaryDataAPI();
-    setSalaryData(response);
-    setFilteredData(response);
-
-    setIsLoading(false);
+    try {
+      const response = await fetchSalaryDataAPI();
+      setSalaryData(response);
+      setFilteredData(response);
+    } catch (error) {
+      console.error("Error fetching salary data:", error);
+      // Optionally show an error message to the user
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Update salary record
   const updateSalaryRecord = async (id, data) => {
     try {
-      await updateSalary(id, data);
+      await updateSalaryAPI(id, data);
       fetchSalaryData(); // Refresh data
       setIsModalOpen(false);
     } catch (error) {
@@ -108,7 +113,7 @@ const SalaryPage = () => {
   // Delete salary record
   const deleteSalaryRecord = async (id) => {
     try {
-      await deleteSalaryRecord(id);
+      await deleteSalaryRecordAPI(id);
       fetchSalaryData(); // Refresh data
       setIsDeleteModalOpen(false);
     } catch (error) {
