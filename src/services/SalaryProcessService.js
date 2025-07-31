@@ -25,9 +25,19 @@ export const UpdateAllowances = async (allowances) => {
 export const saveSalaryData = async (data) => {
   // console.log(JSON.stringify({data}))
   try {
-    const response = await axios.post('/salary/process/save',  {data} );
+    const response = await axios.post("/salary/process/save", { data });
     return response.data;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const updateSlaryStatus = async (status) => {
+  try {
+    const response = await axios.get(`/salary/update/status?status=${status}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating salary status:", error);
     throw error;
   }
 };

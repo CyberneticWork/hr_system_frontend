@@ -20,6 +20,7 @@ import {
   getSalaryData,
   UpdateAllowances,
   saveSalaryData,
+  updateSlaryStatus,
 } from "@services/SalaryProcessService";
 import AllowancesService from "@services/AllowancesService";
 import * as DeductionService from "@services/DeductionService";
@@ -93,14 +94,20 @@ const SalaryProcessPage = () => {
   ];
 
   // Handle salary process
-  const handleSalaryProcess = () => {
+  const handleSalaryProcess = async () => {
     setStatus("Processed");
     statusInfo.lastProcessDate = new Date().toISOString().split("T")[0];
+    try {
+      await updateSlaryStatus("processed");
+      alert("Salary status updated HUTTO !");
+    } catch (error) {
+      alert(error);
+    }
     // Save processed data to localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(employeeData));
   };
 
-  const handlePrintPayslips = () => {
+  const handlePrintPayslips = async () => {
     // Get processed data from localStorage
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     if (!data.length) {
@@ -242,6 +249,12 @@ const SalaryProcessPage = () => {
     });
 
     doc.save("payslips.pdf");
+    try {
+      await updateSlaryStatus("issued");
+      alert("Salary Issued !");
+    } catch (error) {
+      alert(error);
+    }
   };
 
   // Handle EPF filter
