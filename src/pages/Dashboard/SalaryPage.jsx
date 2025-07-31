@@ -34,23 +34,95 @@ const Modal = ({ isOpen, onClose, children }) => {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  };
+
+  // Add keyboard event listener when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden"; // Prevent background scroll
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0  bg-opacity-75 transition-opacity"
-          aria-hidden="true"
-        ></div>
+      {/* Enhanced backdrop with blur and animation */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 ease-out"
+        aria-hidden="true"
+      />
 
-        {/* Modal content */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full relative">
-          {children}
+      {/* Modal content with enhanced animations and styling */}
+      <div
+        className="relative w-full max-w-2xl transform transition-all duration-300 ease-out scale-100 opacity-100"
+        style={{
+          animation: isOpen
+            ? "modalEnter 0.3s ease-out"
+            : "modalExit 0.2s ease-in",
+        }}
+      >
+        <div className="relative bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 group"
+            aria-label="Close modal"
+          >
+            <svg
+              className="w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+
+          {/* Modal content */}
+          <div className="relative">{children}</div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes modalEnter {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        @keyframes modalExit {
+          from {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -183,6 +255,53 @@ const SalaryPage = () => {
   const companies = [
     ...new Set(salaryData.map((item) => item.company_name)),
   ].sort();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      processed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      pending: 'bg-amber-100 text-amber-800 border-amber-200',
+      draft: 'bg-gray-100 text-gray-800 border-gray-200'
+    };
+
+    return (
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${statusConfig[status] || statusConfig.draft}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const toggleRowExpansion = (id) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen bg-gray-50">
