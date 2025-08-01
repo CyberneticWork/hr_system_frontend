@@ -19,6 +19,9 @@ import { fetchCompanies, fetchDepartmentsById } from "@services/ApiDataService";
 import {
   getSalaryData,
   UpdateAllowances,
+  saveSalaryData,
+  updateSlaryStatus,
+  getProcessedSalaries,
 } from "@services/SalaryProcessService";
 import AllowancesService from "@services/AllowancesService";
 import * as DeductionService from "@services/DeductionService";
@@ -59,7 +62,7 @@ const SalaryProcessPage = () => {
   const [bulkActionType, setBulkActionType] = useState("allowance");
   const [bulkActionAmount, setBulkActionAmount] = useState("");
   const [bulkActionName, setBulkActionName] = useState("");
-  const [bulkActionId, setBulkActionId] = useState(""); // Replace bulkActionName
+  const [bulkActionId, setBulkActionId] = useState("");
 
   // Status information
   const statusInfo = {
@@ -92,155 +95,421 @@ const SalaryProcessPage = () => {
   ];
 
   // Handle salary process
-  const handleSalaryProcess = () => {
+  const handleSalaryProcess = async () => {
     setStatus("Processed");
     statusInfo.lastProcessDate = new Date().toISOString().split("T")[0];
+    try {
+      await updateSlaryStatus("processed");
+      alert("Salary status updated HUTTO !");
+    } catch (error) {
+      alert(error);
+    }
     // Save processed data to localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(employeeData));
   };
 
-  const handlePrintPayslips = () => {
+  const handlePrintPayslips = async () => {
     // Get processed data from localStorage
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     if (!data.length) {
       alert("No processed salary data found.");
-      return;
     }
-    const doc = new jsPDF();
+  };
+  const handleDownloadAllProcessed = async () => {
+    try {
+      setIsLoading(true);
 
-    data.forEach((emp, idx) => {
-      if (idx > 0) doc.addPage();
+      // Get processed data from the backend
+      const processedData = await getProcessedSalaries();
 
-      // Header
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("Company Name (Official Payslip)", 105, 18, { align: "center" });
-
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Payslip for the Month: ${month} ${year}`, 105, 28, {
-        align: "center",
-      });
-
-      // Employee Info
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("Employee Details", 14, 40);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Employee No: ${emp.emp_no}`, 14, 48);
-      doc.text(`Name: ${emp.full_name}`, 14, 54);
-      doc.text(`Department: ${emp.department_name}`, 14, 60);
-      doc.text(`Company: ${emp.company_name}`, 14, 66);
-
-      // Salary Table
-      let y = 82;
-      doc.setFont("helvetica", "bold");
-      doc.text("Earnings", 14, y);
-      doc.text("Amount (LKR)", 70, y);
-      doc.text("Deductions", 120, y);
-      doc.text("Amount (LKR)", 180, y);
-      y += 8;
-      doc.setFont("helvetica", "normal");
-
-      // Earnings
-      const earnings = [["Basic Salary", emp.basic_salary]];
-
-      // Deductions
-      const deductions = [["Loan", emp.total_loan_amount]];
-
-      // Print earnings and deductions side by side
-      const maxRows = Math.max(earnings.length, deductions.length);
-      for (let i = 0; i < maxRows; i++) {
-        if (earnings[i]) {
-          doc.text(earnings[i][0], 14, y);
-          doc.text(
-            earnings[i][1] ? parseFloat(earnings[i][1]).toLocaleString() : "-",
-            70,
-            y,
-            { align: "right" }
-          );
-        }
-        if (deductions[i]) {
-          doc.text(deductions[i][0], 120, y);
-          doc.text(
-            deductions[i][1]
-              ? parseFloat(deductions[i][1]).toLocaleString()
-              : "-",
-            180,
-            y,
-            { align: "right" }
-          );
-        }
-        y += 8;
-        if (y > 260) {
-          doc.addPage();
-          y = 20;
-        }
+      if (!processedData || processedData.length === 0) {
+        alert("No processed salary data found for the selected period.");
+        return;
       }
 
-      // Gross, Deductions, Net
-      y += 4;
-      doc.setFont("helvetica", "bold");
-      doc.text("Gross Amount", 14, y);
-      doc.text(
-        emp.basic_salary ? parseFloat(emp.basic_salary).toLocaleString() : "-",
-        70,
-        y,
-        { align: "right" }
-      );
-      doc.text("Total Deduction", 120, y);
-      doc.text(
-        emp.total_loan_amount
-          ? parseFloat(emp.total_loan_amount).toLocaleString()
-          : "-",
-        180,
-        y,
-        { align: "right" }
-      );
+      // Create PDF
+      const doc = new jsPDF();
 
-      y += 10;
-      doc.setFontSize(13);
-      doc.setTextColor(34, 197, 94); // green
-      const netSalary =
-        (parseFloat(emp.basic_salary) || 0) -
-        (parseFloat(emp.total_loan_amount) || 0);
-      doc.text("Net Salary", 14, y);
-      doc.text(netSalary.toLocaleString(), 70, y, {
-        align: "right",
-      });
-      doc.setTextColor(0, 0, 0);
+      // Get month name for display
+      const monthObj = months.find((m) => m.value === month);
+      const monthName = monthObj ? monthObj.label : ` ${month}`;
 
-      // Statutory
-      if (emp.enable_epf_etf) {
-        y += 10;
-        doc.setFontSize(11);
+      processedData.forEach((emp, idx) => {
+        if (idx > 0) doc.addPage();
+
+        // Header - Company Name and Title
+        doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text("Statutory Contributions", 14, y);
+
+        doc.text(`Company: ${emp.company_name}`, 105, 15, { align: "center" });
+        doc.text(`Department: ${emp.department_name}`, 105, 22, {
+          align: "center",
+        });
+        doc.text("Payslip", 105, 29, { align: "center" });
+
+        // Display month name and year properly
+        doc.text(`${monthName} ${year}`, 105, 36, { align: "center" });
+
+        // Draw border around header
+        doc.rect(10, 8, 190, 32);
+
+        let y = 50;
+
+        // Employee Details Section
+        doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        y += 7;
-        const epf8 = (parseFloat(emp.basic_salary) || 0) * 0.08;
-        doc.text(`EPF (8% Employee): ${epf8.toLocaleString()}`, 14, y);
+
+        // EPF No
+        doc.text(`EPF No :`, 15, y);
+        doc.text(`${emp.employee_no || "N/A"}`, 60, y);
         y += 6;
-        const epf12 = (parseFloat(emp.basic_salary) || 0) * 0.12;
-        doc.text(`EPF (12% Employer): ${epf12.toLocaleString()}`, 14, y);
+
+        // Code
+        doc.text(`Code :`, 15, y);
+        doc.text(`${emp.employee_no || "N/A"}`, 60, y);
         y += 6;
-        const etf3 = (parseFloat(emp.basic_salary) || 0) * 0.03;
-        doc.text(`ETF (3% Employer): ${etf3.toLocaleString()}`, 14, y);
+
+        // Name
+        doc.text(`Name :`, 15, y);
+        doc.text(`${emp.full_name || "N/A"}`, 60, y);
+        y += 6;
+
+        // Bank (if available)
+        doc.text(`Bank :`, 15, y);
+        doc.text(`${emp.compensation?.bank_name || "N/A"}`, 60, y);
+        y += 6;
+
+        // Branch (if available)
+        doc.text(`Branch :`, 15, y);
+        doc.text(`${emp.compensation?.branch_name || "N/A"}`, 60, y);
+        y += 6;
+
+        // Account No (if available)
+        doc.text(`Account No. :`, 15, y);
+        doc.text(`${emp.compensation?.bank_account_no || "N/A"}`, 60, y);
+        y += 10;
+
+        // Basic Salary
+        doc.setFont("helvetica", "bold");
+        doc.text(`Basic Salary`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.basic_salary?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 10;
+
+        // Transactions for EPF Section
+        doc.setFont("helvetica", "normal");
+        doc.text(`Transactions for EPF`, 15, y);
+        y += 8;
+
+        // Allowances
+        doc.text(`Allowances`, 15, y);
+        y += 6;
+
+        // Display allowances if available
+        if (emp.allowances && emp.allowances.length > 0) {
+          emp.allowances.forEach((allowance) => {
+            doc.text(`${allowance.name}`, 15, y);
+            doc.text(
+              `${parseFloat(allowance.amount || 0).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`,
+              170,
+              y,
+              { align: "right" }
+            );
+            y += 6;
+          });
+        } else {
+          // Default allowance entries from salary_breakdown
+          doc.text(`BRA1 Act`, 15, y);
+          doc.text(
+            `${
+              emp.salary_breakdown?.br_allowance?.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }) || "0.00"
+            }`,
+            170,
+            y,
+            { align: "right" }
+          );
+          y += 6;
+          // doc.text(`BRA2 Act No:04 of 2016`, 15, y);
+          // doc.text(`${emp.salary_breakdown?.br_allowance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}`, 170, y, { align: "right" });
+          // y += 6;
+        }
+
+        y += 4;
+
+        // Total EPF App. Transaction
+        // doc.text(`Total EPF App. Transaction`, 15, y);
+        // doc.text(`0.00`, 170, y, { align: "right" });
+        // y += 6;
+
+        // // Pay Reduction Adjustment
+        // doc.text(`Pay Reduction Adjustment`, 15, y);
+        // doc.text(`0.00`, 170, y, { align: "right" });
+        // y += 6;
+
+        // Nopay Amount
+        doc.text(`Nopay Amount`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.no_pay_deduction?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 8;
+
+        // Gross for EPF
+        doc.setFont("helvetica", "bold");
+        doc.text(`Gross for EPF`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.epf_etf_base?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 8;
+
+        // OT Amount
+        doc.setFont("helvetica", "normal");
+        doc.text(`OT Amount`, 15, y);
+        doc.text(`0.00`, 170, y, { align: "right" });
+        y += 6;
+
+        // Nopay Amount Non EPF [-]
+        doc.text(`Nopay Amount Non EPF [-]`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.no_pay_deduction?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 8;
+
+        // Gross Salary
+        doc.setFont("helvetica", "bold");
+        doc.text(`Gross Salary`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.gross_salary?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 10;
+
+        // Deductions Section
+        doc.text(`Deductions`, 15, y);
+        y += 8;
+
+        // EPF Employee Deduction (8%)
+        doc.setFont("helvetica", "normal");
+        doc.text(`EPF - Employee - 8.00%`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.epf_employee_deduction?.toLocaleString(
+              "en-US",
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            ) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 6;
+
+        // Other deductions
+        if (emp.deductions && emp.deductions.length > 0) {
+          emp.deductions.forEach((deduction) => {
+            doc.text(`${deduction.name}`, 15, y);
+            doc.text(
+              `${parseFloat(deduction.amount || 0).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`,
+              170,
+              y,
+              { align: "right" }
+            );
+            y += 6;
+          });
+        } else {
+          // Default deduction entries
+          doc.text(`Salary Advance`, 15, y);
+          doc.text(`0.00`, 170, y, { align: "right" });
+          y += 6;
+          doc.text(`APIT`, 15, y);
+          doc.text(`0.00`, 170, y, { align: "right" });
+          y += 6;
+          doc.text(`Stamp Duty`, 15, y);
+          doc.text(`0.00`, 170, y, { align: "right" });
+          y += 6;
+        }
+
+        // Loan deduction
+        if (emp.salary_breakdown?.loan_installment) {
+          doc.text(`Loan`, 15, y);
+          doc.text(
+            `${emp.salary_breakdown.loan_installment.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+            170,
+            y,
+            { align: "right" }
+          );
+          y += 6;
+        }
+
+        y += 2;
+
+        // Total Deduction
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Deduction`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.total_deductions?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 10;
+
+        // Net Salary
+        doc.setFontSize(12);
+        doc.text(`Net Salary Rs.`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.net_salary?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 12;
+
+        // Employer Contribution Section
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.text(`Employer Contribution:`, 15, y);
+        y += 8;
+
+        // EPF Employer (12%)
+        doc.setFont("helvetica", "normal");
+        doc.text(`EPF - 12.00%`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.epf_employer_contribution?.toLocaleString(
+              "en-US",
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            ) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 6;
+
+        // ETF (3%)
+        doc.text(`ETF - 3.00%`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.etf_employer_contribution?.toLocaleString(
+              "en-US",
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            ) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 6;
+
+        // Total EPF
+        const totalEPF =
+          (emp.salary_breakdown?.epf_employee_deduction || 0) +
+          (emp.salary_breakdown?.epf_employer_contribution || 0);
+        doc.text(`Total EPF`, 15, y);
+        doc.text(
+          `${totalEPF.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 15;
+
+        // Company Name and Date at bottom
+        doc.text(`LIFEHRMS`, 15, y);
+        const currentDate = new Date();
+        const formattedDate = `${currentDate
+          .getDate()
+          .toString()
+          .padStart(2, "0")}/${(currentDate.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}/${currentDate.getFullYear()}`;
+        doc.text(formattedDate, 170, y, { align: "right" });
+
+        // Draw border around entire payslip
+        doc.rect(10, 45, 190, y - 40);
+      });
+
+      // Save the PDF immediately after creation - this will trigger download
+      doc.save(`payslips_${monthName}_${year}.pdf`);
+
+      // Mark payslips as issued after successful PDF generation
+      try {
+        await updateSlaryStatus("issued");
+        alert("Salary Issued !");
+      } catch (error) {
+        alert(error);
       }
-
-      // Footer
-      y = 275;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "italic");
-      doc.text(
-        "This is a system generated payslip and does not require a signature.",
-        105,
-        y,
-        { align: "center" }
-      );
-    });
-
-    doc.save("payslips.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle EPF filter
@@ -296,35 +565,40 @@ const SalaryProcessPage = () => {
     loadDepartments();
   }, [selectedCompany]);
 
-  // Fetch salary data when filters change
-  useEffect(() => {
-    const fetchSalaryData = async () => {
-      if (month && year && selectedCompany) {
-        setIsLoading(true);
-        try {
-          const data = await getSalaryData(
-            month,
-            year,
-            selectedCompany,
-            selectedDepartment || ""
-          );
-          setEmployeeData(data.data);
-          setDisplayedData(data.data);
-          setFilteredData(data.data);
-        } catch (error) {
-          console.error("Error fetching salary data:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
+  // Fetch salary data when Apply Filters is clicked
+  const fetchSalaryData = async () => {
+    if (!month || !year || !selectedCompany) {
+      alert("Please select company, month, and year before applying filters");
+      return null;
+    }
 
-    fetchSalaryData();
-  }, [month, year, selectedCompany, selectedDepartment]);
+    setIsLoading(true);
+    try {
+      const data = await getSalaryData(
+        month,
+        year,
+        selectedCompany,
+        selectedDepartment || ""
+      );
+      setEmployeeData(data.data);
+      setDisplayedData(data.data);
+      setFilteredData(data.data);
+      return data.data; // Return the data
+    } catch (error) {
+      console.error("Error fetching salary data:", error);
+      alert("Error fetching salary data. Please try again.");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Apply filters
-  const applyFilters = () => {
-    let filtered = employeeData;
+  const applyFilters = async () => {
+    const newData = await fetchSalaryData(); // Get the new data directly
+    if (!newData) return; // Handle error case
+
+    let filtered = newData; // Use the newly returned data instead of employeeData
 
     if (activeFilter === "EPF") {
       filtered = filtered.filter((emp) => emp.enable_epf_etf);
@@ -348,8 +622,9 @@ const SalaryProcessPage = () => {
   // Reset filter function
   const resetFilter = () => {
     setActiveFilter("All");
-    setDisplayedData(employeeData);
-    setFilteredData(employeeData);
+    setEmployeeData([]);
+    setDisplayedData([]);
+    setFilteredData([]);
     setSelectedCompany("");
     setSelectedDepartment("");
     setMonth("");
@@ -484,9 +759,8 @@ const SalaryProcessPage = () => {
       alert(
         `Successfully applied ${bulkActionType} to ${selectedEmployees.length} employee(s)`
       );
-      // setDisplayedData(displayedData);
-      fetchSalaryData();
-      // setEmployeeData(updatedData);
+      // Refresh data after bulk action
+      await fetchSalaryData();
 
       // Clear selection after applying
       setSelectedEmployees([]);
@@ -496,7 +770,7 @@ const SalaryProcessPage = () => {
       setBulkActionName("");
     } catch (error) {
       console.log(error);
-      alert(`Error - ${error.response.data.message}`);
+      alert(`Error - ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -781,6 +1055,28 @@ const SalaryProcessPage = () => {
                 Apply Filters
               </button>
               <button
+                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg text-base font-semibold hover:bg-green-700 transition-colors shadow"
+                onClick={async () => {
+                  if (filteredData.length === 0) {
+                    alert("No data to save. Please apply filters first.");
+                    return;
+                  }
+                  try {
+                    const savedData = await saveSalaryData(filteredData);
+                    // console.log(JSON.stringify(savedData));
+                    alert("Salary data saved successfully!");
+                  } catch (error) {
+                    console.error("Error saving salary data:", error);
+                    alert(error);
+                  }
+                }}
+                type="button"
+                disabled={filteredData.length === 0}
+              >
+                <FileText size={18} strokeWidth={2} />
+                Save Data
+              </button>
+              <button
                 className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-base font-semibold hover:bg-gray-300 transition-colors shadow"
                 onClick={resetFilter}
                 type="button"
@@ -849,19 +1145,17 @@ const SalaryProcessPage = () => {
                 Process Salary
               </button>
               <button
-                className={`
-                  w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-base font-semibold transition-colors
-                  ${
-                    status !== "Processed"
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700 shadow"
-                  }
-                `}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-base font-semibold transition-colors
+    ${
+      status !== "Processed"
+        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+        : "bg-purple-600 text-white hover:bg-purple-700 shadow"
+    }`}
+                onClick={handleDownloadAllProcessed}
                 disabled={status !== "Processed"}
-                onClick={handlePrintPayslips}
               >
-                <Printer size={18} strokeWidth={2} />
-                Print Payslips
+                <Download size={18} strokeWidth={2} />
+                Download All Processed Payslips
               </button>
             </div>
           </div>
@@ -885,8 +1179,8 @@ const SalaryProcessPage = () => {
                 value={bulkActionType}
                 onChange={(e) => {
                   setBulkActionType(e.target.value);
-                  setBulkActionName(""); // Reset selection
-                  setBulkActionAmount(""); // Reset amount
+                  setBulkActionName("");
+                  setBulkActionAmount("");
                 }}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
@@ -966,7 +1260,7 @@ const SalaryProcessPage = () => {
       )}
 
       {/* Employee Salary Table */}
-      {!isLoading && (
+      {!isLoading && displayedData.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow mb-8">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -987,13 +1281,10 @@ const SalaryProcessPage = () => {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Company
+                    Company/Dept
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Basic Salary
+                    Salary Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                     EPF/ETF
@@ -1005,6 +1296,9 @@ const SalaryProcessPage = () => {
                     Deductions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Salary Breakdown
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                     Net Salary
                   </th>
                 </tr>
@@ -1013,7 +1307,7 @@ const SalaryProcessPage = () => {
                 {displayedData.map((employee) => {
                   const empId = `${employee.id}`;
 
-                  // Calculate total allowances
+                  // Calculate totals
                   const totalAllowances =
                     employee.allowances?.reduce(
                       (sum, allowance) =>
@@ -1021,7 +1315,6 @@ const SalaryProcessPage = () => {
                       0
                     ) || 0;
 
-                  // Calculate total deductions
                   const totalDeductions =
                     employee.deductions?.reduce(
                       (sum, deduction) =>
@@ -1029,11 +1322,11 @@ const SalaryProcessPage = () => {
                       0
                     ) || 0;
 
-                  // Calculate net salary
                   const netSalary =
+                    employee.salary_breakdown?.net_salary ||
                     (parseFloat(employee.basic_salary) || 0) +
-                    totalAllowances -
-                    totalDeductions;
+                      totalAllowances -
+                      totalDeductions;
 
                   return (
                     <tr
@@ -1052,35 +1345,89 @@ const SalaryProcessPage = () => {
                         {employee.emp_no}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.full_name}
+                        <div className="font-medium">{employee.full_name}</div>
+                        <div className="text-xs text-gray-500">
+                          ID: {employee.id} | BR: {employee.br_status}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.company_name}
+                        <div className="font-medium">
+                          {employee.company_name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {employee.department_name}
+                          {employee.sub_department_name &&
+                            ` (${employee.sub_department_name})`}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.department_name}
-                        {employee.sub_department_name &&
-                          ` (${employee.sub_department_name})`}
+                        <div>
+                          Basic:{" "}
+                          {parseFloat(
+                            employee.basic_salary || 0
+                          ).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {employee.increment_active ? (
+                            <>
+                              Incr: {employee.increment_value} (eff.{" "}
+                              {employee.increment_effected_date})
+                            </>
+                          ) : (
+                            "No active increment"
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          OT: {employee.ot_morning ? "Morning" : ""}{" "}
+                          {employee.ot_evening ? "Evening" : ""}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.basic_salary
-                          ? parseFloat(employee.basic_salary).toLocaleString()
-                          : "0.00"}
+                        <div>{employee.enable_epf_etf ? "Yes" : "No"}</div>
+                        {employee.enable_epf_etf && (
+                          <div className="text-xs text-gray-500">
+                            EPF:{" "}
+                            {employee.salary_breakdown?.epf_deduction?.toLocaleString() ||
+                              "0"}
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-xs">EPF Cut:</span>
+                          <span className="text-red-600">
+                            {employee.salary_breakdown?.epf_employee_deduction?.toFixed(
+                              2
+                            ) || "0.00"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs">EPF:</span>
+                          <span className="text-yellow-600">
+                            {employee.salary_breakdown
+                              .epf_employer_contribution || "0"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs">ETF:</span>
+                          <span className="text-yellow-600">
+                            {employee.salary_breakdown
+                              .etf_employer_contribution || "0"}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.enable_epf_etf ? "Yes" : "No"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="flex flex-col space-y-1">
-                          {employee.allowances?.map((allowance, index) => (
-                            <div key={index} className="flex justify-between">
-                              <span>{allowance.allowance_name || "N/A"}:</span>
-                              <span>
-                                {allowance.amount
-                                  ? parseFloat(
-                                      allowance.amount
-                                    ).toLocaleString()
-                                  : "0.00"}
+                          {employee.allowances?.map((allowance) => (
+                            <div
+                              key={allowance.id}
+                              className="flex justify-between"
+                            >
+                              <span className="text-xs">
+                                {allowance.name} ({allowance.code})
+                              </span>
+                              <span className="font-medium">
+                                {parseFloat(
+                                  allowance.amount || 0
+                                ).toLocaleString()}
                               </span>
                             </div>
                           ))}
@@ -1089,17 +1436,20 @@ const SalaryProcessPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="flex flex-col space-y-1">
-                          {employee.deductions?.map((deduction, index) => (
-                            <div key={index} className="flex justify-between">
-                              <span>{deduction.deduction_name || "N/A"}:</span>
-                              <span>
-                                {deduction.amount
-                                  ? parseFloat(
-                                      deduction.amount
-                                    ).toLocaleString()
-                                  : "0.00"}
+                          {employee.deductions?.map((deduction) => (
+                            <div
+                              key={deduction.id}
+                              className="flex justify-between"
+                            >
+                              <span className="text-xs">
+                                {deduction.name} ({deduction.code})
+                              </span>
+                              <span className="font-medium">
+                                {parseFloat(
+                                  deduction.amount || 0
+                                ).toLocaleString()}
                               </span>
                             </div>
                           ))}
@@ -1108,8 +1458,51 @@ const SalaryProcessPage = () => {
                           </div>
                         </div>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {employee.salary_breakdown && (
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs">Gross:</span>
+                              <span>
+                                {employee.salary_breakdown.gross_salary?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">Adj. Basic:</span>
+                              <span>
+                                {employee.salary_breakdown.adjusted_basic?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">Per Day:</span>
+                              <span>
+                                {employee.salary_breakdown.per_day_salary?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">Loan:</span>
+                              <span>
+                                {employee.salary_breakdown.loan_installment?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs">No Pay Days:</span>
+                              <span>
+                                {employee.salary_breakdown.no_pay_deduction ||
+                                  "0"}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
-                        {netSalary.toLocaleString()}
+                        <div>{netSalary.toLocaleString()}</div>
+                        {employee.salary_breakdown && (
+                          <div className="text-xs font-normal text-gray-500">
+                            Deductions:{" "}
+                            {employee.salary_breakdown.total_deductions?.toLocaleString()}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1120,53 +1513,79 @@ const SalaryProcessPage = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between bg-white px-8 py-4 rounded-2xl border border-gray-200 shadow">
-        <div className="flex-1 flex justify-between sm:hidden">
-          <button className="relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
-            Previous
-          </button>
-          <button className="ml-3 relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
-            Next
-          </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-base text-gray-700">
-              Showing <span className="font-bold">1</span> to{" "}
-              <span className="font-bold">{Math.min(10, employeeCount)}</span>{" "}
-              of <span className="font-bold">{employeeCount}</span> results
+      {/* Empty State */}
+      {!isLoading && displayedData.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow text-center">
+          <div className="mx-auto max-w-md">
+            <Users className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">
+              No employees found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try adjusting your search or filter criteria
             </p>
-          </div>
-          <div>
-            <nav
-              className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px"
-              aria-label="Pagination"
-            >
-              <button className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
-                <span className="sr-only">Previous</span>
-                &larr;
-              </button>
+            <div className="mt-6">
               <button
-                aria-current="page"
-                className="z-10 bg-blue-100 border-blue-500 text-blue-700 relative inline-flex items-center px-5 py-2 border text-base font-bold"
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={resetFilter}
               >
-                1
+                Reset Filters
               </button>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
-                2
-              </button>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
-                3
-              </button>
-              <button className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
-                <span className="sr-only">Next</span>
-                &rarr;
-              </button>
-            </nav>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Pagination */}
+      {displayedData.length > 0 && (
+        <div className="flex items-center justify-between bg-white px-8 py-4 rounded-2xl border border-gray-200 shadow">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button className="relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
+              Previous
+            </button>
+            <button className="ml-3 relative inline-flex items-center px-5 py-2 border border-gray-300 text-base font-semibold rounded-lg text-gray-700 bg-white hover:bg-blue-50">
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base text-gray-700">
+                Showing <span className="font-bold">1</span> to{" "}
+                <span className="font-bold">{Math.min(10, employeeCount)}</span>{" "}
+                of <span className="font-bold">{employeeCount}</span> results
+              </p>
+            </div>
+            <div>
+              <nav
+                className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px"
+                aria-label="Pagination"
+              >
+                <button className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
+                  <span className="sr-only">Previous</span>
+                  &larr;
+                </button>
+                <button
+                  aria-current="page"
+                  className="z-10 bg-blue-100 border-blue-500 text-blue-700 relative inline-flex items-center px-5 py-2 border text-base font-bold"
+                >
+                  1
+                </button>
+                <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
+                  2
+                </button>
+                <button className="bg-white border-gray-300 text-gray-500 hover:bg-blue-50 relative inline-flex items-center px-5 py-2 border text-base font-semibold">
+                  3
+                </button>
+                <button className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-base font-semibold text-gray-500 hover:bg-blue-50">
+                  <span className="sr-only">Next</span>
+                  &rarr;
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -113,6 +113,7 @@ const Sidebar = ({
           subItems: [
             // { id: "salaryMaster", name: "Salary Master" },
             { id: "SalaryProcessPage", name: "Salary Process" },
+            { id: "SalaryPage", name: "View Salary" },
           ],
         },
         {
