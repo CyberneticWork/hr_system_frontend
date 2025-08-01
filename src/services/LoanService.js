@@ -21,3 +21,13 @@ export const fetchLoans = async () => {
     return [];
   }
 };
+
+export const fetchEmployeeNameByNo = async (employeeNo) => {
+  try {
+    const response = await axios.get(`/loans/employee-by-number/${employeeNo}`);
+    return response.data.full_name || "";
+  } catch (error) {
+    console.error("Error fetching employee name:", error);
+    return "";
+  }
+};

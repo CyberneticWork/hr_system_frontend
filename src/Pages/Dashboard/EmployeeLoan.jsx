@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { createLoan } from "@services/LoanService";
+import { createLoan, fetchEmployeeNameByNo } from "@services/LoanService";
 import Swal from "sweetalert2";
+import employeeService from "@services/EmployeeDataService"; // Make sure this service exists
 
 const EmployeeLoan = () => {
   const [loanId, setLoanId] = useState("");
@@ -12,6 +13,7 @@ const EmployeeLoan = () => {
   const [installmentAmount, setInstallmentAmount] = useState("");
   const [loanDetails, setLoanDetails] = useState([]);
   const [isCalculated, setIsCalculated] = useState(false);
+  const [employeeName, setEmployeeName] = useState("");
 
   // Add these after other useState declarations
   const [calculationType, setCalculationType] = useState("byAmount"); // byAmount or byCount
@@ -126,6 +128,19 @@ const EmployeeLoan = () => {
       setLoanId("");
     }
   }, [employeeNo, startDate]);
+
+  // Fetch employee name when employeeNo changes
+  useEffect(() => {
+    const fetchName = async () => {
+      if (employeeNo) {
+        const name = await fetchEmployeeNameByNo(employeeNo);
+        setEmployeeName(name);
+      } else {
+        setEmployeeName("");
+      }
+    };
+    fetchName();
+  }, [employeeNo]);
 
   const calculateLoan = () => {
     // Validation
@@ -395,6 +410,7 @@ const EmployeeLoan = () => {
               Loan Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Employee Number */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Employee Number
@@ -407,6 +423,19 @@ const EmployeeLoan = () => {
                   onChange={(e) => setEmployeeNo(e.target.value)}
                   placeholder="Enter Employee No."
                   required
+                />
+              </div>
+              {/* Employee Name (read-only, right side of Employee Number) */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Employee Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-100 text-gray-600"
+                  value={employeeName}
+                  readOnly
+                  placeholder="Employee name"
                 />
               </div>
               <div>
