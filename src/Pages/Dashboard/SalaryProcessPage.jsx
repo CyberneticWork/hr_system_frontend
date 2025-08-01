@@ -100,7 +100,7 @@ const SalaryProcessPage = () => {
     statusInfo.lastProcessDate = new Date().toISOString().split("T")[0];
     try {
       await updateSlaryStatus("processed");
-      alert("Salary status updated HUTTO !");
+      alert("Salary status updated!");
     } catch (error) {
       alert(error);
     }
