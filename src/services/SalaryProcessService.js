@@ -14,10 +14,10 @@ export const getSalaryData = async (month, year, company_id, department_id) => {
 
 export const UpdateAllowances = async (allowances) => {
   try {
-    const response = await axios.post('/salary/process/allowances, allowances');
+    const response = await axios.post("/salary/process/allowances", allowances);
     return response.data;
-  } catch (error) {s
-    conole.error("Error fetching salary data:", error);
+  } catch (error) {
+    console.error("Error fetching salary data:", error);
     throw error;
   }
 };
@@ -41,9 +41,9 @@ export const updateSlaryStatus = async (status) => {
     throw error;
   }
 };
-export const getProcessedSalaries = async () => {  
+export const getProcessedSalaries = async () => {
   try {
-    const response = await axios.get('/salary/processed');
+    const response = await axios.get("/salary/processed");
     return response.data;
   } catch (error) {
     console.error("Error fetching processed salaries:", error);
@@ -52,8 +52,8 @@ export const getProcessedSalaries = async () => {
 };
 export const markPayslipsAsIssued = async (employeeIds) => {
   try {
-    const response = await axios.post('/salary/process/mark-issued', {
-      employee_ids: employeeIds
+    const response = await axios.post("/salary/process/mark-issued", {
+      employee_ids: employeeIds,
     });
     return response.data;
   } catch (error) {
