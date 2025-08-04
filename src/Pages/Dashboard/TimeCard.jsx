@@ -68,14 +68,14 @@ const TimeCard = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
-  const [importMethod, setImportMethod] = useState('fingerprint');
+  const [importMethod, setImportMethod] = useState('excel');
   const [filterOption, setFilterOption] = useState('all');
   const [employeeName, setEmployeeName] = useState('');
   const [department, setDepartment] = useState('');
   const [nic, setNic] = useState('');
   const [nicError, setNicError] = useState('');
   const [employeeSearch, setEmployeeSearch] = useState('');
-  const [filterDate, setFilterDate] = useState(''); // <-- Add this for date filter
+  const [filterDate, setFilterDate] = useState('');
 
   // Table data state
   const [attendanceData, setAttendanceData] = useState([]);
@@ -164,13 +164,11 @@ const TimeCard = () => {
     setAbsentLoading(false);
   };
 
-
   // Add new record modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRecord, setNewRecord] = useState({
     empNo: '',
     name: '',
-    fingerprintClock: '',
     time: '',
     date: '',
     entry: '',
@@ -184,6 +182,7 @@ const TimeCard = () => {
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedToDate, setSelectedToDate] = useState('');
   const [excelFile, setExcelFile] = useState(null);
 
   // Fetch data from backend on mount
@@ -259,7 +258,7 @@ const TimeCard = () => {
     setSelectedMonth('');
     setEmployeeName('');
     setDepartment('');
-    setFilterDate(''); // <-- Reset date filter
+    setFilterDate('');
     setFilteredData(attendanceData);
   };
 
@@ -325,7 +324,6 @@ const TimeCard = () => {
   // Helper to sort by date, time, empNo, and entry
   const insertSorted = (data, record) => {
     const parseDateTime = (rec) => {
-      // Combine date and time for sorting, fallback to 0 if missing
       const dt = rec.date ? rec.date : '';
       const tm = rec.time ? rec.time : '';
       return new Date(`${dt} ${tm}`);
@@ -334,11 +332,9 @@ const TimeCard = () => {
     newData.sort((a, b) => {
       if (a.empNo !== b.empNo) return a.empNo.localeCompare(b.empNo);
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      // If both have time, sort by time
       if (a.time && b.time && a.time !== b.time) {
         return parseDateTime(a) - parseDateTime(b);
       }
-      // If both have entry, sort by entry
       if (a.entry && b.entry && a.entry !== b.entry) {
         return Number(a.entry) - Number(b.entry);
       }
@@ -355,10 +351,9 @@ const TimeCard = () => {
     setIsLoading(true);
     setNicError('');
 
-    // Fetch employee by NIC to get employee_id
     let employee;
     try {
-      employee = await timeCardService.fetchEmployeeByNic(nic); // <-- FIXED: use timeCardService
+      employee = await timeCardService.fetchEmployeeByNic(nic);
     } catch {
       setNicError('Employee not found');
       setIsLoading(false);
@@ -371,7 +366,6 @@ const TimeCard = () => {
       return;
     }
 
-    // Validate other fields
     if (!newRecord.time || !newRecord.date || !newRecord.entry || !newRecord.status) {
       setNicError('All fields are required');
       setIsLoading(false);
@@ -395,7 +389,6 @@ const TimeCard = () => {
       setNewRecord({
         empNo: '',
         name: '',
-        fingerprintClock: '',
         time: '',
         date: '',
         entry: '',
@@ -412,7 +405,6 @@ const TimeCard = () => {
         showConfirmButton: false,
       });
     } catch (e) {
-      // Show backend error message if available
       const msg = e.response?.data?.message || 'Failed to add attendance record';
       setNicError(msg);
       Swal.fire({
@@ -424,7 +416,6 @@ const TimeCard = () => {
     setIsLoading(false);
   };
 
-  // Handler to fetch employee by NIC
   const handleNicBlur = async () => {
     if (!nic) return;
     setNicError('');
@@ -435,7 +426,7 @@ const TimeCard = () => {
           ...prev,
           empNo: emp.attendance_employee_no,
           name: emp.full_name,
-          department: emp.department || '', // Auto-fill department from backend
+          department: emp.department || '',
         }));
       } else {
         setNicError('Employee not found for this NIC');
@@ -457,12 +448,10 @@ const TimeCard = () => {
     }
   };
 
-  // (Optional) Reset employeeSearch when filter changes
   useEffect(() => {
     if (filterOption !== 'employee') setEmployeeSearch('');
   }, [filterOption]);
 
-  // Fetch employee records based on search and filter
   useEffect(() => {
     const fetchEmployeeRecords = async () => {
       if (filterOption === 'employee' && employeeSearch.trim() !== '') {
@@ -491,10 +480,15 @@ const TimeCard = () => {
       Swal.fire({ icon: 'error', title: 'No file selected', text: 'Please select an Excel file.' });
       return;
     }
+    if (!selectedDate) {
+      Swal.fire({ icon: 'error', title: 'Missing From Date', text: 'Please select a From Date.' });
+      return;
+    }
     const formData = new FormData();
     formData.append('file', excelFile);
     formData.append('company_id', selectedCompany);
-    formData.append('date', selectedDate);
+    formData.append('from_date', selectedDate);
+    if (selectedToDate) formData.append('to_date', selectedToDate);
 
     try {
       const res = await timeCardService.importExcel(formData);
@@ -513,9 +507,9 @@ const TimeCard = () => {
       setAttendanceData(updated);
       setFilteredData(updated);
 
-      // Auto-clear import fields
       setSelectedCompany('');
       setSelectedDate('');
+      setSelectedToDate('');
       setExcelFile(null);
     } catch (e) {
       Swal.fire({
@@ -526,12 +520,11 @@ const TimeCard = () => {
     }
   };
 
-  // --- Export Template Button Handler ---
   const handleDownloadTemplate = async () => {
     try {
       await timeCardService.downloadTemplate();
     } catch (error) {
-      alert(error.message); // Or use Swal.fire({ icon: 'error', text: error.message })
+      alert(error.message);
     }
   };
 
@@ -600,20 +593,29 @@ const TimeCard = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Date</label>
+                    <label className="block text-sm font-semibold text-slate-700">From Date <span className="text-red-500">*</span></label>
                     <input
                       type="date"
                       className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
                       value={selectedDate}
                       onChange={e => setSelectedDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700">To Date</label>
+                    <input
+                      type="date"
+                      className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm hover:shadow-md text-sm sm:text-base"
+                      value={selectedToDate}
+                      onChange={e => setSelectedToDate(e.target.value)}
+                      min={selectedDate}
                     />
                   </div>
                 </div>
-                
                 <div className="mt-6">
                   <label className="block text-sm font-semibold text-slate-700 mb-4">Import Method</label>
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-                    {/* Remove the fingerprint radio button */}
                     <label className="inline-flex items-center cursor-pointer p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                       <input
                         type="radio"
@@ -1042,7 +1044,7 @@ const TimeCard = () => {
                 placeholder="Auto-filled from NIC"
               />
             </div>
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Fingerprint Clock</label>
               <input
                 type="text"
@@ -1051,7 +1053,7 @@ const TimeCard = () => {
                 onChange={e => setNewRecord({ ...newRecord, fingerprintClock: e.target.value })}
                 placeholder="Enter fingerprint clock"
               />
-            </div>
+            </div> */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Time</label>
               <input
