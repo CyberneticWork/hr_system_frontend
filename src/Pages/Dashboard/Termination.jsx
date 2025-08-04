@@ -16,15 +16,18 @@ import {
   FileQuestion,
   Briefcase,
 } from "lucide-react";
+import ResignationService from "@services/ResignationsService";
+import Swal from "sweetalert2";
 
 const Termination = () => {
   // State for filtering and search
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("Pending");
-  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showDetails, setShowDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // State for rejection modal
   const [showRejectionModal, setShowRejectionModal] = useState(false);
@@ -37,93 +40,75 @@ const Termination = () => {
   const [terminationDate, setTerminationDate] = useState("");
   const [exitNotes, setExitNotes] = useState("");
 
-  // Sample resignation request data
-  const [resignationRequests, setResignationRequests] = useState([
-    {
-      id: 1,
-      employeeNo: "EMP001",
-      employeeName: "John Smith",
-      department: "IT",
-      position: "Senior Developer",
-      submittedDate: "2025-07-01",
-      requestedDate: "2025-08-01",
-      reason:
-        "I've accepted a position at another company that aligns more closely with my career goals. It was a difficult decision, but I believe this is the best step for my professional growth.",
-      status: "Pending",
-      yearsOfService: 4.5,
-    },
-    {
-      id: 2,
-      employeeNo: "EMP014",
-      employeeName: "Sarah Williams",
-      department: "Marketing",
-      position: "Marketing Manager",
-      submittedDate: "2025-06-28",
-      requestedDate: "2025-07-28",
-      reason:
-        "I'm relocating to another city due to family circumstances. I've enjoyed my time with the company and appreciate all the opportunities provided to me during my tenure.",
-      status: "Pending",
-      yearsOfService: 3.2,
-    },
-    {
-      id: 3,
-      employeeNo: "EMP035",
-      employeeName: "Michael Johnson",
-      department: "Finance",
-      position: "Financial Analyst",
-      submittedDate: "2025-07-05",
-      requestedDate: "2025-08-05",
-      reason:
-        "I've decided to pursue further education full-time. I believe this will help me advance my career in the long run. I'm grateful for all I've learned while working here.",
-      status: "Approved",
-      approvedBy: "HR Director",
-      approvedDate: "2025-07-10",
-      terminationDate: "2025-08-05",
-      exitNotes:
-        "Exit interview scheduled for Aug 3rd. All company property to be returned by Aug 4th.",
-      yearsOfService: 2.0,
-    },
-    {
-      id: 4,
-      employeeNo: "EMP087",
-      employeeName: "Amanda Chen",
-      department: "HR",
-      position: "HR Specialist",
-      submittedDate: "2025-06-20",
-      requestedDate: "2025-07-20",
-      reason:
-        "I've been offered a position that provides better work-life balance, which is important for my family situation right now. I've enjoyed working with everyone here.",
-      status: "Rejected",
-      rejectedBy: "HR Manager",
-      rejectedDate: "2025-06-25",
-      rejectionReason:
-        "After discussion with department head, we've offered a flexible work arrangement and revised compensation package. Employee has accepted and withdrawn resignation.",
-      yearsOfService: 1.8,
-    },
-    {
-      id: 5,
-      employeeNo: "EMP042",
-      employeeName: "Robert Taylor",
-      department: "Operations",
-      position: "Operations Supervisor",
-      submittedDate: "2025-07-08",
-      requestedDate: "2025-08-15",
-      reason:
-        "I'm starting my own business venture. This has been a goal of mine for several years, and I feel now is the right time to pursue it. I'm thankful for the skills I've developed here.",
-      status: "Pending",
-      yearsOfService: 5.3,
-    },
-  ]);
+  // State for resignation requests from API
+  const [resignationRequests, setResignationRequests] = useState([]);
+  // const [departments, setDepartments] = useState([]);
 
-  // Sample departments
-  const departments = [
-    "IT",
-    "HR",
-    "Finance",
-    "Marketing",
-    "Operations",
-    "Sales",
-  ];
+  // Fetch resignation requests on component mount
+  useEffect(() => {
+    fetchResignationRequests();
+  }, []);
+
+  // Function to fetch resignation requests
+  const fetchResignationRequests = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch all resignations from API (remove the status filter)
+      const response = await ResignationService.getAllResignations();
+
+      // Transform the API data to match our component's expected format
+      const formattedData = response.data.map((resignation) => ({
+        id: resignation.id,
+        employeeNo:
+          resignation.employee?.attendance_employee_no?.toString() || "N/A",
+        employeeName:
+          resignation.employee?.full_name ||
+          resignation.employee?.name_with_initials ||
+          "Unknown Employee",
+        department:
+          resignation.employee?.organization_assignment?.department?.name ||
+          "N/A",
+        position:
+          resignation.employee?.organization_assignment?.designation?.name ||
+          "N/A",
+        submittedDate:
+          resignation.created_at?.split("T")[0] ||
+          new Date().toISOString().split("T")[0],
+        requestedDate: resignation.resigning_date,
+        reason: resignation.resignation_reason || "No reason provided",
+        status: resignation.status,
+        approvedBy: resignation.processed_by_name || "",
+        approvedDate: resignation.processed_at?.split("T")[0] || "",
+        rejectedBy: resignation.processed_by_name || "",
+        rejectedDate: resignation.processed_at?.split("T")[0] || "",
+        rejectionReason: resignation.notes || "",
+        yearsOfService: calculateYearsOfService(
+          resignation.employee?.organization_assignment?.date_of_joining
+        ),
+        terminationDate: resignation.last_working_day || "",
+      }));
+
+      setResignationRequests(formattedData);
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch resignation requests:", err);
+      setError("Failed to load resignation requests. Please try again later.");
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to calculate years of service
+  const calculateYearsOfService = (joinDate) => {
+    if (!joinDate) return 0;
+
+    const start = new Date(joinDate);
+    const today = new Date();
+    const yearsDiff = (today - start) / (365 * 24 * 60 * 60 * 1000);
+
+    return parseFloat(yearsDiff.toFixed(1));
+  };
 
   // Filter resignation requests based on search and filter criteria
   const filteredRequests = resignationRequests.filter((request) => {
@@ -138,10 +123,6 @@ const Termination = () => {
     const matchesStatus =
       filterStatus === "All" || request.status === filterStatus;
 
-    // Department filter
-    const matchesDepartment =
-      !filterDepartment || request.department === filterDepartment;
-
     // Date range filter
     let matchesDateRange = true;
     if (dateFrom) {
@@ -151,20 +132,18 @@ const Termination = () => {
       matchesDateRange = matchesDateRange && request.requestedDate <= dateTo;
     }
 
-    return (
-      matchesSearch && matchesStatus && matchesDepartment && matchesDateRange
-    );
+    return matchesSearch && matchesStatus && matchesDateRange;
   });
 
   // Count statistics
   const pendingCount = resignationRequests.filter(
-    (req) => req.status === "Pending"
+    (req) => req.status === "pending"
   ).length;
   const approvedCount = resignationRequests.filter(
-    (req) => req.status === "Approved"
+    (req) => req.status === "approved"
   ).length;
   const rejectedCount = resignationRequests.filter(
-    (req) => req.status === "Rejected"
+    (req) => req.status === "rejected"
   ).length;
   const totalCount = resignationRequests.length;
 
@@ -177,32 +156,61 @@ const Termination = () => {
   const handleApprove = (id) => {
     setApprovingRequestId(id);
     const request = resignationRequests.find((req) => req.id === id);
-    setTerminationDate(request.requestedDate);
+    setTerminationDate(request.terminationDate || request.requestedDate);
     setExitNotes("");
     setShowApprovalModal(true);
   };
 
   // Handle confirm approval
-  const confirmApproval = () => {
+  const confirmApproval = async () => {
     if (terminationDate) {
-      setResignationRequests((prevRequests) =>
-        prevRequests.map((request) =>
-          request.id === approvingRequestId
-            ? {
-                ...request,
-                status: "Approved",
-                approvedBy: "HR Director",
-                approvedDate: new Date().toISOString().split("T")[0],
-                terminationDate: terminationDate,
-                exitNotes: exitNotes,
-              }
-            : request
-        )
-      );
-      setShowApprovalModal(false);
-      setApprovingRequestId(null);
-      setTerminationDate("");
-      setExitNotes("");
+      try {
+        // Update the resignation status via API
+        await ResignationService.updateResignationStatus(approvingRequestId, {
+          status: "approved",
+          notes: exitNotes,
+        });
+
+        // Update local state to show the changes immediately
+        setResignationRequests((prevRequests) =>
+          prevRequests.map((request) =>
+            request.id === approvingRequestId
+              ? {
+                  ...request,
+                  status: "approved",
+                  approvedBy: "HR Director", // This would ideally come from logged-in user context
+                  approvedDate: new Date().toISOString().split("T")[0],
+                  terminationDate: terminationDate,
+                  exitNotes: exitNotes,
+                }
+              : request
+          )
+        );
+
+        // Show success message
+        Swal.fire({
+          icon: "success",
+          title: "Resignation Approved",
+          text: "The resignation request has been approved and the employee will be terminated on the specified date.",
+          confirmButtonColor: "#3085d6",
+        });
+
+        setShowApprovalModal(false);
+        setApprovingRequestId(null);
+        setTerminationDate("");
+        setExitNotes("");
+
+        // Refresh data from API
+        fetchResignationRequests();
+      } catch (error) {
+        console.error("Error approving resignation:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "There was an error approving the resignation. Please try again.",
+          confirmButtonColor: "#3085d6",
+        });
+      }
     }
   };
 
@@ -214,39 +222,74 @@ const Termination = () => {
   };
 
   // Handle confirm rejection
-  const confirmReject = () => {
+  const confirmReject = async () => {
     if (rejectionReason.trim()) {
-      setResignationRequests((prevRequests) =>
-        prevRequests.map((request) =>
-          request.id === rejectingRequestId
-            ? {
-                ...request,
-                status: "Rejected",
-                rejectedBy: "HR Director",
-                rejectedDate: new Date().toISOString().split("T")[0],
-                rejectionReason: rejectionReason,
-              }
-            : request
-        )
-      );
-      setShowRejectionModal(false);
-      setRejectingRequestId(null);
-      setRejectionReason("");
+      try {
+        // Update the resignation status via API
+        await ResignationService.updateResignationStatus(rejectingRequestId, {
+          status: "rejected",
+          notes: rejectionReason,
+        });
+
+        // Update local state to show the changes immediately
+        setResignationRequests((prevRequests) =>
+          prevRequests.map((request) =>
+            request.id === rejectingRequestId
+              ? {
+                  ...request,
+                  status: "rejected",
+                  rejectedBy: "HR Director", // This would ideally come from logged-in user context
+                  rejectedDate: new Date().toISOString().split("T")[0],
+                  rejectionReason: rejectionReason,
+                }
+              : request
+          )
+        );
+
+        // Show success message
+        Swal.fire({
+          icon: "success",
+          title: "Resignation Rejected",
+          text: "The resignation request has been rejected with provided reason.",
+          confirmButtonColor: "#3085d6",
+        });
+
+        setShowRejectionModal(false);
+        setRejectingRequestId(null);
+        setRejectionReason("");
+
+        // Refresh data from API
+        fetchResignationRequests();
+      } catch (error) {
+        console.error("Error rejecting resignation:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "There was an error rejecting the resignation. Please try again.",
+          confirmButtonColor: "#3085d6",
+        });
+      }
     }
   };
 
   // Format date
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+
     const options = { year: "numeric", month: "short", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    } catch (error) {
+      return dateString || "N/A";
+    }
   };
 
   // Get status badge style
   const getStatusBadge = (status) => {
     switch (status) {
-      case "Approved":
+      case "approved":
         return "bg-green-100 text-green-800";
-      case "Rejected":
+      case "rejected":
         return "bg-red-100 text-red-800";
       default:
         return "bg-yellow-100 text-yellow-800";
@@ -256,9 +299,9 @@ const Termination = () => {
   // Get status icon
   const getStatusIcon = (status) => {
     switch (status) {
-      case "Approved":
+      case "approved":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "Rejected":
+      case "rejected":
         return <XCircle className="w-4 h-4 text-red-600" />;
       default:
         return <Clock className="w-4 h-4 text-yellow-600" />;
@@ -267,8 +310,8 @@ const Termination = () => {
 
   // Reset filters
   const resetFilters = () => {
-    setFilterStatus("Pending");
-    setFilterDepartment("");
+    setFilterStatus("All");
+
     setDateFrom("");
     setDateTo("");
     setSearchTerm("");
@@ -370,27 +413,9 @@ const Termination = () => {
                     className="w-full p-3 border border-gray-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 bg-white shadow-sm"
                   >
                     <option value="All">All Statuses</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={filterDepartment}
-                    onChange={(e) => setFilterDepartment(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 bg-white shadow-sm"
-                  >
-                    <option value="">All Departments</option>
-                    {departments.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
                   </select>
                 </div>
 
@@ -445,157 +470,181 @@ const Termination = () => {
           {/* Resignation Requests Table */}
           <div className="px-4 sm:px-6 lg:px-8 pb-8">
             <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Employee
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Department
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Resignation Date
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Years of Service
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Status
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredRequests.length > 0 ? (
-                      filteredRequests.map((request) => (
-                        <tr key={request.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
-                                <span className="text-red-600 font-medium">
-                                  {request.employeeName
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </span>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {request.employeeName}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                  <p className="ml-3 text-gray-600">
+                    Loading resignation requests...
+                  </p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center">
+                  <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+                  <h3 className="text-lg font-medium text-red-800 mb-2">
+                    Error Loading Data
+                  </h3>
+                  <p className="text-gray-600">{error}</p>
+                  <button
+                    onClick={fetchResignationRequests}
+                    className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Employee
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Department
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Resignation Date
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Years of Service
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Status
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredRequests.length > 0 ? (
+                        filteredRequests.map((request) => (
+                          <tr key={request.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                                  <span className="text-red-600 font-medium">
+                                    {request.employeeName
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
+                                  </span>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  {request.employeeNo}
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {request.employeeName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {request.employeeNo}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {request.department}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {request.position}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {formatDate(request.requestedDate)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Submitted: {formatDate(request.submittedDate)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {request.yearsOfService} years
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(
-                                request.status
-                              )}`}
-                            >
-                              {getStatusIcon(request.status)}
-                              <span className="ml-1.5">{request.status}</span>
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                            <div className="flex justify-center space-x-2">
-                              <button
-                                onClick={() => handleViewDetails(request.id)}
-                                className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                                title="View Details"
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {request.department}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {request.position}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {formatDate(request.requestedDate)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Submitted: {formatDate(request.submittedDate)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {request.yearsOfService} years
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(
+                                  request.status
+                                )}`}
                               >
-                                <Eye size={18} />
-                              </button>
+                                {getStatusIcon(request.status)}
+                                <span className="ml-1.5">{request.status}</span>
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                              <div className="flex justify-center space-x-2">
+                                <button
+                                  onClick={() => handleViewDetails(request.id)}
+                                  className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye size={18} />
+                                </button>
 
-                              {request.status === "Pending" && (
-                                <>
-                                  <button
-                                    onClick={() => handleApprove(request.id)}
-                                    className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
-                                    title="Approve & Terminate"
-                                  >
-                                    <Check size={18} />
-                                  </button>
+                                {request.status === "pending" && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApprove(request.id)}
+                                      className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                                      title="Approve & Terminate"
+                                    >
+                                      <Check size={18} />
+                                    </button>
 
-                                  <button
-                                    onClick={() => handleReject(request.id)}
-                                    className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-                                    title="Reject"
-                                  >
-                                    <X size={18} />
-                                  </button>
-                                </>
-                              )}
+                                    <button
+                                      onClick={() => handleReject(request.id)}
+                                      className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                                      title="Reject"
+                                    >
+                                      <X size={18} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="px-6 py-10 text-center text-gray-500"
+                          >
+                            <div className="flex flex-col items-center">
+                              <FileQuestion className="h-12 w-12 text-gray-400 mb-4" />
+                              <p className="text-lg font-medium mb-1">
+                                No resignation requests found
+                              </p>
+                              <p className="text-sm">
+                                Adjust your filters or try a different search
+                                term
+                              </p>
                             </div>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          <div className="flex flex-col items-center">
-                            <FileQuestion className="h-12 w-12 text-gray-400 mb-4" />
-                            <p className="text-lg font-medium mb-1">
-                              No resignation requests found
-                            </p>
-                            <p className="text-sm">
-                              Adjust your filters or try a different search term
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
 
@@ -698,7 +747,7 @@ const Termination = () => {
                               </p>
                             </div>
 
-                            {request.status === "Approved" && (
+                            {request.status === "approved" && (
                               <>
                                 <div>
                                   <h5 className="text-sm font-medium text-gray-500 mb-1">
@@ -734,7 +783,7 @@ const Termination = () => {
                               </>
                             )}
 
-                            {request.status === "Rejected" && (
+                            {request.status === "rejected" && (
                               <>
                                 <div>
                                   <h5 className="text-sm font-medium text-gray-500 mb-1">
@@ -760,7 +809,7 @@ const Termination = () => {
                             )}
                           </div>
 
-                          {request.status === "Pending" && (
+                          {request.status === "pending" && (
                             <div className="flex justify-end space-x-3 pt-4 border-t">
                               <button
                                 onClick={() => {
