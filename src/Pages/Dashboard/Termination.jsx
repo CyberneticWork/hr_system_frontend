@@ -22,8 +22,7 @@ import Swal from "sweetalert2";
 const Termination = () => {
   // State for filtering and search
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("pending");
-  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showDetails, setShowDetails] = useState(null);
@@ -43,7 +42,7 @@ const Termination = () => {
 
   // State for resignation requests from API
   const [resignationRequests, setResignationRequests] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  // const [departments, setDepartments] = useState([]);
 
   // Fetch resignation requests on component mount
   useEffect(() => {
@@ -56,10 +55,8 @@ const Termination = () => {
       setIsLoading(true);
       setError(null);
 
-      // Fetch resignations from API
-      const response = await ResignationService.getAllResignations({
-        status: "pending",
-      });
+      // Fetch all resignations from API (remove the status filter)
+      const response = await ResignationService.getAllResignations();
 
       // Transform the API data to match our component's expected format
       const formattedData = response.data.map((resignation) => ({
@@ -93,15 +90,7 @@ const Termination = () => {
         terminationDate: resignation.last_working_day || "",
       }));
 
-      // Extract unique departments
-      const uniqueDepartments = [
-        ...new Set(
-          formattedData.map((request) => request.department).filter(Boolean)
-        ),
-      ];
-
       setResignationRequests(formattedData);
-      setDepartments(uniqueDepartments);
       setIsLoading(false);
     } catch (err) {
       console.error("Failed to fetch resignation requests:", err);
@@ -134,10 +123,6 @@ const Termination = () => {
     const matchesStatus =
       filterStatus === "All" || request.status === filterStatus;
 
-    // Department filter
-    const matchesDepartment =
-      !filterDepartment || request.department === filterDepartment;
-
     // Date range filter
     let matchesDateRange = true;
     if (dateFrom) {
@@ -147,9 +132,7 @@ const Termination = () => {
       matchesDateRange = matchesDateRange && request.requestedDate <= dateTo;
     }
 
-    return (
-      matchesSearch && matchesStatus && matchesDepartment && matchesDateRange
-    );
+    return matchesSearch && matchesStatus && matchesDateRange;
   });
 
   // Count statistics
@@ -327,8 +310,8 @@ const Termination = () => {
 
   // Reset filters
   const resetFilters = () => {
-    setFilterStatus("pending");
-    setFilterDepartment("");
+    setFilterStatus("All");
+
     setDateFrom("");
     setDateTo("");
     setSearchTerm("");
@@ -433,24 +416,6 @@ const Termination = () => {
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={filterDepartment}
-                    onChange={(e) => setFilterDepartment(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 bg-white shadow-sm"
-                  >
-                    <option value="">All Departments</option>
-                    {departments.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
                   </select>
                 </div>
 
@@ -782,7 +747,7 @@ const Termination = () => {
                               </p>
                             </div>
 
-                            {request.status === "Approved" && (
+                            {request.status === "approved" && (
                               <>
                                 <div>
                                   <h5 className="text-sm font-medium text-gray-500 mb-1">
@@ -818,7 +783,7 @@ const Termination = () => {
                               </>
                             )}
 
-                            {request.status === "Rejected" && (
+                            {request.status === "rejected" && (
                               <>
                                 <div>
                                   <h5 className="text-sm font-medium text-gray-500 mb-1">
@@ -844,7 +809,7 @@ const Termination = () => {
                             )}
                           </div>
 
-                          {request.status === "Pending" && (
+                          {request.status === "pending" && (
                             <div className="flex justify-end space-x-3 pt-4 border-t">
                               <button
                                 onClick={() => {
