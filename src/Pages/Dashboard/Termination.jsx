@@ -207,7 +207,7 @@ const Termination = () => {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "There was an error approving the resignation. Please try again.",
+          text: error.message,
           confirmButtonColor: "#3085d6",
         });
       }
