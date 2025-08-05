@@ -69,6 +69,8 @@ const initialState = {
     incrementActive: false,
     nopayActive: false,
     morningOt: false,
+    ot_morning_rate: "",
+    ot_night_rate: "",
     eveningOt: false,
     budgetaryReliefAllowance2015: false,
     budgetaryReliefAllowance2016: false,

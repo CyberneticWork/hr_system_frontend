@@ -1,21 +1,29 @@
 import React from "react";
-import { DollarSign, Calendar, Building2, CreditCard, AlertCircle, User } from "lucide-react";
-import { useEmployeeForm } from '@contexts/EmployeeFormContext';
-import FieldError from '@components/ErrorMessage/FieldError';
+import {
+  DollarSign,
+  Calendar,
+  Building2,
+  CreditCard,
+  AlertCircle,
+  User,
+} from "lucide-react";
+import { useEmployeeForm } from "@contexts/EmployeeFormContext";
+import FieldError from "@components/ErrorMessage/FieldError";
 
 const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
-  const { formData, updateFormData, errors, clearFieldError } = useEmployeeForm();
+  const { formData, updateFormData, errors, clearFieldError } =
+    useEmployeeForm();
 
   const handleInputChange = (field, value) => {
     // Clear error when user makes changes
     if (errors.compensation?.[field]) {
-      clearFieldError('compensation', field);
+      clearFieldError("compensation", field);
     }
-    updateFormData('compensation', { [field]: value });
+    updateFormData("compensation", { [field]: value });
   };
 
   const handleToggleChange = (field) => {
-    updateFormData('compensation', { [field]: !formData.compensation[field] });
+    updateFormData("compensation", { [field]: !formData.compensation[field] });
   };
 
   return (
@@ -52,9 +60,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("basicSalary", e.target.value)
                         }
                         className={`w-full pl-10 pr-4 py-3 border ${
-                          errors.compensation?.basicSalary 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.basicSalary
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter basic salary"
                         required
@@ -76,9 +84,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("incrementValue", e.target.value)
                         }
                         className={`w-full pl-10 pr-4 py-3 border ${
-                          errors.compensation?.incrementValue 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.incrementValue
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter increment"
                       />
@@ -102,13 +110,15 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           )
                         }
                         className={`w-full pl-10 pr-4 py-3 border ${
-                          errors.compensation?.incrementEffectiveFrom 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.incrementEffectiveFrom
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                       />
                     </div>
-                    <FieldError error={errors.compensation?.incrementEffectiveFrom} />
+                    <FieldError
+                      error={errors.compensation?.incrementEffectiveFrom}
+                    />
                   </div>
                 </div>
               </div>
@@ -191,7 +201,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                     >
                       <span
                         className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                          formData.compensation.otActive ? "translate-x-6" : "translate-x-1"
+                          formData.compensation.otActive
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </div>
@@ -303,7 +315,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                     >
                       <span
                         className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                          formData.compensation.morningOt ? "translate-x-6" : "translate-x-1"
+                          formData.compensation.morningOt
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </div>
@@ -327,10 +341,60 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                     >
                       <span
                         className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                          formData.compensation.eveningOt ? "translate-x-6" : "translate-x-1"
+                          formData.compensation.eveningOt
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Morning OT Rate <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="number"
+                        value={formData.compensation.ot_morning_rate}
+                        onChange={(e) =>
+                          handleInputChange("ot_morning_rate", e.target.value)
+                        }
+                        className={`w-full pl-10 pr-4 py-3 border ${
+                          errors.compensation?.ot_morning_rate
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        placeholder="Enter Morning OT Rate"
+                        required
+                      />
+                    </div>
+                    <FieldError error={errors.compensation?.ot_morning_rate} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Night OT Rate <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="number"
+                        value={formData.compensation.ot_night_rate}
+                        onChange={(e) =>
+                          handleInputChange("ot_night_rate", e.target.value)
+                        }
+                        className={`w-full pl-10 pr-4 py-3 border ${
+                          errors.compensation?.ot_night_rate
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        placeholder="Enter Night OT Rate"
+                        required
+                      />
+                    </div>
+                    <FieldError error={errors.compensation?.ot_night_rate} />
                   </div>
                 </div>
               </div>
@@ -356,9 +420,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("bankName", e.target.value)
                         }
                         className={`w-full px-4 py-3 border ${
-                          errors.compensation?.bankName 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.bankName
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                       >
                         <option value="1/1/1900">Select Bank</option>
@@ -379,9 +443,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("branchName", e.target.value)
                         }
                         className={`w-full px-4 py-3 border ${
-                          errors.compensation?.branchName 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.branchName
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                       >
                         <option value="1/1/1900">Select Branch</option>
@@ -403,9 +467,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("bankCode", e.target.value)
                         }
                         className={`w-full px-4 py-3 border ${
-                          errors.compensation?.bankCode 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.bankCode
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter bank code"
                       />
@@ -423,9 +487,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("branchCode", e.target.value)
                         }
                         className={`w-full px-4 py-3 border ${
-                          errors.compensation?.branchCode 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.branchCode
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter branch code"
                       />
@@ -446,9 +510,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                           handleInputChange("bankAccountNo", e.target.value)
                         }
                         className={`w-full pl-10 pr-4 py-3 border ${
-                          errors.compensation?.bankAccountNo 
-                            ? 'border-red-500' 
-                            : 'border-gray-300'
+                          errors.compensation?.bankAccountNo
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="Enter account number"
                       />
@@ -477,7 +541,8 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                     <div
                       className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                       style={{
-                        backgroundColor: formData.compensation.budgetaryReliefAllowance2015
+                        backgroundColor: formData.compensation
+                          .budgetaryReliefAllowance2015
                           ? "#3b82f6"
                           : "#e5e7eb",
                       }}
@@ -507,7 +572,8 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                     <div
                       className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                       style={{
-                        backgroundColor: formData.compensation.budgetaryReliefAllowance2016
+                        backgroundColor: formData.compensation
+                          .budgetaryReliefAllowance2016
                           ? "#3b82f6"
                           : "#e5e7eb",
                       }}
@@ -534,32 +600,30 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                 </h2>
 
                 <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
-                    <div>
-                      <h3 className="font-medium text-gray-800">
-                        Primary Employment Basic
-                      </h3>
-                  
-                    </div>
-                    <div
-                      className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-                      style={{
-                        backgroundColor: formData.compensation.primaryEmploymentBasic
-                          ? "#3b82f6"
-                          : "#e5e7eb",
-                      }}
-                      onClick={() =>
-                        handleToggleChange("primaryEmploymentBasic")
-                      }
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                          formData.compensation.primaryEmploymentBasic
-                            ? "translate-x-6"
-                            : "translate-x-1"
-                        }`}
-                      />
-                    </div>
+                  <div>
+                    <h3 className="font-medium text-gray-800">
+                      Primary Employment Basic
+                    </h3>
                   </div>
+                  <div
+                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                    style={{
+                      backgroundColor: formData.compensation
+                        .primaryEmploymentBasic
+                        ? "#3b82f6"
+                        : "#e5e7eb",
+                    }}
+                    onClick={() => handleToggleChange("primaryEmploymentBasic")}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        formData.compensation.primaryEmploymentBasic
+                          ? "translate-x-6"
+                          : "translate-x-1"
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Comments */}
@@ -575,9 +639,9 @@ const CompensationManagement = ({ onNext, onPrevious, activeCategory }) => {
                   }
                   rows="4"
                   className={`w-full px-4 py-3 border ${
-                    errors.compensation?.comments 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
+                    errors.compensation?.comments
+                      ? "border-red-500"
+                      : "border-gray-300"
                   } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none`}
                   placeholder="Add any additional comments or notes..."
                 />
