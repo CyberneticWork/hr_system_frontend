@@ -239,7 +239,10 @@ const LeaveMaster = () => {
       const employeeCompanyId = empData?.organization_assignment?.company?.id;
 
       // Set disabled dates only for matching company
-      const disabledDatesArray = getDisabledDates(calendarData, employeeCompanyId);
+      const disabledDatesArray = getDisabledDates(
+        calendarData,
+        employeeCompanyId
+      );
       setDisabledDates(disabledDatesArray);
 
       if (leaveData && Array.isArray(leaveData)) {
@@ -326,12 +329,14 @@ const LeaveMaster = () => {
     setSearchError("");
 
     try {
-      const empData = await employeeService.fetchEmployeeById(formData.attendanceNo);
+      const empData = await employeeService.fetchEmployeeById(
+        formData.attendanceNo
+      );
 
       if (empData) {
         // Store the full employee data
         setEmployeeData(empData);
-        
+
         setFormData({
           ...formData,
           epfNo: empData.epf || "",
