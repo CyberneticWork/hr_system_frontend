@@ -9,6 +9,7 @@ import {
   Building,
   FileText,
   X,
+  AlertCircle,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import employeeService from "../../services/EmployeeDataService";
@@ -49,6 +50,7 @@ const LeaveMaster = () => {
   const [leaveUsageData, setLeaveUsageData] = useState([]);
   const [isLoadingUsage, setIsLoadingUsage] = useState(false);
   const [disabledDates, setDisabledDates] = useState([]);
+  const [hoveredDate, setHoveredDate] = useState(null);
 
   // Define standard leave entitlements
   const leaveEntitlements = {
@@ -122,24 +124,39 @@ const LeaveMaster = () => {
     return dates;
   };
 
-  // Handle input changes with SweetAlert2 notification for disabled dates
-  const handleInputChange = (e) => {
+  // Enhanced date input handler with validation
+  const handleDateChange = (e) => {
     const { name, value } = e.target;
 
-    // If the field relates to leave dates, check if the selected date is disabled
-    if (name.includes("leaveDate") && disabledDates.includes(value)) {
-      Swal.fire({
-        icon: "error",
-        title: "Date Not Available",
-        text: "This date has been marked as an Event day and is not available for leave requests.",
-        confirmButtonColor: "#3085d6",
-        confirmButtonText: "Ok, I understand",
-        customClass: {
-          popup: "rounded-xl",
-          confirmButton: "rounded-lg text-sm px-5 py-2.5",
-        },
-      });
-      return; // Do not update the state if disabled date is selected
+    // Check if this is a date field
+    if (name.includes("leaveDate")) {
+      // Check if the selected date is disabled
+      if (disabledDates.includes(value)) {
+        // Show error message
+        Swal.fire({
+          icon: "error",
+          title: "Date Not Available",
+          html: `
+            <div class="text-left">
+              <p>This date (${formatDateForDisplay(
+                value
+              )}) is not available for leave requests because:</p>
+              <ul class="list-disc pl-5 mt-2">
+                <li>It's marked as an event day</li>
+                <li>Or it's already booked as leave</li>
+              </ul>
+              <p class="mt-3 text-sm">Please select a different date.</p>
+            </div>
+          `,
+          confirmButtonColor: "#3085d6",
+          confirmButtonText: "Ok, I understand",
+          customClass: {
+            popup: "rounded-xl",
+            confirmButton: "rounded-lg text-sm px-5 py-2.5",
+          },
+        });
+        return; // Don't update the state
+      }
     }
 
     // Handle nested objects in state (like leaveDate.single, leaveDate.from, etc.)
@@ -158,6 +175,46 @@ const LeaveMaster = () => {
         [name]: value,
       });
     }
+  };
+
+  // Format date for display in error messages
+  const formatDateForDisplay = (dateString) => {
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Function to check if a date is disabled
+  const isDateDisabled = (dateString) => {
+    return disabledDates.includes(dateString);
+  };
+
+  // Function to get date input styling based on disabled status
+  const getDateInputStyle = (dateString) => {
+    const baseStyle =
+      "w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200";
+
+    if (isDateDisabled(dateString)) {
+      return `${baseStyle} bg-red-50 border-red-300 text-red-700 cursor-not-allowed`;
+    }
+
+    return `${baseStyle} border-gray-300`;
+  };
+
+  // Function to get date hover tooltip content
+  const getDateHoverContent = (dateString) => {
+    if (!isDateDisabled(dateString)) return null;
+
+    return (
+      <div className="absolute z-10 bottom-full mb-2 left-0 bg-red-600 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+        <AlertCircle className="inline mr-1 w-3 h-3" />
+        Unavailable date (event or existing leave)
+      </div>
+    );
   };
 
   // Function to fetch employee leaves and calendar data (to set disabled dates)
@@ -306,6 +363,62 @@ const LeaveMaster = () => {
     setIsSubmitting(true);
 
     try {
+      // First validate all selected dates
+      let invalidDates = [];
+
+      if (formData.leaveDateType === "fullDay") {
+        if (isDateDisabled(formData.leaveDate.single)) {
+          invalidDates.push(formData.leaveDate.single);
+        }
+      } else if (formData.leaveDateType === "halfDay") {
+        if (isDateDisabled(formData.leaveDate.single)) {
+          invalidDates.push(formData.leaveDate.single);
+        }
+      } else if (formData.leaveDateType === "manual") {
+        // Check each date in the range
+        const fromDate = new Date(formData.leaveDate.from);
+        const toDate = new Date(formData.leaveDate.to);
+
+        for (
+          let d = new Date(fromDate);
+          d <= toDate;
+          d.setDate(d.getDate() + 1)
+        ) {
+          const dateStr = formatDate(d);
+          if (isDateDisabled(dateStr)) {
+            invalidDates.push(dateStr);
+          }
+        }
+      }
+
+      if (invalidDates.length > 0) {
+        const formattedDates = invalidDates
+          .map((d) => formatDateForDisplay(d))
+          .join(", ");
+        Swal.fire({
+          icon: "error",
+          title: "Invalid Date Selection",
+          html: `
+            <div class="text-left">
+              <p>The following selected dates are not available:</p>
+              <ul class="list-disc pl-5 mt-2">
+                ${invalidDates
+                  .map((d) => `<li>${formatDateForDisplay(d)}</li>`)
+                  .join("")}
+              </ul>
+              <p class="mt-3 text-sm">Please adjust your leave dates and try again.</p>
+            </div>
+          `,
+          confirmButtonColor: "#3085d6",
+          confirmButtonText: "Ok, I understand",
+          customClass: {
+            popup: "rounded-xl",
+            confirmButton: "rounded-lg text-sm px-5 py-2.5",
+          },
+        });
+        return;
+      }
+
       let leaveData = {
         employee_id: parseInt(formData.attendanceNo),
         reporting_date: formData.reportingDate,
@@ -329,23 +442,7 @@ const LeaveMaster = () => {
         leaveData.leave_to = formData.leaveDate.to;
       }
 
-      console.group("Leave Request Data Debug");
-      console.log("Form data being submitted:", { ...formData });
-      console.log("Formatted API payload:", leaveData);
-      console.log("Leave type selected:", formData.leaveDateType);
-      if (formData.leaveDateType === "fullDay") {
-        console.log("Full day date:", formData.leaveDate.single);
-      } else if (formData.leaveDateType === "halfDay") {
-        console.log("Half day date:", formData.leaveDate.single);
-        console.log("Half day period:", formData.halfDayPeriod);
-      } else {
-        console.log("Date range - From:", formData.leaveDate.from);
-        console.log("Date range - To:", formData.leaveDate.to);
-      }
-      console.groupEnd();
-
       const response = await createLeave(leaveData);
-      console.log("API Response:", response);
 
       await Promise.all([
         fetchEmployeeLeaves(formData.attendanceNo),
@@ -370,11 +467,7 @@ const LeaveMaster = () => {
         reason: "",
       });
     } catch (error) {
-      console.group("Leave Request Error Debug");
       console.error("Error submitting leave request:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
-      console.groupEnd();
       setSubmitError("Failed to submit leave request. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -453,7 +546,7 @@ const LeaveMaster = () => {
                             type="text"
                             name="attendanceNo"
                             value={formData.attendanceNo}
-                            onChange={handleInputChange}
+                            onChange={handleDateChange}
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             placeholder="Enter employee number"
@@ -540,7 +633,7 @@ const LeaveMaster = () => {
                         <select
                           name="leaveType"
                           value={formData.leaveType}
-                          onChange={handleInputChange}
+                          onChange={handleDateChange}
                           required
                           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                         >
@@ -567,7 +660,7 @@ const LeaveMaster = () => {
                             name="leaveDateType"
                             value="fullDay"
                             checked={formData.leaveDateType === "fullDay"}
-                            onChange={handleInputChange}
+                            onChange={handleDateChange}
                             className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
                           />
                           <label
@@ -584,7 +677,7 @@ const LeaveMaster = () => {
                             name="leaveDateType"
                             value="halfDay"
                             checked={formData.leaveDateType === "halfDay"}
-                            onChange={handleInputChange}
+                            onChange={handleDateChange}
                             className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
                           />
                           <label
@@ -601,7 +694,7 @@ const LeaveMaster = () => {
                             name="leaveDateType"
                             value="manual"
                             checked={formData.leaveDateType === "manual"}
-                            onChange={handleInputChange}
+                            onChange={handleDateChange}
                             className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500"
                           />
                           <label
@@ -614,35 +707,75 @@ const LeaveMaster = () => {
                       </div>
 
                       {formData.leaveDateType === "fullDay" && (
-                        <div className="mb-4">
+                        <div className="mb-4 relative">
                           <label className="block text-xs text-gray-500 mb-1">
                             Date
                           </label>
-                          <input
-                            type="date"
-                            name="leaveDate.single"
-                            value={formData.leaveDate.single}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                          />
+                          <div
+                            className="relative"
+                            onMouseEnter={() =>
+                              setHoveredDate(formData.leaveDate.single)
+                            }
+                            onMouseLeave={() => setHoveredDate(null)}
+                          >
+                            <input
+                              type="date"
+                              name="leaveDate.single"
+                              value={formData.leaveDate.single}
+                              onChange={handleDateChange}
+                              required
+                              className={getDateInputStyle(
+                                formData.leaveDate.single
+                              )}
+                              min={getCurrentDate()}
+                              onKeyDown={(e) => e.preventDefault()}
+                            />
+                            {hoveredDate === formData.leaveDate.single &&
+                              getDateHoverContent(formData.leaveDate.single)}
+                          </div>
+                          {isDateDisabled(formData.leaveDate.single) && (
+                            <p className="mt-1 text-xs text-red-600 flex items-center">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              This date is unavailable for leave
+                            </p>
+                          )}
                         </div>
                       )}
 
                       {formData.leaveDateType === "halfDay" && (
                         <div className="space-y-4">
-                          <div>
+                          <div className="relative">
                             <label className="block text-xs text-gray-500 mb-1">
                               Date
                             </label>
-                            <input
-                              type="date"
-                              name="leaveDate.single"
-                              value={formData.leaveDate.single}
-                              onChange={handleInputChange}
-                              required
-                              className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            />
+                            <div
+                              className="relative"
+                              onMouseEnter={() =>
+                                setHoveredDate(formData.leaveDate.single)
+                              }
+                              onMouseLeave={() => setHoveredDate(null)}
+                            >
+                              <input
+                                type="date"
+                                name="leaveDate.single"
+                                value={formData.leaveDate.single}
+                                onChange={handleDateChange}
+                                required
+                                className={getDateInputStyle(
+                                  formData.leaveDate.single
+                                )}
+                                min={getCurrentDate()}
+                                onKeyDown={(e) => e.preventDefault()}
+                              />
+                              {hoveredDate === formData.leaveDate.single &&
+                                getDateHoverContent(formData.leaveDate.single)}
+                            </div>
+                            {isDateDisabled(formData.leaveDate.single) && (
+                              <p className="mt-1 text-xs text-red-600 flex items-center">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                This date is unavailable for leave
+                              </p>
+                            )}
                           </div>
                           <div>
                             <label className="block text-xs text-gray-500 mb-1">
@@ -651,7 +784,7 @@ const LeaveMaster = () => {
                             <select
                               name="halfDayPeriod"
                               value={formData.halfDayPeriod}
-                              onChange={handleInputChange}
+                              onChange={handleDateChange}
                               required
                               className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             >
@@ -664,31 +797,71 @@ const LeaveMaster = () => {
 
                       {formData.leaveDateType === "manual" && (
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
+                          <div className="relative">
                             <label className="block text-xs text-gray-500 mb-1">
                               From
                             </label>
-                            <input
-                              type="date"
-                              name="leaveDate.from"
-                              value={formData.leaveDate.from}
-                              onChange={handleInputChange}
-                              required
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            />
+                            <div
+                              className="relative"
+                              onMouseEnter={() =>
+                                setHoveredDate(formData.leaveDate.from)
+                              }
+                              onMouseLeave={() => setHoveredDate(null)}
+                            >
+                              <input
+                                type="date"
+                                name="leaveDate.from"
+                                value={formData.leaveDate.from}
+                                onChange={handleDateChange}
+                                required
+                                className={getDateInputStyle(
+                                  formData.leaveDate.from
+                                )}
+                                min={getCurrentDate()}
+                                onKeyDown={(e) => e.preventDefault()}
+                              />
+                              {hoveredDate === formData.leaveDate.from &&
+                                getDateHoverContent(formData.leaveDate.from)}
+                            </div>
+                            {isDateDisabled(formData.leaveDate.from) && (
+                              <p className="mt-1 text-xs text-red-600 flex items-center">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                This date is unavailable for leave
+                              </p>
+                            )}
                           </div>
-                          <div>
+                          <div className="relative">
                             <label className="block text-xs text-gray-500 mb-1">
                               To
                             </label>
-                            <input
-                              type="date"
-                              name="leaveDate.to"
-                              value={formData.leaveDate.to}
-                              onChange={handleInputChange}
-                              required
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            />
+                            <div
+                              className="relative"
+                              onMouseEnter={() =>
+                                setHoveredDate(formData.leaveDate.to)
+                              }
+                              onMouseLeave={() => setHoveredDate(null)}
+                            >
+                              <input
+                                type="date"
+                                name="leaveDate.to"
+                                value={formData.leaveDate.to}
+                                onChange={handleDateChange}
+                                required
+                                className={getDateInputStyle(
+                                  formData.leaveDate.to
+                                )}
+                                min={formData.leaveDate.from}
+                                onKeyDown={(e) => e.preventDefault()}
+                              />
+                              {hoveredDate === formData.leaveDate.to &&
+                                getDateHoverContent(formData.leaveDate.to)}
+                            </div>
+                            {isDateDisabled(formData.leaveDate.to) && (
+                              <p className="mt-1 text-xs text-red-600 flex items-center">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                This date is unavailable for leave
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}
@@ -702,7 +875,7 @@ const LeaveMaster = () => {
                       <textarea
                         name="reason"
                         value={formData.reason}
-                        onChange={handleInputChange}
+                        onChange={handleDateChange}
                         rows={3}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         placeholder="Reason for leave"
