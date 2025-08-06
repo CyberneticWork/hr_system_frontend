@@ -52,6 +52,9 @@ const LeaveMaster = () => {
   const [disabledDates, setDisabledDates] = useState([]);
   const [hoveredDate, setHoveredDate] = useState(null);
 
+  // Add a new state to store employee data
+  const [employeeData, setEmployeeData] = useState(null);
+
   // Define standard leave entitlements
   const leaveEntitlements = {
     "Annual Leave": 14,
@@ -103,11 +106,15 @@ const LeaveMaster = () => {
     };
   }
 
-  // Function to get disabled dates from calendar data (from leave events)
-  const getDisabledDates = (calendarData) => {
+  // Update the getDisabledDates function to check company ID
+  const getDisabledDates = (calendarData, employeeCompanyId) => {
     const dates = [];
+
+    if (!employeeCompanyId) return dates;
+
     calendarData.forEach((leave) => {
-      if (leave.start_date) {
+      // Only process leaves that match the employee's company
+      if (leave.company_id === employeeCompanyId && leave.start_date) {
         const start = new Date(leave.start_date);
         const end = leave.end_date
           ? new Date(leave.end_date)
@@ -218,7 +225,7 @@ const LeaveMaster = () => {
   };
 
   // Function to fetch employee leaves and calendar data (to set disabled dates)
-  const fetchEmployeeLeaves = async (employeeId) => {
+  const fetchEmployeeLeaves = async (employeeId, empData) => {
     if (!employeeId) return;
 
     setIsLoadingLeaves(true);
@@ -228,8 +235,12 @@ const LeaveMaster = () => {
         fetchLeaveCalendar(),
       ]);
 
-      // Set disabled dates from the calendar data
-      setDisabledDates(getDisabledDates(calendarData));
+      // Get employee's company ID from organization assignment
+      const employeeCompanyId = empData?.organization_assignment?.company?.id;
+
+      // Set disabled dates only for matching company
+      const disabledDatesArray = getDisabledDates(calendarData, employeeCompanyId);
+      setDisabledDates(disabledDatesArray);
 
       if (leaveData && Array.isArray(leaveData)) {
         const formattedLeaves = leaveData.map(formatLeaveRecord);
@@ -315,26 +326,27 @@ const LeaveMaster = () => {
     setSearchError("");
 
     try {
-      const employeeData = await employeeService.fetchEmployeeById(
-        formData.attendanceNo
-      );
+      const empData = await employeeService.fetchEmployeeById(formData.attendanceNo);
 
-      if (employeeData) {
+      if (empData) {
+        // Store the full employee data
+        setEmployeeData(empData);
+        
         setFormData({
           ...formData,
-          epfNo: employeeData.epf || "",
-          employeeName: employeeData.name_with_initials || "",
-          department:
-            employeeData.organization_assignment?.department?.name || "",
+          epfNo: empData.epf || "",
+          employeeName: empData.name_with_initials || "",
+          department: empData.organization_assignment?.department?.name || "",
         });
 
         await Promise.all([
-          fetchEmployeeLeaves(formData.attendanceNo),
+          fetchEmployeeLeaves(formData.attendanceNo, empData),
           fetchLeaveUsage(formData.attendanceNo),
         ]);
       } else {
         setSearchError("Employee not found");
         setLeaveRecords([]);
+        setEmployeeData(null);
         const defaultUsage = Object.keys(leaveEntitlements).map(
           (leaveType, index) => ({
             id: index + 1,
@@ -350,6 +362,7 @@ const LeaveMaster = () => {
       console.error("Error fetching employee data:", error);
       setSearchError("Failed to retrieve employee data. Please try again.");
       setLeaveRecords([]);
+      setEmployeeData(null);
     } finally {
       setIsLoading(false);
     }
