@@ -788,6 +788,62 @@ const SalaryProcessPage = () => {
     setSelectAll(false);
   }, [searchTerm, location, month, activeFilter, showHistory]);
 
+  // Convert array of objects to CSV string, flattening salary_breakdown
+  function convertToCSV(data) {
+    if (data.length === 0) return "";
+
+    // Flatten each object to include salary_breakdown properties
+    const flattenedData = data.map((item) => {
+      const flattened = { ...item };
+
+      // If salary_breakdown exists, flatten its properties with a prefix
+      if (item.salary_breakdown && typeof item.salary_breakdown === "object") {
+        for (const [key, value] of Object.entries(item.salary_breakdown)) {
+          flattened[`breakdown_${key}`] = value;
+        }
+        delete flattened.salary_breakdown; // Remove the original nested object
+      }
+
+      return flattened;
+    });
+
+    // Extract headers from the first flattened object
+    const headers = Object.keys(flattenedData[0]);
+
+    // Create CSV rows
+    const rows = flattenedData.map((obj) =>
+      headers
+        .map((header) => {
+          // Escape quotes and wrap in quotes if contains comma
+          let value = obj[header] !== undefined ? String(obj[header]) : "";
+          if (
+            value.includes(",") ||
+            value.includes('"') ||
+            value.includes("\n")
+          ) {
+            value = `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        })
+        .join(",")
+    );
+
+    return [headers.join(","), ...rows].join("\n");
+  }
+
+  // Trigger CSV download
+  function downloadCSV(csvContent, fileName) {
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
@@ -1063,8 +1119,12 @@ const SalaryProcessPage = () => {
                   }
                   try {
                     const savedData = await saveSalaryData(filteredData);
-                    // console.log(JSON.stringify(savedData));
-                    alert("Salary data saved successfully!");
+
+                    // Convert to CSV and download
+                    const csvContent = convertToCSV(filteredData);
+                    downloadCSV(csvContent, `salary_data_${Date.now()}.csv`);
+
+                    alert("Salary data saved and downloaded successfully!");
                   } catch (error) {
                     console.error("Error saving salary data:", error);
                     alert(error);
@@ -1296,6 +1356,9 @@ const SalaryProcessPage = () => {
                     Deductions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Overtime
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                     Salary Breakdown
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
@@ -1455,6 +1518,22 @@ const SalaryProcessPage = () => {
                           ))}
                           <div className="font-semibold border-t mt-1 pt-1">
                             Total: {totalDeductions.toLocaleString()}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-xs">Morning :</span>
+                            <span>
+                              {employee.salary_breakdown.ot_morning_fees?.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs">Night :</span>
+                            <span>
+                              {employee.salary_breakdown.ot_night_fees?.toLocaleString()}
+                            </span>
                           </div>
                         </div>
                       </td>
