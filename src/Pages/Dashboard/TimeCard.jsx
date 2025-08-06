@@ -1071,6 +1071,7 @@ const TimeCard = () => {
                 className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 value={newRecord.date}
                 onChange={e => setNewRecord({ ...newRecord, date: e.target.value })}
+                max={new Date().toISOString().split('T')[0]} // restrict to today or earlier
               />
             </div>
             <div className="mb-3">
