@@ -14,7 +14,7 @@ import {
   Search,
   Building2,
   Layers,
-  Loader2 
+  Loader2,
 } from "lucide-react";
 import {
   fetchLeaveCalendar,
@@ -46,6 +46,11 @@ const LeaveCalendar = () => {
   const [selectedCompany, setSelectedCompany] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
 
   // Fetch companies and leave data on component mount
   useEffect(() => {
@@ -189,7 +194,7 @@ const LeaveCalendar = () => {
       textColor: "text-blue-800",
     },
     {
-      value: "Sick",
+      value: "Event",
       color: "bg-red-500",
       lightColor: "bg-red-100",
       textColor: "text-red-800",
@@ -288,6 +293,21 @@ const LeaveCalendar = () => {
       2,
       "0"
     )}-${String(day).padStart(2, "0")}`;
+
+    // Check if selected date is in the past
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      Swal.fire({
+        title: "Invalid Date",
+        text: "You cannot select past dates for leave requests",
+        icon: "warning",
+      });
+      return;
+    }
+
     const existingLeave = leaveRequests.find(
       (req) => req.dates && req.dates.includes(dateString)
     );
@@ -1050,7 +1070,22 @@ const LeaveCalendar = () => {
                   <input
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    min={getCurrentDate()}
+                    onChange={(e) => {
+                      const selectedDate = new Date(e.target.value);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      if (selectedDate < today) {
+                        Swal.fire({
+                          title: "Invalid Date",
+                          text: "You cannot select past dates for leave requests",
+                          icon: "warning",
+                        });
+                        return;
+                      }
+                      setStartDate(e.target.value);
+                    }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
@@ -1061,8 +1096,22 @@ const LeaveCalendar = () => {
                   <input
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate}
+                    min={startDate || getCurrentDate()}
+                    onChange={(e) => {
+                      const selectedDate = new Date(e.target.value);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      if (selectedDate < today) {
+                        Swal.fire({
+                          title: "Invalid Date",
+                          text: "You cannot select past dates for leave requests",
+                          icon: "warning",
+                        });
+                        return;
+                      }
+                      setEndDate(e.target.value);
+                    }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
