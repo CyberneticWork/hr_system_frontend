@@ -10,12 +10,14 @@ import {
   FileText,
   X,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import employeeService from "../../services/EmployeeDataService";
 import {
   createLeave,
   getLeaveById,
   getLeaveCountsByEmployee,
-} from "../../services/LeaveMaster"; // Import getLeaveCountsByEmployee
+} from "../../services/LeaveMaster";
+import { fetchLeaveCalendar } from "../../services/LeaveCalendar";
 
 const LeaveMaster = () => {
   // State for form fields
@@ -36,18 +38,17 @@ const LeaveMaster = () => {
     reason: "",
   });
 
-  // Loading state for employee search
+  // Loading and notification states
   const [isLoading, setIsLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
-
-  // Loading state for leave records
   const [isLoadingLeaves, setIsLoadingLeaves] = useState(false);
-  // Add this with your other state declarations (around line 39-40)
   const [leaveRecords, setLeaveRecords] = useState([]);
-  // Add loading state for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [leaveUsageData, setLeaveUsageData] = useState([]);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
+  const [disabledDates, setDisabledDates] = useState([]);
 
   // Define standard leave entitlements
   const leaveEntitlements = {
@@ -66,10 +67,6 @@ const LeaveMaster = () => {
     "Special Leave",
   ];
 
-  // Leave usage data with loading state
-  const [leaveUsageData, setLeaveUsageData] = useState([]);
-  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
-
   // Helper function to get current date in YYYY-MM-DD format
   function getCurrentDate() {
     const today = new Date();
@@ -77,9 +74,10 @@ const LeaveMaster = () => {
   }
 
   // Function to format date for display
-  function formatDate(dateString) {
-    if (!dateString) return "";
-    const date = new Date(dateString);
+  function formatDate(dateInput) {
+    if (!dateInput) return "";
+    const date =
+      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
     return date.toISOString().split("T")[0];
   }
 
@@ -103,10 +101,48 @@ const LeaveMaster = () => {
     };
   }
 
+  // Function to get disabled dates from calendar data (from leave events)
+  const getDisabledDates = (calendarData) => {
+    const dates = [];
+    calendarData.forEach((leave) => {
+      if (leave.start_date) {
+        const start = new Date(leave.start_date);
+        const end = leave.end_date
+          ? new Date(leave.end_date)
+          : new Date(leave.start_date);
+        for (
+          let date = new Date(start);
+          date <= end;
+          date.setDate(date.getDate() + 1)
+        ) {
+          dates.push(formatDate(new Date(date)));
+        }
+      }
+    });
+    return dates;
+  };
+
+  // Handle input changes with SweetAlert2 notification for disabled dates
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Handle nested objects in state
+    // If the field relates to leave dates, check if the selected date is disabled
+    if (name.includes("leaveDate") && disabledDates.includes(value)) {
+      Swal.fire({
+        icon: "error",
+        title: "Date Not Available",
+        text: "This date has been marked as an Event day and is not available for leave requests.",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok, I understand",
+        customClass: {
+          popup: "rounded-xl",
+          confirmButton: "rounded-lg text-sm px-5 py-2.5",
+        },
+      });
+      return; // Do not update the state if disabled date is selected
+    }
+
+    // Handle nested objects in state (like leaveDate.single, leaveDate.from, etc.)
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData({
@@ -124,20 +160,24 @@ const LeaveMaster = () => {
     }
   };
 
-  // Function to fetch employee leaves
+  // Function to fetch employee leaves and calendar data (to set disabled dates)
   const fetchEmployeeLeaves = async (employeeId) => {
     if (!employeeId) return;
 
     setIsLoadingLeaves(true);
     try {
-      const leaveData = await getLeaveById(employeeId);
+      const [leaveData, calendarData] = await Promise.all([
+        getLeaveById(employeeId),
+        fetchLeaveCalendar(),
+      ]);
+
+      // Set disabled dates from the calendar data
+      setDisabledDates(getDisabledDates(calendarData));
 
       if (leaveData && Array.isArray(leaveData)) {
-        // Format leave records for display
         const formattedLeaves = leaveData.map(formatLeaveRecord);
         setLeaveRecords(formattedLeaves);
       } else {
-        // No leaves found or error
         setLeaveRecords([]);
       }
     } catch (error) {
@@ -157,13 +197,13 @@ const LeaveMaster = () => {
       const leaveCounts = await getLeaveCountsByEmployee(employeeId);
 
       if (leaveCounts && Array.isArray(leaveCounts)) {
-        // Process leave counts and calculate balance
         const formattedUsage = Object.keys(leaveEntitlements).map(
           (leaveType, index) => {
-            // Find corresponding count from API response
             const leaveData = leaveCounts.find(
               (item) => item.leave_type === leaveType
-            ) || { count: 0 };
+            ) || {
+              count: 0,
+            };
             const total = leaveEntitlements[leaveType];
             const usage = leaveData.count;
             const balance = total - usage;
@@ -177,10 +217,8 @@ const LeaveMaster = () => {
             };
           }
         );
-
         setLeaveUsageData(formattedUsage);
       } else {
-        // If no data, show default values with zero usage
         const defaultUsage = Object.keys(leaveEntitlements).map(
           (leaveType, index) => ({
             id: index + 1,
@@ -190,12 +228,10 @@ const LeaveMaster = () => {
             balance: leaveEntitlements[leaveType],
           })
         );
-
         setLeaveUsageData(defaultUsage);
       }
     } catch (error) {
       console.error("Error fetching leave usage data:", error);
-      // Set default data on error
       const defaultUsage = Object.keys(leaveEntitlements).map(
         (leaveType, index) => ({
           id: index + 1,
@@ -205,7 +241,6 @@ const LeaveMaster = () => {
           balance: leaveEntitlements[leaveType],
         })
       );
-
       setLeaveUsageData(defaultUsage);
     } finally {
       setIsLoadingUsage(false);
@@ -228,7 +263,6 @@ const LeaveMaster = () => {
       );
 
       if (employeeData) {
-        // Extract only needed data
         setFormData({
           ...formData,
           epfNo: employeeData.epf || "",
@@ -237,7 +271,6 @@ const LeaveMaster = () => {
             employeeData.organization_assignment?.department?.name || "",
         });
 
-        // Fetch both leave records and leave counts
         await Promise.all([
           fetchEmployeeLeaves(formData.attendanceNo),
           fetchLeaveUsage(formData.attendanceNo),
@@ -245,8 +278,6 @@ const LeaveMaster = () => {
       } else {
         setSearchError("Employee not found");
         setLeaveRecords([]);
-
-        // Reset leave usage data when employee not found
         const defaultUsage = Object.keys(leaveEntitlements).map(
           (leaveType, index) => ({
             id: index + 1,
@@ -256,7 +287,6 @@ const LeaveMaster = () => {
             balance: leaveEntitlements[leaveType],
           })
         );
-
         setLeaveUsageData(defaultUsage);
       }
     } catch (error) {
@@ -268,50 +298,41 @@ const LeaveMaster = () => {
     }
   };
 
+  // Handle form submission for leave requests
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Reset status messages
     setSubmitError("");
     setSubmitSuccess(false);
     setIsSubmitting(true);
 
     try {
-      // Format data according to simplified API requirements
       let leaveData = {
         employee_id: parseInt(formData.attendanceNo),
         reporting_date: formData.reportingDate,
         leave_type: formData.leaveType,
         reason: formData.reason,
-        status: "Pending", // Default status for new leave requests
-
-        // Initialize all date fields as null
+        status: "Pending",
         leave_date: null,
         leave_from: null,
         leave_to: null,
         period: null,
       };
 
-      // Handle different leave date types
       if (formData.leaveDateType === "fullDay") {
-        // For full day, only set leave_date
         leaveData.leave_date = formData.leaveDate.single;
       } else if (formData.leaveDateType === "halfDay") {
-        // For half day, set leave_date and period (Morning/Afternoon)
         leaveData.leave_date = formData.leaveDate.single;
         leaveData.period =
           formData.halfDayPeriod === "morning" ? "Morning" : "Afternoon";
       } else if (formData.leaveDateType === "manual") {
-        // For date range, set leave_from and leave_to
         leaveData.leave_from = formData.leaveDate.from;
         leaveData.leave_to = formData.leaveDate.to;
       }
 
-      // Debug console logs
       console.group("Leave Request Data Debug");
       console.log("Form data being submitted:", { ...formData });
       console.log("Formatted API payload:", leaveData);
       console.log("Leave type selected:", formData.leaveDateType);
-
       if (formData.leaveDateType === "fullDay") {
         console.log("Full day date:", formData.leaveDate.single);
       } else if (formData.leaveDateType === "halfDay") {
@@ -323,22 +344,17 @@ const LeaveMaster = () => {
       }
       console.groupEnd();
 
-      // Call the API to create the leave
       const response = await createLeave(leaveData);
       console.log("API Response:", response);
 
-      // Refresh both employee leave records and usage counts
       await Promise.all([
         fetchEmployeeLeaves(formData.attendanceNo),
         fetchLeaveUsage(formData.attendanceNo),
       ]);
 
-      // Show success message and reset form
       setSubmitSuccess(true);
-
-      // Reset form after successful submission
       setFormData({
-        attendanceNo: formData.attendanceNo, // Keep the employee ID for continuity
+        attendanceNo: formData.attendanceNo,
         epfNo: formData.epfNo,
         employeeName: formData.employeeName,
         department: formData.department,
@@ -365,9 +381,8 @@ const LeaveMaster = () => {
     }
   };
 
-  // Initialize with default values when component mounts
+  // Initialize default leave usage data when component mounts
   useEffect(() => {
-    // Set default leave usage data
     const defaultUsage = Object.keys(leaveEntitlements).map(
       (leaveType, index) => ({
         id: index + 1,
@@ -377,7 +392,6 @@ const LeaveMaster = () => {
         balance: leaveEntitlements[leaveType],
       })
     );
-
     setLeaveUsageData(defaultUsage);
   }, []);
 
@@ -394,7 +408,6 @@ const LeaveMaster = () => {
               Employee Leave Management System
             </p>
           </div>
-
           <div className="p-4 sm:p-6 lg:p-8">
             {submitSuccess && (
               <div className="mb-6 bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center justify-between">
@@ -410,7 +423,6 @@ const LeaveMaster = () => {
                 </button>
               </div>
             )}
-
             {submitError && (
               <div className="mb-6 bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
                 <div className="flex items-center">
@@ -425,7 +437,6 @@ const LeaveMaster = () => {
                 </button>
               </div>
             )}
-
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column - Leave Form */}
@@ -466,7 +477,6 @@ const LeaveMaster = () => {
                           </p>
                         )}
                       </div>
-
                       {/* EPF No */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -481,7 +491,6 @@ const LeaveMaster = () => {
                           placeholder="EPF number"
                         />
                       </div>
-
                       {/* Employee Name */}
                       <div className="space-y-2 sm:col-span-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -496,7 +505,6 @@ const LeaveMaster = () => {
                           placeholder="Employee name"
                         />
                       </div>
-
                       {/* Department */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -511,7 +519,6 @@ const LeaveMaster = () => {
                           placeholder="Department"
                         />
                       </div>
-
                       {/* Reporting Date */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -525,7 +532,6 @@ const LeaveMaster = () => {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-gray-50 text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         />
                       </div>
-
                       {/* Leave Type */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -548,13 +554,11 @@ const LeaveMaster = () => {
                       </div>
                     </div>
 
-                    {/* Leave Date Section - Updated with radio buttons */}
+                    {/* Leave Date Section */}
                     <div className="mt-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Leave Duration <span className="text-red-500">*</span>
                       </label>
-
-                      {/* Radio button selection for leave type */}
                       <div className="flex flex-wrap gap-4 mb-4">
                         <div className="flex items-center">
                           <input
@@ -573,7 +577,6 @@ const LeaveMaster = () => {
                             Full Day
                           </label>
                         </div>
-
                         <div className="flex items-center">
                           <input
                             type="radio"
@@ -591,7 +594,6 @@ const LeaveMaster = () => {
                             Half Day
                           </label>
                         </div>
-
                         <div className="flex items-center">
                           <input
                             type="radio"
@@ -611,7 +613,6 @@ const LeaveMaster = () => {
                         </div>
                       </div>
 
-                      {/* Conditional rendering based on selected leave type */}
                       {formData.leaveDateType === "fullDay" && (
                         <div className="mb-4">
                           <label className="block text-xs text-gray-500 mb-1">
@@ -643,7 +644,6 @@ const LeaveMaster = () => {
                               className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             />
                           </div>
-
                           <div>
                             <label className="block text-xs text-gray-500 mb-1">
                               Period
@@ -858,7 +858,6 @@ const LeaveMaster = () => {
                         </span>
                       )}
                     </div>
-
                     <div className="overflow-x-auto">
                       {isLoadingLeaves ? (
                         <div className="py-10 text-center">
