@@ -115,273 +115,92 @@ const SalaryProcessPage = () => {
       alert("No processed salary data found.");
     }
   };
-  const handleDownloadAllProcessed = async () => {
-    try {
-      setIsLoading(true);
+const handleDownloadAllProcessed = async () => {
+  try {
+    setIsLoading(true);
 
-      // Get processed data from the backend
-      const processedData = await getProcessedSalaries();
+    const processedData = await getProcessedSalaries();
 
-      if (!processedData || processedData.length === 0) {
-        alert("No processed salary data found for the selected period.");
-        return;
-      }
+    if (!processedData || processedData.length === 0) {
+      alert("No processed salary data found for the selected period.");
+      return;
+    }
 
-      // Create PDF
-      const doc = new jsPDF();
+    const doc = new jsPDF();
 
-      // Get month name for display
-      const monthObj = months.find((m) => m.value === month);
-      const monthName = monthObj ? monthObj.label : ` ${month}`;
+    const monthObj = months.find((m) => m.value === month);
+    const monthName = monthObj ? monthObj.label : ` ${month}`;
 
-      processedData.forEach((emp, idx) => {
-        if (idx > 0) doc.addPage();
+    processedData.forEach((emp, idx) => {
+      if (idx > 0) doc.addPage();
 
-        // Header - Company Name and Title
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
+      // Header
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Company: ${emp.company_name}`, 105, 15, { align: "center" });
+      doc.text(`Department: ${emp.department_name}`, 105, 22, { align: "center" });
+      doc.text("Payslip", 105, 29, { align: "center" });
+      doc.text(`${monthName} ${year}`, 105, 36, { align: "center" });
+      doc.rect(10, 8, 190, 32);
 
-        doc.text(`Company: ${emp.company_name}`, 105, 15, { align: "center" });
-        doc.text(`Department: ${emp.department_name}`, 105, 22, {
-          align: "center",
-        });
-        doc.text("Payslip", 105, 29, { align: "center" });
+      let y = 50;
 
-        // Display month name and year properly
-        doc.text(`${monthName} ${year}`, 105, 36, { align: "center" });
+      // Employee Info
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`EPF No :`, 15, y);
+      doc.text(`${emp.employee_no || "N/A"}`, 60, y);
+      y += 6;
 
-        // Draw border around header
-        doc.rect(10, 8, 190, 32);
+      doc.text(`Code :`, 15, y);
+      doc.text(`${emp.employee_no || "N/A"}`, 60, y);
+      y += 6;
 
-        let y = 50;
+      doc.text(`Name :`, 15, y);
+      doc.text(`${emp.full_name || "N/A"}`, 60, y);
+      y += 6;
 
-        // Employee Details Section
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
+      doc.text(`Bank :`, 15, y);
+      doc.text(`${emp.compensation?.bank_name || "N/A"}`, 60, y);
+      y += 6;
 
-        // EPF No
-        doc.text(`EPF No :`, 15, y);
-        doc.text(`${emp.employee_no || "N/A"}`, 60, y);
-        y += 6;
+      doc.text(`Branch :`, 15, y);
+      doc.text(`${emp.compensation?.branch_name || "N/A"}`, 60, y);
+      y += 6;
 
-        // Code
-        doc.text(`Code :`, 15, y);
-        doc.text(`${emp.employee_no || "N/A"}`, 60, y);
-        y += 6;
+      doc.text(`Account No. :`, 15, y);
+      doc.text(`${emp.compensation?.bank_account_no || "N/A"}`, 60, y);
+      y += 10;
 
-        // Name
-        doc.text(`Name :`, 15, y);
-        doc.text(`${emp.full_name || "N/A"}`, 60, y);
-        y += 6;
+      // Basic Salary
+      doc.setFont("helvetica", "bold");
+      doc.text(`Basic Salary`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.basic_salary?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 10;
 
-        // Bank (if available)
-        doc.text(`Bank :`, 15, y);
-        doc.text(`${emp.compensation?.bank_name || "N/A"}`, 60, y);
-        y += 6;
+      // Transactions for EPF
+      doc.setFont("helvetica", "normal");
+      doc.text(`Transactions for EPF`, 15, y);
+      y += 8;
 
-        // Branch (if available)
-        doc.text(`Branch :`, 15, y);
-        doc.text(`${emp.compensation?.branch_name || "N/A"}`, 60, y);
-        y += 6;
+      doc.text(`Allowances`, 15, y);
+      y += 6;
 
-        // Account No (if available)
-        doc.text(`Account No. :`, 15, y);
-        doc.text(`${emp.compensation?.bank_account_no || "N/A"}`, 60, y);
-        y += 10;
-
-        // Basic Salary
-        doc.setFont("helvetica", "bold");
-        doc.text(`Basic Salary`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.basic_salary?.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 10;
-
-        // Transactions for EPF Section
-        doc.setFont("helvetica", "normal");
-        doc.text(`Transactions for EPF`, 15, y);
-        y += 8;
-
-        // Allowances
-        doc.text(`Allowances`, 15, y);
-        y += 6;
-
-        // Display allowances if available
-        if (emp.allowances && emp.allowances.length > 0) {
-          emp.allowances.forEach((allowance) => {
-            doc.text(`${allowance.name}`, 15, y);
-            doc.text(
-              `${parseFloat(allowance.amount || 0).toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`,
-              170,
-              y,
-              { align: "right" }
-            );
-            y += 6;
-          });
-        } else {
-          // Default allowance entries from salary_breakdown
-          doc.text(`BRA1 Act`, 15, y);
+      if (emp.allowances && emp.allowances.length > 0) {
+        emp.allowances.forEach((allowance) => {
+          doc.text(`${allowance.name}`, 15, y);
           doc.text(
-            `${
-              emp.salary_breakdown?.br_allowance?.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }) || "0.00"
-            }`,
-            170,
-            y,
-            { align: "right" }
-          );
-          y += 6;
-          // doc.text(`BRA2 Act No:04 of 2016`, 15, y);
-          // doc.text(`${emp.salary_breakdown?.br_allowance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}`, 170, y, { align: "right" });
-          // y += 6;
-        }
-
-        y += 4;
-
-        // Total EPF App. Transaction
-        // doc.text(`Total EPF App. Transaction`, 15, y);
-        // doc.text(`0.00`, 170, y, { align: "right" });
-        // y += 6;
-
-        // // Pay Reduction Adjustment
-        // doc.text(`Pay Reduction Adjustment`, 15, y);
-        // doc.text(`0.00`, 170, y, { align: "right" });
-        // y += 6;
-
-        // Nopay Amount
-        doc.text(`Nopay Amount`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.no_pay_deduction?.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 8;
-
-        // Gross for EPF
-        doc.setFont("helvetica", "bold");
-        doc.text(`Gross for EPF`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.epf_etf_base?.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 8;
-
-        // OT Amount
-        doc.setFont("helvetica", "normal");
-        doc.text(`OT Amount`, 15, y);
-        doc.text(`0.00`, 170, y, { align: "right" });
-        y += 6;
-
-        // Nopay Amount Non EPF [-]
-        doc.text(`Nopay Amount Non EPF [-]`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.no_pay_deduction?.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 8;
-
-        // Gross Salary
-        doc.setFont("helvetica", "bold");
-        doc.text(`Gross Salary`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.gross_salary?.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 10;
-
-        // Deductions Section
-        doc.text(`Deductions`, 15, y);
-        y += 8;
-
-        // EPF Employee Deduction (8%)
-        doc.setFont("helvetica", "normal");
-        doc.text(`EPF - Employee - 8.00%`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.epf_employee_deduction?.toLocaleString(
-              "en-US",
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-            ) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 6;
-
-        // Other deductions
-        if (emp.deductions && emp.deductions.length > 0) {
-          emp.deductions.forEach((deduction) => {
-            doc.text(`${deduction.name}`, 15, y);
-            doc.text(
-              `${parseFloat(deduction.amount || 0).toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`,
-              170,
-              y,
-              { align: "right" }
-            );
-            y += 6;
-          });
-        } else {
-          // Default deduction entries
-          doc.text(`Salary Advance`, 15, y);
-          doc.text(`0.00`, 170, y, { align: "right" });
-          y += 6;
-          doc.text(`APIT`, 15, y);
-          doc.text(`0.00`, 170, y, { align: "right" });
-          y += 6;
-          doc.text(`Stamp Duty`, 15, y);
-          doc.text(`0.00`, 170, y, { align: "right" });
-          y += 6;
-        }
-
-        // Loan deduction
-        if (emp.salary_breakdown?.loan_installment) {
-          doc.text(`Loan`, 15, y);
-          doc.text(
-            `${emp.salary_breakdown.loan_installment.toLocaleString("en-US", {
+            `${parseFloat(allowance.amount || 0).toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}`,
@@ -390,86 +209,166 @@ const SalaryProcessPage = () => {
             { align: "right" }
           );
           y += 6;
-        }
+        });
+      } else {
+        doc.text(`BRA1 Act`, 15, y);
+        doc.text(
+          `${
+            emp.salary_breakdown?.br_allowance?.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) || "0.00"
+          }`,
+          170,
+          y,
+          { align: "right" }
+        );
+        y += 6;
+      }
 
-        y += 2;
+      y += 4;
 
-        // Total Deduction
+      doc.text(`Nopay Amount`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.no_pay_deduction?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.text(`Gross for EPF`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.epf_etf_base?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 10;
+
+      // ✅ OVERTIME SECTION
         doc.setFont("helvetica", "bold");
-        doc.text(`Total Deduction`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.total_deductions?.toLocaleString("en-US", {
+      doc.text("Overtime Details", 15, y);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+
+      doc.text(`Morning OT Amount`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.ot_morning_fees?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 6;
+
+      doc.text(`Evening OT Amount`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.ot_night_fees?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 8;
+
+      doc.text(`Nopay Amount `, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.no_pay_deduction?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.text(`Gross Salary`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.gross_salary?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 10;
+
+      // Deductions
+      doc.text(`Deductions`, 15, y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`EPF - Employee - 8.00%`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.epf_employee_deduction?.toLocaleString(
+            "en-US",
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+          ) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 6;
+
+      if (emp.deductions && emp.deductions.length > 0) {
+        emp.deductions.forEach((deduction) => {
+          doc.text(`${deduction.name}`, 15, y);
+          doc.text(
+            `${parseFloat(deduction.amount || 0).toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 10;
-
-        // Net Salary
-        doc.setFontSize(12);
-        doc.text(`Net Salary Rs.`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.net_salary?.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
-        y += 12;
-
-        // Employer Contribution Section
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        doc.text(`Employer Contribution:`, 15, y);
-        y += 8;
-
-        // EPF Employer (12%)
-        doc.setFont("helvetica", "normal");
-        doc.text(`EPF - 12.00%`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.epf_employer_contribution?.toLocaleString(
-              "en-US",
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-            ) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
+            })}`,
+            170,
+            y,
+            { align: "right" }
+          );
+          y += 6;
+        });
+      } else {
+        doc.text(`Salary Advance`, 15, y);
+        doc.text(`0.00`, 170, y, { align: "right" });
         y += 6;
-
-        // ETF (3%)
-        doc.text(`ETF - 3.00%`, 15, y);
-        doc.text(
-          `${
-            emp.salary_breakdown?.etf_employer_contribution?.toLocaleString(
-              "en-US",
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-            ) || "0.00"
-          }`,
-          170,
-          y,
-          { align: "right" }
-        );
+        doc.text(`APIT`, 15, y);
+        doc.text(`0.00`, 170, y, { align: "right" });
         y += 6;
+        doc.text(`Stamp Duty`, 15, y);
+        doc.text(`0.00`, 170, y, { align: "right" });
+        y += 6;
+      }
 
-        // Total EPF
-        const totalEPF =
-          (emp.salary_breakdown?.epf_employee_deduction || 0) +
-          (emp.salary_breakdown?.epf_employer_contribution || 0);
-        doc.text(`Total EPF`, 15, y);
+      if (emp.salary_breakdown?.loan_installment) {
+        doc.text(`Loan`, 15, y);
         doc.text(
-          `${totalEPF.toLocaleString("en-US", {
+          `${emp.salary_breakdown.loan_installment.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`,
@@ -477,40 +376,120 @@ const SalaryProcessPage = () => {
           y,
           { align: "right" }
         );
-        y += 15;
-
-        // Company Name and Date at bottom
-        doc.text(`LIFEHRMS`, 15, y);
-        const currentDate = new Date();
-        const formattedDate = `${currentDate
-          .getDate()
-          .toString()
-          .padStart(2, "0")}/${(currentDate.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}/${currentDate.getFullYear()}`;
-        doc.text(formattedDate, 170, y, { align: "right" });
-
-        // Draw border around entire payslip
-        doc.rect(10, 45, 190, y - 40);
-      });
-
-      // Save the PDF immediately after creation - this will trigger download
-      doc.save(`payslips_${monthName}_${year}.pdf`);
-
-      // Mark payslips as issued after successful PDF generation
-      try {
-        await updateSlaryStatus("issued");
-        alert("Salary Issued !");
-      } catch (error) {
-        alert(error);
+        y += 6;
       }
+
+      y += 2;
+
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total Deduction`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.total_deductions?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 10;
+
+      doc.setFontSize(12);
+      doc.text(`Net Salary Rs.`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.net_salary?.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 12;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "italic");
+      doc.text(`Employer Contribution:`, 15, y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`EPF - 12.00%`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.epf_employer_contribution?.toLocaleString(
+            "en-US",
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+          ) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 6;
+
+      doc.text(`ETF - 3.00%`, 15, y);
+      doc.text(
+        `${
+          emp.salary_breakdown?.etf_employer_contribution?.toLocaleString(
+            "en-US",
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+          ) || "0.00"
+        }`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 6;
+
+      const totalEPF =
+        (emp.salary_breakdown?.epf_employee_deduction || 0) +
+        (emp.salary_breakdown?.epf_employer_contribution || 0);
+
+      doc.text(`Total EPF`, 15, y);
+      doc.text(
+        `${totalEPF.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`,
+        170,
+        y,
+        { align: "right" }
+      );
+      y += 15;
+
+      doc.text(`LIFEHRMS`, 15, y);
+      const currentDate = new Date();
+      const formattedDate = `${currentDate
+        .getDate()
+        .toString()
+        .padStart(2, "0")}/${(currentDate.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}/${currentDate.getFullYear()}`;
+      doc.text(formattedDate, 170, y, { align: "right" });
+
+      doc.rect(10, 45, 190, y - 40);
+    });
+
+    doc.save(`payslips_${monthName}_${year}.pdf`);
+
+    try {
+      await updateSlaryStatus("issued");
+      alert("Salary Issued !");
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Error generating PDF. Please try again.");
-    } finally {
-      setIsLoading(false);
+      alert(error);
     }
-  };
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    alert("Error generating PDF. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   // Handle EPF filter
   const handleEPFFilter = () => {
