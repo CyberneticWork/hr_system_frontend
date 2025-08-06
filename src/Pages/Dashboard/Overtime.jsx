@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Clock,
-  Search,
-} from "lucide-react";
+import { Clock, Search } from "lucide-react";
 import { fetchTimeCards } from "@services/OverTimeService";
 
 const Overtime = () => {
@@ -49,7 +46,7 @@ const Overtime = () => {
 
         {/* Main Content - Always show table */}
         {isLoading ? (
-          <div className="flex items-center justify-center h-64"> 
+          <div className="flex items-center justify-center h-64">
             <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
           </div>
         ) : (
@@ -68,7 +65,13 @@ const Overtime = () => {
                       Date
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Shift start
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       IN Time
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Shift End
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       OUT Time
@@ -85,9 +88,9 @@ const Overtime = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Total OT
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Special OT
-                    </th>
+                    </th> */}
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Approve OT
                     </th>
@@ -109,7 +112,7 @@ const Overtime = () => {
                     timeData.map((row) => (
                       <tr
                         key={row.id}
-                        className={`transition-all duration-200 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400`} 
+                        className={`transition-all duration-200 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                           {row.employee_id}
@@ -126,16 +129,21 @@ const Overtime = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {row.time_card_id.time}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                           {row.time_card_id.working_hours}
+                        </td> */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                          {row.shift_code.end_time}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {row.time_card_id.time}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">
                           {/* Morning OT - not directly in data, showing shift morning OT start time */}
-                          {row.shift_code.morning_ot_start}
+                          {/* {row.shift_code.morning_ot_start} */}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">
-                          {/* Evening OT - not directly in data */}
-                          -
+                          {/* Evening OT - not directly in data */}-
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">
                           {row.ot_hours}
