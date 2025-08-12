@@ -768,7 +768,7 @@ const SalaryProcessPage = () => {
           allowances.forEach((allowance) => {
             row[`Allowance ID`] = allowance.id;
             row[`Allowance Name`] = allowance.allowance_name;
-            row[`Allowance Amount (LKR)`] = 0; // Default amount
+            row[`Amount (LKR)`] = 0; // Default amount
           });
         }
 
@@ -777,7 +777,7 @@ const SalaryProcessPage = () => {
           deductions.forEach((deduction) => {
             row[`Deduction ID`] = deduction.id;
             row[`Deduction Name`] = deduction.deduction_name;
-            row[`Deduction Amount (LKR)`] = 0; // Default amount
+            row[`Amount (LKR)`] = 0; // Default amount
           });
         }
 
