@@ -846,13 +846,7 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
 
         {/* Action Buttons */}
         <div className="mt-8 flex justify-end space-x-4">
-          <button
-            onClick={onPrevious}
-            className="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition duration-200 flex items-center space-x-2"
-          >
-            <Edit className="w-5 h-5" />
-            <span>Edit Information</span>
-          </button>
+          
           <button
             onClick={handleClearForm}
             className="px-6 py-3 bg-red-300 hover:bg-red-400 text-gray-800 font-medium rounded-lg transition duration-200 flex items-center space-x-2"
