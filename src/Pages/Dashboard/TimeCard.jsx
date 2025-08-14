@@ -416,6 +416,35 @@ const TimeCard = () => {
     setIsLoading(false);
   };
 
+  // Clear fields helper for Add New modal
+  const clearAddModalFields = () => {
+    setNic('');
+    setNicError('');
+    setNewRecord({
+      empNo: '',
+      name: '',
+      time: '',
+      date: '',
+      entry: '',
+      department: '',
+      status: '',
+    });
+  };
+
+  // Cancel handler for Add New modal: clear fields if any data present, then close
+  const handleAddModalCancel = () => {
+    const hasData =
+      nic ||
+      newRecord.empNo ||
+      newRecord.name ||
+      newRecord.time ||
+      newRecord.date ||
+      newRecord.entry ||
+      newRecord.status;
+    if (hasData) clearAddModalFields();
+    setShowAddModal(false);
+  };
+
   const handleNicBlur = async () => {
     if (!nic) return;
     setNicError('');
@@ -454,22 +483,55 @@ const TimeCard = () => {
 
   useEffect(() => {
     const fetchEmployeeRecords = async () => {
-      if (filterOption === 'employee' && employeeSearch.trim() !== '') {
+      // Only handle when "Filter by Employee" is active
+      if (filterOption === 'employee') {
         setIsLoading(true);
         try {
-          const data = await timeCardService.searchEmployeeTimeCards(employeeSearch.trim());
+          let data = [];
+
+          // If user typed NIC/EPF, fetch search results; otherwise use full attendanceData as base
+          if (employeeSearch.trim() !== '') {
+            data = await timeCardService.searchEmployeeTimeCards(employeeSearch.trim());
+            if (!Array.isArray(data)) data = [];
+          } else {
+            data = [...attendanceData];
+          }
+
+          // Apply date filters (single date or range) on the fetched results
+          if (filterDate) {
+            data = data.filter((rec) => rec.date === filterDate);
+          }
+          if (dateFrom) {
+            data = data.filter((rec) => rec.date >= dateFrom);
+          }
+          if (dateTo) {
+            data = data.filter((rec) => rec.date <= dateTo);
+          }
+
           setFilteredData(data);
         } catch (e) {
           setFilteredData([]);
+        } finally {
+          setIsLoading(false);
         }
-        setIsLoading(false);
       } else if (filterOption === 'all') {
+        // When "All" is selected, still allow date filtering
+        if (filterDate || dateFrom || dateTo) {
+          let data = [...attendanceData];
+          if (filterDate) data = data.filter((rec) => rec.date === filterDate);
+          if (dateFrom) data = data.filter((rec) => rec.date >= dateFrom);
+          if (dateTo) data = data.filter((rec) => rec.date <= dateTo);
+          setFilteredData(data);
+        } else {
+          setFilteredData(attendanceData);
+        }
+      } else {
         setFilteredData(attendanceData);
       }
     };
+
     fetchEmployeeRecords();
-    // eslint-disable-next-line
-  }, [employeeSearch, filterOption]);
+  }, [employeeSearch, filterOption, filterDate, dateFrom, dateTo, attendanceData]);
 
   const handleExcelUpload = (e) => {
     setExcelFile(e.target.files[0]);
@@ -1112,7 +1174,7 @@ const TimeCard = () => {
             <div className="flex justify-end gap-3 mt-8">
               <button
                 className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => setShowAddModal(false)}
+                onClick={handleAddModalCancel}
               >
                 Cancel
               </button>

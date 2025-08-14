@@ -1390,14 +1390,14 @@ const Department = () => {
                 )}
               </div>
               {/* Search button (replaces Filter) */}
-              <button
+              {/* <button
                 className="flex items-center px-3 py-2 bg-indigo-600 text-white border border-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                 onClick={() => setSearchTerm(getSearchTerm())}
                 type="button"
               >
                 <Search className="w-4 h-4 mr-2 text-white" />
                 Search
-              </button>
+              </button> */}
               {/* Add buttons based on activeTab */}
               {activeTab === 'companies' && (
                 <button
