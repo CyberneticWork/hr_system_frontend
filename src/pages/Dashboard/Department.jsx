@@ -24,32 +24,52 @@ const EditModal = ({
   editingCompany,
   setShowAddModal,
   setCompanies,
-  companies
+  companies,
+  refreshAll
 }) => {
   const [localForm, setLocalForm] = React.useState(companyForm);
-  const [error, setError] = React.useState("");
+  const [errors, setErrors] = React.useState({});
+
+  const isAddMode = !editingCompany;
 
   React.useEffect(() => {
     if (show) setLocalForm(companyForm);
-    setError("");
+    setErrors({});
   }, [show, companyForm]);
 
   if (!show) return null;
 
   const validateEstablished = (value) => {
+    if (value === undefined || value === null || String(value).trim() === "") return true;
     const year = Number(value);
     const currentYear = new Date().getFullYear();
-    return (
-      /^\d{4}$/.test(value) &&
-      year > 0 &&
-      year <= currentYear
-    );
+    return /^\d{4}$/.test(String(value)) && year >= 1900 && year <= currentYear;
+  };
+
+  // Field-level validation
+  const validateFields = () => {
+    const newErrors = {};
+    if (!localForm.name || !localForm.name.trim()) {
+      newErrors.name = "Company name is required.";
+    }
+    if (!localForm.location || !localForm.location.trim()) {
+      newErrors.location = "Location is required.";
+    }
+    if (
+      localForm.established &&
+      !validateEstablished(localForm.established)
+    ) {
+      newErrors.established = "Established year must be a valid 4-digit year, not in the future, and positive.";
+    }
+    return newErrors;
   };
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold mb-4">Edit Company</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          {isAddMode ? "Add Company" : "Edit Company"}
+        </h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -57,23 +77,26 @@ const EditModal = ({
               type="text"
               value={localForm.name}
               onChange={e => setLocalForm({ ...localForm, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border ${errors.name ? "border-red-500" : "border-gray-300"} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             />
+            {errors.name && <div className="text-red-600 text-sm mt-1">{errors.name}</div>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={localForm.location}
               onChange={e => setLocalForm({ ...localForm, location: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border ${errors.location ? "border-red-500" : "border-gray-300"} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             />
+            {errors.location && <div className="text-red-600 text-sm mt-1">{errors.location}</div>}
           </div>
-          <div>
+          {/* Employees field hidden from UI */}
+          <div style={{ display: "none" }}>
             <label className="block text-sm font-medium text-gray-700 mb-1">Employees</label>
             <input
               type="number"
-              value={localForm.employees}
+              value={localForm.employees === null || localForm.employees === "" ? 0 : localForm.employees}
               readOnly
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-not-allowed"
             />
@@ -83,13 +106,18 @@ const EditModal = ({
             <input
               type="text"
               value={localForm.established}
-              onChange={e => setLocalForm({ ...localForm, established: e.target.value })}
+              onChange={e => {
+                // Only allow up to 4 digits, no non-numeric characters
+                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                setLocalForm({ ...localForm, established: val });
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g. 2005"
               maxLength={4}
+              inputMode="numeric"
+              pattern="\d{4}"
             />
           </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
         </div>
         <div className="flex justify-end space-x-3 mt-6">
           <button
@@ -100,37 +128,61 @@ const EditModal = ({
           </button>
           <button
             onClick={async () => {
-              if (!validateEstablished(localForm.established)) {
-                setError("Established year must be a valid 4-digit year, not in the future, and positive.");
+              const fieldErrors = validateFields();
+              if (Object.keys(fieldErrors).length > 0) {
+                setErrors(fieldErrors);
                 return;
               }
-              setError("");
-              if (editingCompany) {
-                // Edit
-                const updated = await updateCompany(editingCompany.id, localForm);
-                setCompanies(companies.map(c => c.id === editingCompany.id ? updated : c));
-                Swal.fire({
-                  icon: "success",
-                  title: "Company updated successfully!",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              } else {
-                // Add
-                const created = await createCompany(localForm);
-                setCompanies([...companies, created]);
-                Swal.fire({
-                  icon: "success",
-                  title: "Company added successfully!",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
+              setErrors({});
+              const payload = {
+                ...localForm,
+                established: localForm.established ? Number(localForm.established) : null,
+              };
+              try {
+                if (editingCompany) {
+                  await updateCompany(editingCompany.id, payload);
+                  Swal.fire({
+                    icon: "success",
+                    title: "Company updated successfully!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                } else {
+                  await createCompany(payload);
+                  Swal.fire({
+                    icon: "success",
+                    title: "Company added successfully!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                }
+                setShowAddModal(false);
+                await refreshAll?.();
+              } catch (error) {
+                const res = error?.response?.data;
+                if (res?.errors) {
+                  setErrors({
+                    ...fieldErrors,
+                    ...res.errors
+                  });
+                } else if (res?.message) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: res.message,
+                  });
+                } else {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "An unexpected error occurred.",
+                  });
+                }
               }
-              setShowAddModal(false);
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className={`px-4 py-2 ${isAddMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors`}
           >
-            Save Changes
+            {isAddMode ? "Add Company" : "Save Changes"}
           </button>
         </div>
       </div>
@@ -140,7 +192,10 @@ const EditModal = ({
 
 const Department = () => {
   const [activeTab, setActiveTab] = useState('companies');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Separate search terms for each tab
+  const [companySearch, setCompanySearch] = useState('');
+  const [departmentSearch, setDepartmentSearch] = useState('');
+  const [subdepartmentSearch, setSubdepartmentSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddDeptModal, setShowAddDeptModal] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -238,6 +293,53 @@ const Department = () => {
     );
   };
 
+  // Helper to get/set search term based on active tab
+  const getSearchTerm = () => {
+    if (activeTab === 'companies') return companySearch;
+    if (activeTab === 'departments') return departmentSearch;
+    if (activeTab === 'subdepartments') return subdepartmentSearch;
+    return '';
+  };
+  const setSearchTerm = (val) => {
+    if (activeTab === 'companies') setCompanySearch(val);
+    if (activeTab === 'departments') setDepartmentSearch(val);
+    if (activeTab === 'subdepartments') setSubdepartmentSearch(val);
+  };
+
+  // Filtering logic per tab
+  const filteredCompanies = companySearch
+    ? companies.filter(company =>
+        company.name?.toLowerCase().includes(companySearch.toLowerCase()) ||
+        company.location?.toLowerCase().includes(companySearch.toLowerCase()))
+    : companies;
+
+  const filteredDepartmentsData = departmentSearch
+    ? departmentsWithSubs.filter(dept =>
+        dept.name?.toLowerCase().includes(departmentSearch.toLowerCase()) ||
+        dept.code?.toLowerCase().includes(departmentSearch.toLowerCase()))
+    : departmentsWithSubs;
+
+  const filteredCompaniesWithDeps = companies.map(company => ({
+    ...company,
+    departments: filteredDepartmentsData.filter(dept => dept.company_id === company.id)
+  })).filter(company => activeTab === 'departments' ? company.departments.length > 0 : true);
+
+  const filteredSubdepartments = subdepartmentSearch
+    ? subDepartments.filter(subdept =>
+        subdept.name?.toLowerCase().includes(subdepartmentSearch.toLowerCase()))
+    : subDepartments;
+
+  const filteredCompaniesWithSubdepts = companies.map(company => {
+    const depts = departments.filter(dept => dept.company_id === company.id);
+    return {
+      ...company,
+      departments: depts.map(dept => ({
+        ...dept,
+        subdepartments: filteredSubdepartments.filter(sub => sub.department_id === dept.id)
+      })).filter(dept => activeTab === 'subdepartments' ? dept.subdepartments.length > 0 : true)
+    };
+  }).filter(company => activeTab === 'subdepartments' ? company.departments.some(d => d.subdepartments.length > 0) : true);
+
   const CompaniesTable = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
@@ -252,7 +354,7 @@ const Department = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {companies.map((company) => (
+            {filteredCompanies.map((company) => (
               <tr key={company.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -263,7 +365,9 @@ const Department = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.location}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.employees}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {company.employees}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.established}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center space-x-2">
@@ -295,7 +399,6 @@ const Department = () => {
                         });
                         if (result.isConfirmed) {
                           await deleteCompany(company.id);
-                          setCompanies(companies.filter(c => c.id !== company.id));
                           Swal.fire({
                             icon: "success",
                             title: "Deleted!",
@@ -303,6 +406,7 @@ const Department = () => {
                             timer: 1500,
                             showConfirmButton: false,
                           });
+                          await refreshAll(); // <-- refresh after delete
                         }
                       }}
                       variant="danger"
@@ -332,7 +436,7 @@ const Department = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {companiesWithDeps.flatMap(company =>
+            {filteredCompaniesWithDeps.flatMap(company =>
               company.departments.map(dept => (
                 <React.Fragment key={`${company.id}-${dept.id}`}>
                   <tr className="hover:bg-gray-50 transition-colors">
@@ -356,7 +460,9 @@ const Department = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.manager}</td> */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.employees}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {dept.employees}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.subdepartments.length}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
@@ -376,7 +482,6 @@ const Department = () => {
                             if (result.isConfirmed) {
                               try {
                                 await deleteDepartment(dept.id);
-                                setDepartments(departments.filter(d => d.id !== dept.id));
                                 Swal.fire({
                                   icon: "success",
                                   title: "Deleted!",
@@ -384,6 +489,7 @@ const Department = () => {
                                   timer: 1500,
                                   showConfirmButton: false,
                                 });
+                                await refreshAll(); // <-- refresh after delete
                               } catch (error) {
                                 Swal.fire({
                                   icon: "error",
@@ -430,12 +536,33 @@ const Department = () => {
   // Add Department Modal
   const AddDepartmentModal = () => {
     const [localDeptForm, setLocalDeptForm] = React.useState(deptForm);
+    const [error, setError] = React.useState("");
 
     React.useEffect(() => {
-      if (showAddDeptModal) setLocalDeptForm(deptForm);
+      if (showAddDeptModal) {
+        setLocalDeptForm(deptForm);
+        setError("");
+      }
     }, [showAddDeptModal, deptForm]);
 
     if (!showAddDeptModal) return null;
+
+    // Validation function
+    const validate = () => {
+      if (!localDeptForm.company_id) {
+        return "Please select a company.";
+      }
+      if (!localDeptForm.name.trim()) {
+        return "Department name is required.";
+      }
+      if (localDeptForm.name.trim().length < 2) {
+        return "Department name must be at least 2 characters.";
+      }
+      if (localDeptForm.name.trim().length > 50) {
+        return "Department name must be less than 50 characters.";
+      }
+      return "";
+    };
 
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
@@ -462,9 +589,10 @@ const Department = () => {
                 value={localDeptForm.name}
                 onChange={e => setLocalDeptForm({ ...localDeptForm, name: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                maxLength={50}
               />
             </div>
-            {/* Removed Department Code and Employees fields */}
+            {error && <div className="text-red-600 text-sm">{error}</div>}
           </div>
           <div className="flex justify-end space-x-3 mt-6">
             <button
@@ -475,36 +603,38 @@ const Department = () => {
             </button>
             <button
               onClick={async () => {
-                if (
-                  localDeptForm.company_id &&
-                  localDeptForm.name.trim()
-                ) {
-                  try {
-                    const newDept = await createDepartment({
-                      company_id: localDeptForm.company_id,
-                      name: localDeptForm.name,
-                    });
-                    setDepartments([...departments, newDept]);
-                    setDeptForm({
-                      company_id: '',
-                      name: '',
-                      code: '',
-                      employees: ''
-                    });
-                    setShowAddDeptModal(false);
-                    Swal.fire({
-                      icon: "success",
-                      title: "Department added successfully!",
-                      timer: 1500,
-                      showConfirmButton: false,
-                    });
-                  } catch (error) {
-                    Swal.fire({
-                      icon: "error",
-                      title: "Error",
-                      text: error?.response?.data?.message || "Failed to add department.",
-                    });
-                  }
+                const validationError = validate();
+                if (validationError) {
+                  setError(validationError);
+                  return;
+                }
+                setError("");
+                try {
+                  const newDept = await createDepartment({
+                    company_id: localDeptForm.company_id,
+                    name: localDeptForm.name,
+                  });
+                  setDepartments([...departments, newDept]);
+                  setDeptForm({
+                    company_id: '',
+                    name: '',
+                    code: '',
+                    employees: ''
+                  });
+                  setShowAddDeptModal(false);
+                  Swal.fire({
+                    icon: "success",
+                    title: "Department added successfully!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                  await refreshAll();
+                } catch (error) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: error?.response?.data?.message || "Failed to add department.",
+                  });
                 }
               }}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -597,6 +727,7 @@ const Department = () => {
                     timer: 1500,
                     showConfirmButton: false,
                   });
+                  await refreshAll(); // <-- refresh after edit
                 } catch (error) {
                   Swal.fire({
                     icon: "error",
@@ -698,6 +829,7 @@ const Department = () => {
                 }
                 setError("");
                 await onCreate(form);
+                await refreshAll();
               }}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg"
             >
@@ -794,6 +926,7 @@ const Department = () => {
                 }
                 setError("");
                 await onUpdate(form);
+                await refreshAll(); // <-- refresh after edit
               }}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
@@ -916,7 +1049,7 @@ const Department = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {companiesWithDeps.flatMap(company =>
+            {filteredCompaniesWithSubdepts.flatMap(company =>
               company.departments.flatMap(dept =>
                 dept.subdepartments.map(subdept => (
                   <tr key={`${company.id}-${dept.id}-${subdept.id}`} className="hover:bg-gray-50 transition-colors">
@@ -974,7 +1107,6 @@ const Department = () => {
                             if (result.isConfirmed) {
                               try {
                                 await deleteSubDepartment(subdept.id);
-                                setSubDepartments(subDepartments.filter(sd => sd.id !== subdept.id));
                                 Swal.fire({
                                   icon: "success",
                                   title: "Deleted!",
@@ -982,6 +1114,7 @@ const Department = () => {
                                   timer: 1500,
                                   showConfirmButton: false,
                                 });
+                                await refreshAll(); // <-- refresh after delete
                               } catch (error) {
                                 Swal.fire({
                                   icon: "error",
@@ -1046,6 +1179,7 @@ const Department = () => {
               value={subDepartments.length} 
               color="bg-purple-500" 
             />
+            {/* Stat card for employees */}
             <StatCard 
               icon={Calendar} 
               title="Total Employees" 
@@ -1084,14 +1218,30 @@ const Department = () => {
                 <input
                   type="text"
                   placeholder={`Search ${activeTab}...`}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={getSearchTerm()}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {/* Close button */}
+                {getSearchTerm() && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    onClick={() => setSearchTerm('')}
+                    aria-label="Clear search"
+                  >
+                    &#10005;
+                  </button>
+                )}
               </div>
-              <button className="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
+              {/* Search button (replaces Filter) */}
+              <button
+                className="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => setSearchTerm(getSearchTerm())}
+                type="button"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Search
               </button>
               {/* Add buttons based on activeTab */}
               {activeTab === 'companies' && (
@@ -1127,12 +1277,10 @@ const Department = () => {
               )}
             </div>
           </div>
-
           {/* Tables */}
           {activeTab === 'companies' && <CompaniesTable />}
           {activeTab === 'departments' && <DepartmentsTable />}
           {activeTab === 'subdepartments' && <SubdepartmentsTable />}
-
           {/* Edit Modal */}
           <EditModal
             show={showAddModal}
@@ -1142,6 +1290,7 @@ const Department = () => {
             setShowAddModal={setShowAddModal}
             setCompanies={setCompanies}
             companies={companies}
+            refreshAll={refreshAll} // <-- pass it
           />
 
           {/* Add Department Modal */}
