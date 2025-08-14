@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, UserCheck, Calendar, Edit2, Trash2, Search, Filter, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Building2, Users, UserCheck, Calendar, Edit2, Trash2, Search, Filter, ChevronDown, ChevronRight, Plus, ChevronLeft } from 'lucide-react';
 import {
   fetchCompanies,
   fetchDepartments,
@@ -228,6 +228,12 @@ const Department = () => {
   const [showEditSubDeptModal, setShowEditSubDeptModal] = useState(false);
   const [editingSubDept, setEditingSubDept] = useState(null);
 
+  // Pagination state
+  const [companiesPage, setCompaniesPage] = useState(1);
+  const [departmentsPage, setDepartmentsPage] = useState(1);
+  const [subdepartmentsPage, setSubdepartmentsPage] = useState(1);
+  const rowsPerPage = 7;
+
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -346,113 +352,138 @@ const Department = () => {
      };
    }).filter(company => company.departments.length > 0);
 
-  const CompaniesTable = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Established</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredCompanies.map((company) => (
-              <tr key={company.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <Building2 className="w-5 h-5 text-gray-400 mr-3" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{company.name}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.location}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {company.employees}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.established}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-2">
-                    <ActionButton
-                      icon={Edit2}
-                      onClick={() => {
-                        setModalMode('edit');
-                        setEditingCompany(company);
-                        setCompanyForm({
-                          name: company.name || '',
-                          location: company.location || '',
-                          employees: company.employees || '',
-                          established: company.established || ''
-                        });
-                        setShowAddModal(true);
-                      }}
-                    />
-                    <ActionButton
-                      icon={Trash2}
-                      onClick={async () => {
-                        const result = await Swal.fire({
-                          title: "Are you sure?",
-                          text: "This action cannot be undone!",
-                          icon: "warning",
-                          showCancelButton: true,
-                          confirmButtonColor: "#d33",
-                          cancelButtonColor: "#3085d6",
-                          confirmButtonText: "Yes, delete it!",
-                        });
-                        if (result.isConfirmed) {
-                          await deleteCompany(company.id);
-                          Swal.fire({
-                            icon: "success",
-                            title: "Deleted!",
-                            text: "Company has been deleted.",
-                            timer: 1500,
-                            showConfirmButton: false,
-                          });
-                          await refreshAll(); // <-- refresh after delete
-                        }
-                      }}
-                      variant="danger"
-                    />
-                  </div>
-                </td>
+  const CompaniesTable = () => {
+    // Paginate the data
+    const paginatedCompanies = filteredCompanies.slice(
+      (companiesPage - 1) * rowsPerPage,
+      companiesPage * rowsPerPage
+    );
+    
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            {/* Table header remains the same */}
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Established</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedCompanies.map((company) => (
+                <tr key={company.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <Building2 className="w-5 h-5 text-gray-400 mr-3" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.location}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {company.employees}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.established}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <ActionButton
+                        icon={Edit2}
+                        onClick={() => {
+                          setModalMode('edit');
+                          setEditingCompany(company);
+                          setCompanyForm({
+                            name: company.name || '',
+                            location: company.location || '',
+                            employees: company.employees || '',
+                            established: company.established || ''
+                          });
+                          setShowAddModal(true);
+                        }}
+                      />
+                      <ActionButton
+                        icon={Trash2}
+                        onClick={async () => {
+                          const result = await Swal.fire({
+                            title: "Are you sure?",
+                            text: "This action cannot be undone!",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonColor: "#d33",
+                            cancelButtonColor: "#3085d6",
+                            confirmButtonText: "Yes, delete it!",
+                          });
+                          if (result.isConfirmed) {
+                            await deleteCompany(company.id);
+                            Swal.fire({
+                              icon: "success",
+                              title: "Deleted!",
+                              text: "Company has been deleted.",
+                              timer: 1500,
+                              showConfirmButton: false,
+                            });
+                            await refreshAll(); // <-- refresh after delete
+                          }
+                        }}
+                        variant="danger"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination 
+          currentPage={companiesPage} 
+          totalItems={filteredCompanies.length} 
+          onPageChange={setCompaniesPage} 
+        />
       </div>
-    </div>
-  );
+    );
+  };
 
-  const DepartmentsTable = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th> */}
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartments</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredCompaniesWithDeps.flatMap(company =>
-              company.departments.map(dept => (
-                <React.Fragment key={`${company.id}-${dept.id}`}>
+  const DepartmentsTable = () => {
+    // Get flattened departments for pagination
+    const flattenedDepartments = filteredCompaniesWithDeps.flatMap(company => 
+      company.departments.map(dept => ({ ...dept, companyName: company.name, companyId: company.id }))
+    );
+    
+    // Paginate the data
+    const paginatedDepartments = flattenedDepartments.slice(
+      (departmentsPage - 1) * rowsPerPage,
+      departmentsPage * rowsPerPage
+    );
+    
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th> */}
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartments</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedDepartments.map((dept) => (
+                <React.Fragment key={`${dept.companyId}-${dept.id}`}>
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <button
-                          onClick={() => toggleRowExpansion(`${company.id}-${dept.id}`)}
+                          onClick={() => toggleRowExpansion(`${dept.companyId}-${dept.id}`)}
                           className="mr-2 p-1 hover:bg-gray-200 rounded"
                         >
-                          {expandedRows.has(`${company.id}-${dept.id}`) ?
+                          {expandedRows.has(`${dept.companyId}-${dept.id}`) ?
                             <ChevronDown className="w-4 h-4" /> :
                             <ChevronRight className="w-4 h-4" />
                           }
@@ -464,7 +495,7 @@ const Department = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.companyName}</td>
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.manager}</td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {dept.employees}
@@ -510,7 +541,7 @@ const Department = () => {
                       </div>
                     </td>
                   </tr>
-                  {expandedRows.has(`${company.id}-${dept.id}`) && dept.subdepartments.map(subdept => (
+                  {expandedRows.has(`${dept.companyId}-${dept.id}`) && dept.subdepartments.map(subdept => (
                     <tr key={subdept.id} className="bg-gray-25 border-l-4 border-blue-200">
                       <td className="px-6 py-3 whitespace-nowrap">
                         <div className="flex items-center pl-8">
@@ -531,13 +562,18 @@ const Department = () => {
                     </tr>
                   ))}
                 </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination 
+          currentPage={departmentsPage} 
+          totalItems={flattenedDepartments.length} 
+          onPageChange={setDepartmentsPage} 
+        />
       </div>
-    </div>
-  );
+    );
+  };
 
   // Add Department Modal
   const AddDepartmentModal = () => {
@@ -1040,109 +1076,222 @@ const Department = () => {
   };
 
   // --- SubdepartmentsTable with working edit button ---
-  const SubdepartmentsTable = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartment</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO Of Employees</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredCompaniesWithSubdepts.flatMap(company =>
-              company.departments.flatMap(dept =>
-                dept.subdepartments.map(subdept => (
-                  <tr key={`${company.id}-${dept.id}-${subdept.id}`} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <UserCheck className="w-5 h-5 text-gray-400 mr-3" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{subdept.name}</div>
-                          <div className="text-sm text-gray-500">SD{subdept.id.toString().padStart(3, '0')}</div>
-                        </div>
+  const SubdepartmentsTable = () => {
+    // Get flattened subdepartments for pagination
+    const flattenedSubdepartments = filteredCompaniesWithSubdepts.flatMap(company =>
+      company.departments.flatMap(dept =>
+        dept.subdepartments.map(subdept => ({
+          ...subdept,
+          departmentName: dept.name,
+          departmentCode: dept.code,
+          companyName: company.name
+        }))
+      )
+    );
+    
+    // Paginate the data
+    const paginatedSubdepartments = flattenedSubdepartments.slice(
+      (subdepartmentsPage - 1) * rowsPerPage,
+      subdepartmentsPage * rowsPerPage
+    );
+    
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdepartment</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO Of Employees</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedSubdepartments.map((subdept) => (
+                <tr key={subdept.id} className="hover:bg-gray-50 transition-colors">
+                  {/* Replace nested references with the flattened data */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <UserCheck className="w-5 h-5 text-gray-400 mr-3" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{subdept.name}</div>
+                        <div className="text-sm text-gray-500">SD{subdept.id.toString().padStart(3, '0')}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{dept.name}</div>
-                      <div className="text-sm text-gray-500">{dept.code}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className=" px-8 py-1 text-sm text-gray-900">{subdept.employees}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        subdept.employees > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {subdept.employees > 0 ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <ActionButton
-                          icon={Edit2}
-                          onClick={() => {
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{subdept.departmentName}</div>
+                    <div className="text-sm text-gray-500">{subdept.departmentCode}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subdept.companyName}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className=" px-8 py-1 text-sm text-gray-900">{subdept.employees}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      subdept.employees > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {subdept.employees > 0 ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <ActionButton
+                        icon={Edit2}
+                        onClick={() => {
+                          // The issue is here - we need to find the parent department using the department_id from subdept
+                          const parentDept = departments.find(d => d.id === subdept.department_id);
+                          if (parentDept) {
                             setEditingSubDept({
                               ...subdept,
-                              company_id: dept.company_id,
-                              department_id: dept.id,
+                              company_id: parentDept.company_id,
+                              department_id: subdept.department_id,
                             });
                             setShowEditSubDeptModal(true);
-                          }}
-                        />
-                        <ActionButton
-                          icon={Trash2}
-                          onClick={async () => {
-                            const result = await Swal.fire({
-                              title: "Are you sure?",
-                              text: "This action cannot be undone!",
-                              icon: "warning",
-                              showCancelButton: true,
-                              confirmButtonColor: "#d33",
-                              cancelButtonColor: "#3085d6",
-                              confirmButtonText: "Yes, delete it!",
+                          } else {
+                            Swal.fire({
+                              icon: "error",
+                              title: "Error",
+                              text: "Could not find parent department information.",
                             });
-                            if (result.isConfirmed) {
-                              try {
-                                await deleteSubDepartment(subdept.id);
-                                Swal.fire({
-                                  icon: "success",
-                                  title: "Deleted!",
-                                  text: "Sub Department has been deleted.",
-                                  timer: 1500,
-                                  showConfirmButton: false,
-                                });
-                                await refreshAll(); // <-- refresh after delete
-                              } catch (error) {
-                                Swal.fire({
-                                  icon: "error",
-                                  title: "Error",
-                                  text: error?.response?.data?.message || "Failed to delete sub department.",
-                                });
-                              }
+                          }
+                        }}
+                      />
+                      <ActionButton
+                        icon={Trash2}
+                        onClick={async () => {
+                          const result = await Swal.fire({
+                            title: "Are you sure?",
+                            text: "This action cannot be undone!",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonColor: "#d33",
+                            cancelButtonColor: "#3085d6",
+                            confirmButtonText: "Yes, delete it!",
+                          });
+                          if (result.isConfirmed) {
+                            try {
+                              await deleteSubDepartment(subdept.id);
+                              Swal.fire({
+                                icon: "success",
+                                title: "Deleted!",
+                                text: "Sub Department has been deleted.",
+                                timer: 1500,
+                                showConfirmButton: false,
+                              });
+                              await refreshAll(); // <-- refresh after delete
+                            } catch (error) {
+                              Swal.fire({
+                                icon: "error",
+                                title: "Error",
+                                text: error?.response?.data?.message || "Failed to delete sub department.",
+                              });
                             }
-                          }}
-                          variant="danger"
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )
-            )}
-          </tbody>
-        </table>
+                          }
+                        }}
+                        variant="danger"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination 
+          currentPage={subdepartmentsPage} 
+          totalItems={flattenedSubdepartments.length} 
+          onPageChange={setSubdepartmentsPage} 
+        />
       </div>
-    </div>
-  );
+    );
+  };
+
+  const Pagination = ({ currentPage, totalItems, onPageChange }) => {
+    const totalPages = Math.ceil(totalItems / rowsPerPage);
+    
+    if (totalPages <= 1) return null;
+    
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{(currentPage - 1) * rowsPerPage + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * rowsPerPage, totalItems)}
+              </span>{" "}
+              of <span className="font-medium">{totalItems}</span> results
+            </p>
+          </div>
+          <div>
+            <nav className="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                  currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <span className="sr-only">Previous</span>
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  className={`relative inline-flex items-center px-4 py-2 border ${
+                    page === currentPage
+                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  } text-sm font-medium`}
+                >
+                  {page}
+                </button>
+              ))}
+              
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                  currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <span className="sr-only">Next</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    // Reset pagination when changing tabs
+    setCompaniesPage(1);
+    setDepartmentsPage(1);
+    setSubdepartmentsPage(1);
+  }, [activeTab]);
+
+  // Also reset pagination when search terms change
+  useEffect(() => {
+    setCompaniesPage(1);
+  }, [companySearch]);
+
+  useEffect(() => {
+    setDepartmentsPage(1);
+  }, [departmentSearch]);
+
+  useEffect(() => {
+    setSubdepartmentsPage(1);
+  }, [subdepartmentSearch]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -1242,11 +1391,11 @@ const Department = () => {
               </div>
               {/* Search button (replaces Filter) */}
               <button
-                className="flex items-center px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center px-3 py-2 bg-indigo-600 text-white border border-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                 onClick={() => setSearchTerm(getSearchTerm())}
                 type="button"
               >
-                <Search className="w-4 h-4 mr-2" />
+                <Search className="w-4 h-4 mr-2 text-white" />
                 Search
               </button>
               {/* Add buttons based on activeTab */}
