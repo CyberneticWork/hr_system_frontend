@@ -24,10 +24,14 @@ const EditModal = ({
   editingCompany,
   setShowAddModal,
   setCompanies,
-  companies
+  companies,
+  refreshAll // <-- add this prop
 }) => {
   const [localForm, setLocalForm] = React.useState(companyForm);
   const [error, setError] = React.useState("");
+
+  // Determine if this is add or edit mode
+  const isAddMode = !editingCompany;
 
   React.useEffect(() => {
     if (show) setLocalForm(companyForm);
@@ -37,19 +41,19 @@ const EditModal = ({
   if (!show) return null;
 
   const validateEstablished = (value) => {
+    // allow empty (nullable)
+    if (value === undefined || value === null || String(value).trim() === "") return true;
     const year = Number(value);
     const currentYear = new Date().getFullYear();
-    return (
-      /^\d{4}$/.test(value) &&
-      year > 0 &&
-      year <= currentYear
-    );
+    return /^\d{4}$/.test(String(value)) && year >= 1900 && year <= currentYear;
   };
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold mb-4">Edit Company</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          {isAddMode ? "Add Company" : "Edit Company"}
+        </h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -73,7 +77,7 @@ const EditModal = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">Employees</label>
             <input
               type="number"
-              value={localForm.employees}
+              value={localForm.employees === null || localForm.employees === "" ? 0 : localForm.employees}
               readOnly
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-not-allowed"
             />
@@ -105,32 +109,52 @@ const EditModal = ({
                 return;
               }
               setError("");
-              if (editingCompany) {
-                // Edit
-                const updated = await updateCompany(editingCompany.id, localForm);
-                setCompanies(companies.map(c => c.id === editingCompany.id ? updated : c));
+
+              // Prepare payload with nullable established
+              const payload = {
+                ...localForm,
+                established: localForm.established ? Number(localForm.established) : null,
+              };
+
+              try {
+                if (editingCompany) {
+                  await updateCompany(editingCompany.id, payload);
+                  Swal.fire({
+                    icon: "success",
+                    title: "Company updated successfully!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                } else {
+                  await createCompany(payload);
+                  Swal.fire({
+                    icon: "success",
+                    title: "Company added successfully!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                }
+                setShowAddModal(false);
+                await refreshAll?.(); // <-- use the prop, avoid ReferenceError
+              } catch (error) {
+                const res = error?.response?.data;
+                if (res?.errors?.name) {
+                  setError(res.errors.name[0]);
+                } else if (res?.message) {
+                  setError(res.message);
+                } else {
+                  setError("An unexpected error occurred.");
+                }
                 Swal.fire({
-                  icon: "success",
-                  title: "Company updated successfully!",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              } else {
-                // Add
-                const created = await createCompany(localForm);
-                setCompanies([...companies, created]);
-                Swal.fire({
-                  icon: "success",
-                  title: "Company added successfully!",
-                  timer: 1500,
-                  showConfirmButton: false,
+                  icon: "error",
+                  title: "Error",
+                  text: res?.message || "Failed to save company.",
                 });
               }
-              setShowAddModal(false);
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className={`px-4 py-2 ${isAddMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors`}
           >
-            Save Changes
+            {isAddMode ? "Add Company" : "Save Changes"}
           </button>
         </div>
       </div>
@@ -263,7 +287,9 @@ const Department = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.location}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.employees}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {company.employees}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.established}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center space-x-2">
@@ -295,7 +321,6 @@ const Department = () => {
                         });
                         if (result.isConfirmed) {
                           await deleteCompany(company.id);
-                          setCompanies(companies.filter(c => c.id !== company.id));
                           Swal.fire({
                             icon: "success",
                             title: "Deleted!",
@@ -303,6 +328,7 @@ const Department = () => {
                             timer: 1500,
                             showConfirmButton: false,
                           });
+                          await refreshAll(); // <-- refresh after delete
                         }
                       }}
                       variant="danger"
@@ -356,7 +382,9 @@ const Department = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.name}</td>
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.manager}</td> */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.employees}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {dept.employees}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dept.subdepartments.length}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
@@ -376,7 +404,6 @@ const Department = () => {
                             if (result.isConfirmed) {
                               try {
                                 await deleteDepartment(dept.id);
-                                setDepartments(departments.filter(d => d.id !== dept.id));
                                 Swal.fire({
                                   icon: "success",
                                   title: "Deleted!",
@@ -384,6 +411,7 @@ const Department = () => {
                                   timer: 1500,
                                   showConfirmButton: false,
                                 });
+                                await refreshAll(); // <-- refresh after delete
                               } catch (error) {
                                 Swal.fire({
                                   icon: "error",
@@ -498,6 +526,7 @@ const Department = () => {
                       timer: 1500,
                       showConfirmButton: false,
                     });
+                    await refreshAll();
                   } catch (error) {
                     Swal.fire({
                       icon: "error",
@@ -597,6 +626,7 @@ const Department = () => {
                     timer: 1500,
                     showConfirmButton: false,
                   });
+                  await refreshAll(); // <-- refresh after edit
                 } catch (error) {
                   Swal.fire({
                     icon: "error",
@@ -698,6 +728,7 @@ const Department = () => {
                 }
                 setError("");
                 await onCreate(form);
+                await refreshAll();
               }}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg"
             >
@@ -794,6 +825,7 @@ const Department = () => {
                 }
                 setError("");
                 await onUpdate(form);
+                await refreshAll(); // <-- refresh after edit
               }}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
@@ -974,7 +1006,6 @@ const Department = () => {
                             if (result.isConfirmed) {
                               try {
                                 await deleteSubDepartment(subdept.id);
-                                setSubDepartments(subDepartments.filter(sd => sd.id !== subdept.id));
                                 Swal.fire({
                                   icon: "success",
                                   title: "Deleted!",
@@ -982,6 +1013,7 @@ const Department = () => {
                                   timer: 1500,
                                   showConfirmButton: false,
                                 });
+                                await refreshAll(); // <-- refresh after delete
                               } catch (error) {
                                 Swal.fire({
                                   icon: "error",
@@ -1046,6 +1078,7 @@ const Department = () => {
               value={subDepartments.length} 
               color="bg-purple-500" 
             />
+            {/* Stat card for employees */}
             <StatCard 
               icon={Calendar} 
               title="Total Employees" 
@@ -1142,6 +1175,7 @@ const Department = () => {
             setShowAddModal={setShowAddModal}
             setCompanies={setCompanies}
             companies={companies}
+            refreshAll={refreshAll} // <-- pass it
           />
 
           {/* Add Department Modal */}
