@@ -313,22 +313,25 @@ const Department = () => {
         company.location?.toLowerCase().includes(companySearch.toLowerCase()))
     : companies;
 
+  // Filtering logic for departments tab - this is where the issue is
   const filteredDepartmentsData = departmentSearch
     ? departmentsWithSubs.filter(dept =>
         dept.name?.toLowerCase().includes(departmentSearch.toLowerCase()) ||
         dept.code?.toLowerCase().includes(departmentSearch.toLowerCase()))
     : departmentsWithSubs;
 
+  // Only include companies that have matching departments when filtering
   const filteredCompaniesWithDeps = companies.map(company => ({
     ...company,
     departments: filteredDepartmentsData.filter(dept => dept.company_id === company.id)
-  })).filter(company => activeTab === 'departments' ? company.departments.length > 0 : true);
+  })).filter(company => company.departments.length > 0);
 
   const filteredSubdepartments = subdepartmentSearch
     ? subDepartments.filter(subdept =>
         subdept.name?.toLowerCase().includes(subdepartmentSearch.toLowerCase()))
     : subDepartments;
 
+  // Only include companies and departments that have matching subdepartments
   const filteredCompaniesWithSubdepts = companies.map(company => {
     const depts = departments.filter(dept => dept.company_id === company.id);
     return {
@@ -336,9 +339,9 @@ const Department = () => {
       departments: depts.map(dept => ({
         ...dept,
         subdepartments: filteredSubdepartments.filter(sub => sub.department_id === dept.id)
-      })).filter(dept => activeTab === 'subdepartments' ? dept.subdepartments.length > 0 : true)
+      })).filter(dept => dept.subdepartments.length > 0)
     };
-  }).filter(company => activeTab === 'subdepartments' ? company.departments.some(d => d.subdepartments.length > 0) : true);
+  }).filter(company => company.departments.length > 0);
 
   const CompaniesTable = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
