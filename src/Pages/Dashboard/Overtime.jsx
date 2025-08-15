@@ -162,10 +162,9 @@ const Overtime = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
                           {(parseFloat(row.morning_ot) || 0) +
                             (parseFloat(row.evening_ot) || 0)}
-                            {row?.ot_morning_rate ?? "-"}
-                            {row?.ot_night_rate ?? "-"}
                         </td>
-                       
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{row?.ot_morning_rate ?? "-"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{row?.ot_night_rate ?? "-"}</td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {row.status === "pending" ? (
