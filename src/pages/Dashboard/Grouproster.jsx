@@ -252,11 +252,18 @@ const RosterManagementSystem = () => {
     let filtered = employees;
 
     if (searchTerm) {
-      filtered = filtered.filter(
-        (emp) =>
-          emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.empCode.includes(searchTerm)
-      );
+      filtered = filtered.filter((emp) => {
+        // Check if name exists and includes the search term
+        const nameMatch =
+          emp.name && emp.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Check if empCode exists before trying to use it
+        const codeMatch =
+          emp.empCode &&
+          emp.empCode.toLowerCase().includes(searchTerm.toLowerCase());
+
+        return nameMatch || codeMatch;
+      });
     }
 
     return filtered;
@@ -619,8 +626,8 @@ const RosterManagementSystem = () => {
               <input
                 type="date"
                 value={rosterDate}
-                onChange={(e) => setRosterDate(e.target.value)}
-                className="w-full px-3 py-2 border border-orange-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-orange-300 rounded-md text-sm bg-gray-50 cursor-not-allowed"
+                readOnly
               />
             </div>
 
@@ -648,10 +655,6 @@ const RosterManagementSystem = () => {
                 />
               </div>
             </div>
-
-            <button className="w-full mt-4 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-md transition-all duration-200 transform hover:scale-105">
-              Show Details
-            </button>
           </div>
 
           {/* Company/Department/SubDepartment Dropdowns */}
