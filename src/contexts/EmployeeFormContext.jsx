@@ -10,6 +10,7 @@ const EmployeeFormContext = createContext();
 
 const initialState = {
   personal: {
+    id: "",
     title: "",
     attendanceEmpNo: "",
     epfNo: "",
