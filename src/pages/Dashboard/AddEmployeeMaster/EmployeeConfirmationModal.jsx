@@ -846,7 +846,6 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
 
         {/* Action Buttons */}
         <div className="mt-8 flex justify-end space-x-4">
-          
           <button
             onClick={handleClearForm}
             className="px-6 py-3 bg-red-300 hover:bg-red-400 text-gray-800 font-medium rounded-lg transition duration-200 flex items-center space-x-2"
@@ -854,7 +853,8 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
             <LucideCloudAlert className="w-5 h-5" />
             <span>Clear Form</span>
           </button>
-          <button
+          {formData.personal.id ? (
+            <button
             onClick={handleSubmit}
             disabled={isSubmitting}
             className={`px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 flex items-center space-x-2 ${
@@ -869,10 +869,31 @@ const EmployeeConfirmationModal = ({ onPrevious, onSubmit }) => {
             ) : (
               <>
                 <Check className="w-5 h-5" />
-                <span>Confirm & Submit</span>
+                <span>Confirm & Update</span>
               </>
             )}
           </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className={`px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 flex items-center space-x-2 ${
+                isSubmitting ? "opacity-75 cursor-not-allowed" : ""
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>Confirm & Submit</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -186,6 +186,7 @@ const EmpPersonalDetails = ({ onNext, activeCategory }) => {
 
       const transformedData = {
         personal: {
+          id: apiData.id,
           title: apiData.title,
           attendanceEmpNo: apiData.attendance_employee_no,
           epfNo: apiData.epf,
