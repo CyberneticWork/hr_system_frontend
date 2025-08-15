@@ -556,7 +556,7 @@ const TimeCard = () => {
       const res = await timeCardService.importExcel(formData);
       Swal.fire({
         icon: 'success',
-        title: 'Import Complete',
+        title: 'Import Completed',
         html: `
           <div>
             <p>Imported: <b>${res.imported}</b></p>
