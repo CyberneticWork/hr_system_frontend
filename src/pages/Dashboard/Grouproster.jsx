@@ -1393,11 +1393,71 @@ const RosterManagementSystem = () => {
               Add to Roster{" "}
               {selectedShifts.size > 0 && `(${selectedShifts.size} shifts)`}
             </button>
+
+            {/* Pending Assignments (added) */}
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold text-gray-800 mb-2">
+                Pending Assignments
+              </h4>
+              {rosterAssignments.length === 0 ? (
+                <div className="text-xs text-gray-500">
+                  No shifts added yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {rosterAssignments.map((a, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 bg-gray-50 border rounded-md"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-800">
+                          {a.shift.shiftName}{" "}
+                          <span className="text-xs text-gray-500">
+                            ({a.shift.shiftStart} - {a.shift.shiftEnd})
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {getCompanyName(a.company)}
+                          {a.department && a.department !== "0" && (
+                            <> {` > ${getDepartmentName(a.department)}`} </>
+                          )}
+                          {a.subDepartment && a.subDepartment !== "0" && (
+                            <>
+                              {" "}
+                              {` > ${getSubDepartmentName(a.subDepartment)}`}
+                            </>
+                          )}
+                          {" · "} {a.employees.length} employees {" · "}{" "}
+                          {a.dateFrom} → {a.dateTo}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveAssignment(idx)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setRosterAssignments([])}
+                      className="text-xs text-gray-600 hover:underline"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Save Roster Button */}
             <div className="flex space-x-2 mt-2">
               <button
                 className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2 px-4 rounded-md text-sm font-semibold shadow-md transition-all duration-200"
-                onClick={handleViewSummary} // You'll need to implement this function
+                onClick={handleViewSummary}
               >
                 View Summary
               </button>
