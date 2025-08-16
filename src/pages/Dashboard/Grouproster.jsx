@@ -927,7 +927,7 @@ const RosterManagementSystem = () => {
               {isCompanyWise && (
                 <div className="mt-1 text-xs bg-blue-50 p-2 rounded-md border border-blue-100">
                   <p className="text-blue-700">
-                    <span className="font-semibold">Company-wide mode:</span>{" "}
+                    <span className="font-semibold">Company-wise mode:</span>{" "}
                     Department and Sub-Department selection not required
                   </p>
                 </div>
@@ -955,7 +955,7 @@ const RosterManagementSystem = () => {
               </span>
               {isCompanyWise && selectedCompany && (
                 <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Company-wide
+                  Company-wise
                 </span>
               )}
             </div>
