@@ -939,9 +939,9 @@ const RosterManagementSystem = () => {
         </div>
 
         {/* Middle Panel - Show appropriate content based on selection */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="w-[400px] min-w-[400px] max-w-[400px] p-4 border-b border-gray-200 bg-gray-50">
           {/* Top: Show current selection as a summary */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 p-4 border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
             <div>
               <span className="text-xs text-gray-500">Selected: </span>
               <span className="font-semibold text-blue-700">
@@ -973,200 +973,213 @@ const RosterManagementSystem = () => {
               )}
           </div>
 
-          <h3 className="font-semibold text-sm mb-3 text-gray-800">
-            {isCompanyWise && selectedCompany
-              ? "Employees"
-              : selectedCompany && !selectedDepartment
-              ? "Departments"
-              : selectedCompany && selectedDepartment && !selectedSubDepartment
-              ? "Sub Departments"
-              : "Employees"}
-          </h3>
+          <div className="p-4">
+            <h3 className="font-semibold text-sm mb-3 text-gray-800">
+              {isCompanyWise && selectedCompany
+                ? "Employees"
+                : selectedCompany && !selectedDepartment
+                ? "Departments"
+                : selectedCompany &&
+                  selectedDepartment &&
+                  !selectedSubDepartment
+                ? "Sub Departments"
+                : "Employees"}
+            </h3>
 
-          {/* Company-wise employees */}
-          {isCompanyWise && selectedCompany && (
-            <div>
-              <div className="mb-3 relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search employees..."
-                  className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {isLoadingEmployees ? (
-                  <div className="flex items-center justify-center p-4">
-                    <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
-                    <span>Loading employees...</span>
+            {/* Fixed height container for scrollable content */}
+            <div className="h-[calc(100vh-280px)] overflow-y-auto">
+              {/* Company-wise employees */}
+              {isCompanyWise && selectedCompany && (
+                <div>
+                  <div className="mb-3 relative sticky top-0 z-10 bg-white pb-2">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search employees..."
+                      className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                   </div>
-                ) : (
-                  filteredEmployees.slice(0, 5).map((emp) => (
-                    <div
-                      key={emp.id}
-                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                        selectedEmployees.has(emp.id.toString())
-                          ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
-                          : "hover:bg-gray-50 border border-gray-200"
-                      }`}
-                      onClick={() =>
-                        assignMode === "employee" &&
-                        handleEmployeeSelect(emp.id.toString())
-                      }
-                    >
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {emp.name}
-                        </span>
-                        {emp.empCode && (
-                          <span className="text-xs text-gray-500 block">
-                            ID: {emp.empCode}
-                          </span>
-                        )}
+
+                  <div className="space-y-2">
+                    {isLoadingEmployees ? (
+                      <div className="flex items-center justify-center p-4">
+                        <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                        <span>Loading employees...</span>
                       </div>
-                      {assignMode === "employee" && (
-                        <input
-                          type="checkbox"
-                          checked={selectedEmployees.has(emp.id.toString())}
-                          readOnly
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                          tabIndex={-1}
-                        />
-                      )}
-                    </div>
-                  ))
-                )}
+                    ) : (
+                      filteredEmployees.slice(0, 15).map((emp) => (
+                        <div
+                          key={emp.id}
+                          className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            selectedEmployees.has(emp.id.toString())
+                              ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                              : "hover:bg-gray-50 border border-gray-200"
+                          }`}
+                          onClick={() =>
+                            assignMode === "employee" &&
+                            handleEmployeeSelect(emp.id.toString())
+                          }
+                        >
+                          <div className="truncate pr-2">
+                            <span className="text-sm font-medium text-gray-700 block truncate">
+                              {emp.name}
+                            </span>
+                            {emp.empCode && (
+                              <span className="text-xs text-gray-500 block truncate">
+                                ID: {emp.empCode}
+                              </span>
+                            )}
+                          </div>
+                          {assignMode === "employee" && (
+                            <input
+                              type="checkbox"
+                              checked={selectedEmployees.has(emp.id.toString())}
+                              readOnly
+                              className="w-4 h-4 flex-shrink-0 text-blue-600 border-gray-300 rounded"
+                              tabIndex={-1}
+                            />
+                          )}
+                        </div>
+                      ))
+                    )}
 
-                {filteredEmployees.length > 5 && (
-                  <div className="mt-2 text-center">
-                    <button
-                      className="text-blue-600 text-sm hover:underline"
-                      onClick={() => setShowEmployeeModal(true)}
-                    >
-                      View all {filteredEmployees.length} employees
-                    </button>
-                  </div>
-                )}
+                    {filteredEmployees.length > 15 && (
+                      <div className="mt-2 text-center sticky bottom-0 pt-2 bg-white">
+                        <button
+                          className="text-blue-600 text-sm hover:underline"
+                          onClick={() => setShowEmployeeModal(true)}
+                        >
+                          View all {filteredEmployees.length} employees
+                        </button>
+                      </div>
+                    )}
 
-                {filteredEmployees.length === 0 && (
-                  <div className="p-4 text-center text-gray-500">
-                    No employees found
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Show departments when not in company-wise mode */}
-          {!isCompanyWise && selectedCompany && !selectedDepartment && (
-            <div className="space-y-2">
-              {isLoadingDepartments ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
-                  <span>Loading departments...</span>
-                </div>
-              ) : departmentsError ? (
-                <div className="p-4 text-center text-red-600">
-                  {departmentsError}
-                </div>
-              ) : filteredDepartments.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  No departments found for this company
-                </div>
-              ) : (
-                filteredDepartments.map((dep) => (
-                  <div
-                    key={dep.id}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedDepartment === dep.id.toString()
-                        ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
-                        : "hover:bg-gray-50 border border-gray-200"
-                    }`}
-                    onClick={() => setSelectedDepartment(dep.id.toString())}
-                  >
-                    <span className="text-sm font-medium text-gray-700">
-                      {dep.name}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* Keep existing code for sub-departments and normal employee selection */}
-          {!isCompanyWise && selectedDepartment && !selectedSubDepartment && (
-            // Your existing code for showing sub-departments
-            <div className="space-y-2">
-              {isLoadingSubDepartments ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
-                  <span>Loading sub-departments...</span>
-                </div>
-              ) : subDepartmentsError ? (
-                <div className="p-4 text-center text-red-600">
-                  {subDepartmentsError}
-                </div>
-              ) : filteredSubDepartments.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  No sub-departments found for this department
-                </div>
-              ) : (
-                filteredSubDepartments.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedSubDepartment === sub.id.toString()
-                        ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
-                        : "hover:bg-gray-50 border border-gray-200"
-                    }`}
-                    onClick={() => setSelectedSubDepartment(sub.id.toString())}
-                  >
-                    <span className="text-sm font-medium text-gray-700">
-                      {sub.name}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* Show employees (normal mode) */}
-          {!isCompanyWise && selectedDepartment && selectedSubDepartment && (
-            <div>
-              <div className="space-y-2">
-                {filteredEmployees.slice(0, 3).map((emp) => (
-                  <div
-                    key={emp.id}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedEmployees.has(emp.id.toString())
-                        ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
-                        : "hover:bg-gray-50 border border-gray-200"
-                    }`}
-                    onClick={() =>
-                      assignMode === "employee" &&
-                      handleEmployeeSelect(emp.id.toString())
-                    }
-                  >
-                    <span className="text-sm font-medium text-gray-700">
-                      {emp.name}
-                    </span>
-                    {assignMode === "employee" && (
-                      <input
-                        type="checkbox"
-                        checked={selectedEmployees.has(emp.id.toString())}
-                        readOnly
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                        tabIndex={-1}
-                      />
+                    {filteredEmployees.length === 0 && !isLoadingEmployees && (
+                      <div className="p-4 text-center text-gray-500">
+                        No employees found
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* Other content sections - keep existing code with similar fixed sizing */}
+              {!isCompanyWise && selectedCompany && !selectedDepartment && (
+                <div className="space-y-2">
+                  {isLoadingDepartments ? (
+                    <div className="flex items-center justify-center p-4">
+                      <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                      <span>Loading departments...</span>
+                    </div>
+                  ) : departmentsError ? (
+                    <div className="p-4 text-center text-red-600">
+                      {departmentsError}
+                    </div>
+                  ) : filteredDepartments.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      No departments found for this company
+                    </div>
+                  ) : (
+                    filteredDepartments.map((dep) => (
+                      <div
+                        key={dep.id}
+                        className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedDepartment === dep.id.toString()
+                            ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                            : "hover:bg-gray-50 border border-gray-200"
+                        }`}
+                        onClick={() => setSelectedDepartment(dep.id.toString())}
+                      >
+                        <span className="text-sm font-medium text-gray-700">
+                          {dep.name}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* Keep existing code for sub-departments and normal employee selection */}
+              {!isCompanyWise &&
+                selectedDepartment &&
+                !selectedSubDepartment && (
+                  // Your existing code for showing sub-departments
+                  <div className="space-y-2">
+                    {isLoadingSubDepartments ? (
+                      <div className="flex items-center justify-center p-4">
+                        <div className="h-6 w-6 mr-2 rounded-full border-2 border-t-blue-500 animate-spin"></div>
+                        <span>Loading sub-departments...</span>
+                      </div>
+                    ) : subDepartmentsError ? (
+                      <div className="p-4 text-center text-red-600">
+                        {subDepartmentsError}
+                      </div>
+                    ) : filteredSubDepartments.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        No sub-departments found for this department
+                      </div>
+                    ) : (
+                      filteredSubDepartments.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            selectedSubDepartment === sub.id.toString()
+                              ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                              : "hover:bg-gray-50 border border-gray-200"
+                          }`}
+                          onClick={() =>
+                            setSelectedSubDepartment(sub.id.toString())
+                          }
+                        >
+                          <span className="text-sm font-medium text-gray-700">
+                            {sub.name}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+              {/* Show employees (normal mode) */}
+              {!isCompanyWise &&
+                selectedDepartment &&
+                selectedSubDepartment && (
+                  <div>
+                    <div className="space-y-2">
+                      {filteredEmployees.slice(0, 3).map((emp) => (
+                        <div
+                          key={emp.id}
+                          className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            selectedEmployees.has(emp.id.toString())
+                              ? "bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 shadow-md"
+                              : "hover:bg-gray-50 border border-gray-200"
+                          }`}
+                          onClick={() =>
+                            assignMode === "employee" &&
+                            handleEmployeeSelect(emp.id.toString())
+                          }
+                        >
+                          <span className="text-sm font-medium text-gray-700">
+                            {emp.name}
+                          </span>
+                          {assignMode === "employee" && (
+                            <input
+                              type="checkbox"
+                              checked={selectedEmployees.has(emp.id.toString())}
+                              readOnly
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                              tabIndex={-1}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Employee Modal */}
